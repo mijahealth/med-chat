@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twilio Conversations</title>
+  <style>
+    /* Existing CSS */
+    :root {
+      --background-color: white;
+      --text-color: black;
+      --sidebar-background: #f9f9f9;
+      --conversation-hover: #f0f0f0;
+      --message-right: #007aff;
+      --message-left: #f1f1f1;
+      --time-color: #CCCCCC;
+    }
+
+    [data-theme="dark"] {
+      --background-color: #000000;
+      --text-color: #e0e0e0;
+      --sidebar-background: #1c1c1e;
+      --conversation-hover: #2c2c2e;
+      --message-right: #0a84ff;
+      --message-left: #3a3a3c;
+      --time-color: #a1a1a1;
+    }
+
+    body {
+      display: flex;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", "Segoe UI", sans-serif;
+      font-size: 1.2rem;
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--background-color);
+      color: var(--text-color);
+    }
+
+    #sidebar {
+      width: 400px;
+      border-right: 1px solid #ccc;
+      padding: 10px;
+      box-sizing: border-box;
+      background-color: var(--sidebar-background);
+      overflow-y: auto;
+    }
+
+    #message-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #messages-title {
+      flex: 0 0 auto;
+      display: none; /* Initially hidden */
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.2em;
+      font-weight: bold;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    #no-conversation {
+      flex: 1 1 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5rem;
+      color: #888;
+    }
+
+    #messages {
+      flex: 1 1 auto;
+      padding: 10px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      display: none; /* Initially hidden */
+    }
+
+    #message-input {
+      flex: 0 0 auto;
+      display: none; /* Initially hidden */
+      align-items: center;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+      background-color: #ffffff;
+      box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Existing CSS for the messages and other elements */
+    .message {
+      margin-bottom: 10px;
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      position: relative;
+      font-size: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .message.right {
+      margin-left: auto;
+      background-color: var(--message-right);
+      color: white;
+      text-align: left;
+      border-bottom-right-radius: 0;
+    }
+
+    .message.left {
+      margin-right: auto;
+      background-color: var(--message-left);
+      color: black;
+      text-align: left;
+      border-bottom-left-radius: 0;
+    }
+
+    .message time {
+      font-size: 0.8em;
+      color: var(--time-color);
+      margin-left: 10px;
+      flex-shrink: 0;
+      align-self: flex-end;
+    }
+
+    #message-input input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      font-size: 1rem;
+      border-radius: 18px;
+      border: 1px solid #ccc;
+      outline: none;
+      background-color: #f1f0f0;
+      margin-right: 10px;
+    }
+
+    #message-input input[type="text"]::placeholder {
+      color: #555;
+    }
+
+    #message-input button {
+      padding: 12px 24px;
+      background-color: var(--message-right);
+      color: white;
+      border: none;
+      border-radius: 18px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s ease;
+    }
+
+    #message-input button:hover {
+      background-color: #005bb5;
+    }
+
+    #message-input button:focus, .conversation button:focus {
+      outline: 2px solid #005bb5;
+      outline-offset: 2px;
+    }
+
+    .conversation {
+      cursor: pointer;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+      position: relative;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    .conversation:hover {
+      background-color: var(--conversation-hover);
+      transform: scale(1.02);
+    }
+
+    .conversation.selected {
+      background-color: #d3d3d3;
+    }
+
+    .respond-icon {
+      font-size: 0.9em;
+      color: #ff3b30;
+      background-color: #ffeef0;
+      margin-right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 12px;
+      padding: 2px 10px;
+    }
+
+    .conversation .time {
+      font-size: 0.8em;
+      color: #888;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .conversation .last-message {
+      font-size: 0.9em;
+      color: #888;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .arrow {
+      font-size: 0.8em;
+      color: #c7c7cc;
+      margin-left: 5px;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #ff3b30;
+      margin-left: 10px;
+    }
+
+    @media (max-width: 768px) {
+      #sidebar {
+        width: 100%;
+        height: 50vh;
+      }
+      #message-pane {
+        height: 50vh;
+      }
+      #message-input input[type="text"] {
+        font-size: 0.9rem;
+      }
+      .message {
+        font-size: 0.9rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #sidebar {
+        width: 100%;
+        height: 40vh;
+      }
+      #message-pane {
+        height: 60vh;
+      }
+      #message-input input[type="text"] {
+        font-size: 0.8rem;
+      }
+      .message {
+        font-size: 0.8rem;
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+         opacity: 0;
+         transform: translateY(10px);
+      }
+      to {
+         opacity: 1;
+         transform: translateY(0);
+      }
+   }
+
+   .message {
+      animation: fadeIn 0.2s ease;
+   }
+  </style>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+  <header>
+    <div id="sidebar" role="navigation" aria-label="Conversation List">
+      <h2>Messages</h2>
+      <div id="conversations" aria-live="polite"></div>
+      <h2>Start a New Conversation</h2>
+      <form id="start-conversation-form" onsubmit="startConversation(event)">
+        <input type="text" name="phoneNumber" placeholder="Enter phone number" required aria-label="Phone Number">
+        <input type="text" name="message" placeholder="Enter a message" required aria-label="Message">
+        <button type="submit">Start Conversation</button>
+      </form>
+      <div style="margin-top: 10px;">
+        <label for="theme-toggle">Dark Mode</label>
+        <input type="checkbox" id="theme-toggle" aria-checked="false" onchange="toggleTheme()">
+      </div>
+    </div>
+  </header>
+  <main id="message-pane">
+    <div id="messages-title">
+      <span id="conversation-title" role="heading" aria-level="1"></span>
+      <span class="close-button" onclick="closeConversation()" style="cursor: pointer;" aria-label="Close Conversation">✕</span>
+    </div>
+    <div id="no-conversation" style="display: flex; justify-content: center; align-items: center; height: 100%; font-size: 1.5rem;">
+      No conversation selected
+    </div>
+    <div id="messages" onscroll="checkScrollPosition()" aria-live="polite"></div>
+    <div id="message-input" role="form">
+      <input type="text" id="new-message" placeholder="iMessage..." aria-label="New Message">
+      <button onclick="sendMessage()" aria-label="Send Message">Send</button>
+    </div>
+  </main>
+  <script>
+    const TWILIO_PHONE_NUMBER = '+12136983410'.trim();
+    let currentConversationSid = null;
+    let currentTheme = 'light';
+    let autoScrollEnabled = true;
+    let pollingInterval;
+
+    function toggleTheme() {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      document.body.setAttribute('data-theme', currentTheme);
+    }
+
+    function checkScrollPosition() {
+      const messagesDiv = document.getElementById('messages');
+      if (messagesDiv.scrollTop + messagesDiv.clientHeight < messagesDiv.scrollHeight) {
+        autoScrollEnabled = false;
+      } else {
+        autoScrollEnabled = true;
+      }
+    }
+
+    async function loadConversations() {
+  try {
+    const response = await axios.get('/conversations');
+    let conversations = response.data;
+
+    console.log('Fetched Conversations:', conversations);
+
+    conversations = await Promise.all(conversations.map(async conversation => {
+      const messagesResponse = await axios.get(`/conversations/${conversation.sid}/messages`);
+      const messages = messagesResponse.data;
+      const lastMessage = messages[messages.length - 1];
+      const lastMessageTime = lastMessage ? new Date(lastMessage.dateCreated).getTime() : 0;
+      conversation.lastMessageTime = lastMessageTime;
+      conversation.lastMessage = lastMessage ? lastMessage.body : ''; // Capture last message text
+      conversation.lastMessageAuthor = lastMessage ? lastMessage.author : ''; // Capture last message author
+
+      console.log(`Processing conversation SID: ${conversation.sid} with friendlyName: ${conversation.friendlyName}`);
+
+      return conversation;
+    }));
+
+    conversations.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
+    const conversationList = conversations.map(conversation => {
+      const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      let displayName = conversation.friendlyName || conversation.sid;
+      if (displayName.startsWith("Conversation with ")) {
+        displayName = displayName.replace("Conversation with ", "");
+      }
+
+      const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
+      
+      // Determine if the respond icon should be shown
+      const showRespondIcon = conversation.lastMessageAuthor && conversation.lastMessageAuthor !== TWILIO_PHONE_NUMBER && conversation.lastMessageAuthor !== 'system';
+      const respondIconHtml = showRespondIcon ? '<span class="respond-icon">Respond</span>' : '';
+
+      return `
+        <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
+          ${respondIconHtml}
+          <div>
+            <strong>${displayName}</strong>
+            <div class="last-message">${lastMessageText}</div>
+          </div>
+          <span class="time">${lastMessageTime}</span>
+          <button class="delete-btn" onclick="window.deleteConversation('${conversation.sid}'); event.stopPropagation();" aria-label="Delete Conversation">🗑️</button>
+        </div>
+      `;
+    });
+
+    document.getElementById('conversations').innerHTML = conversationList.join('');
+    if (currentConversationSid) {
+      document.getElementById(`conv-${currentConversationSid}`).classList.add('selected');
+    }
+  } catch (error) {
+    console.error('Error loading conversations:', error);
+  }
+}
+
+    async function selectConversation(sid, displayName) {
+      currentConversationSid = sid;
+
+      document.querySelectorAll('.conversation').forEach(conv => {
+        conv.classList.remove('selected');
+      });
+      document.getElementById(`conv-${sid}`).classList.add('selected');
+
+      document.getElementById('messages-title').style.display = 'flex';
+      document.getElementById('no-conversation').style.display = 'none';
+      document.getElementById('messages').style.display = 'block';
+      document.getElementById('message-input').style.display = 'flex';
+
+      loadMessages(sid, displayName);
+    }
+
+    async function loadMessages(sid, displayName) {
+  try {
+    const response = await axios.get(`/conversations/${sid}/messages`);
+    const messages = response.data;
+
+    document.getElementById('conversation-title').textContent = displayName;
+
+    // Replace this part with your code
+    const messageList = messages.map(message => {
+      const author = message.author.trim();
+      const displayAuthor = author.startsWith('CH') ? displayName : author; // Replace 'CH...' with phone number if needed
+
+      const messageClass = (displayAuthor === TWILIO_PHONE_NUMBER || displayAuthor === 'system') ? 'right' : 'left';
+
+      return `
+        <div class="message ${messageClass}">
+          <span>${message.body}</span>
+          <time>${new Date(message.dateCreated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('messages').innerHTML = messageList;
+
+    // Auto-scroll to the bottom of the message list
+    document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+
+  } catch (error) {
+    console.error('Error loading messages:', error);
+  }
+}
+
+    async function sendMessage() {
+      const messageInput = document.getElementById('new-message');
+      const message = messageInput.value.trim();
+
+      if (message && currentConversationSid) {
+        try {
+          await axios.post(`/conversations/${currentConversationSid}/messages`, { message });
+          messageInput.value = '';
+          await loadMessages(currentConversationSid);
+
+          // Update the conversation list after sending a message
+          await loadConversations();
+        } catch (error) {
+          console.error('Error sending message:', error);
+        }
+      }
+    }
+
+    function updateConversationPreview(conversationSid, latestMessage) {
+      const conversationDiv = document.getElementById(`conv-${conversationSid}`);
+
+      if (conversationDiv) {
+        const lastMessageDiv = conversationDiv.querySelector('.last-message');
+        if (lastMessageDiv) {
+          lastMessageDiv.textContent = latestMessage.body;
+        }
+
+        const respondIcon = conversationDiv.querySelector('.respond-icon');
+        const showRespondIcon = latestMessage && latestMessage.author !== TWILIO_PHONE_NUMBER && latestMessage.author !== 'system';
+
+        if (respondIcon && !showRespondIcon) {
+            respondIcon.remove();
+        } else if (!respondIcon && showRespondIcon) {
+            // Add Respond Icon if it should be shown and doesn't exist
+            conversationDiv.insertAdjacentHTML('afterbegin', '<span class="respond-icon">Respond</span>');
+        }
+      }
+    }
+
+    function closeConversation() {
+      currentConversationSid = null;
+      document.getElementById('conversation-title').textContent = ''; // Clear the conversation title
+      document.getElementById('messages').innerHTML = ''; // Clear the messages pane
+      document.getElementById('message-input').style.display = 'none'; // Hide the message input pane
+      document.getElementById('messages-title').style.display = 'none'; // Hide the title bar
+      document.getElementById('messages').style.display = 'none'; // Hide messages pane
+      document.getElementById('no-conversation').style.display = 'flex'; // Show the no conversation text
+
+      // Remove the 'selected' class from all conversations
+      document.querySelectorAll('.conversation').forEach(conv => {
+        conv.classList.remove('selected');
+      });
+
+      // Delay the reloading of conversations to ensure the pane is fully closed
+      setTimeout(() => {
+        loadConversations();
+      }, 200); // 200ms delay, adjust as needed
+    }
+
+    async function startConversation(event) {
+  event.preventDefault();
+  const form = event.target;
+  const phoneNumber = form.phoneNumber.value.trim();
+  const message = form.message.value.trim();
+
+  if (phoneNumber && message) {
+    try {
+      const response = await axios.post('/start-conversation', { phoneNumber, message });
+
+      if (response.data.existing) {
+        const userConfirmed = confirm('This conversation already exists. Would you like to open it?');
+        if (userConfirmed) {
+          // Open the existing conversation
+          selectConversation(response.data.sid, phoneNumber);
+        }
+      } else {
+        // Refresh the conversation list to show the new conversation
+        form.reset();
+        loadConversations();
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      alert('Failed to start a new conversation. Please try again.');
+    }
+  } else {
+    alert('Please enter both a phone number and a message.');
+  }
+}
+
+    window.deleteConversation = async function(sid) {
+      if (confirm("Are you sure you want to delete this conversation?")) {
+        try {
+          await axios.delete(`/conversations/${sid}`);
+          loadConversations(); // Refresh the conversation list
+          if (currentConversationSid === sid) {
+            closeConversation(); // Close the conversation if it's currently open
+          }
+        } catch (error) {
+          alert("Failed to delete conversation. Please try again later.");
+          console.error('Error deleting conversation:', error);
+        }
+      }
+    };
+
+    function startPolling() {
+      pollingInterval = setInterval(() => {
+        if (currentConversationSid) {
+          loadMessages(currentConversationSid, document.getElementById('conversation-title').textContent);
+        } else {
+          loadConversations();
+        }
+      }, 5000);
+    }
+
+    function stopPolling() {
+      clearInterval(pollingInterval);
+    }
+
+    startPolling();
+    loadConversations();
+  </script>
+</body>
+</html>
