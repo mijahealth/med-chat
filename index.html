@@ -413,10 +413,9 @@
 
     document.getElementById('conversation-title').textContent = displayName;
 
-    // Replace this part with your code
     const messageList = messages.map(message => {
       const author = message.author.trim();
-      const displayAuthor = author.startsWith('CH') ? displayName : author; // Replace 'CH...' with phone number if needed
+      const displayAuthor = author.startsWith('CH') ? displayName : author;
 
       const messageClass = (displayAuthor === TWILIO_PHONE_NUMBER || displayAuthor === 'system') ? 'right' : 'left';
 
@@ -438,23 +437,35 @@
   }
 }
 
-    async function sendMessage() {
-      const messageInput = document.getElementById('new-message');
-      const message = messageInput.value.trim();
+async function sendMessage() {
+  const messageInput = document.getElementById('new-message');
+  const message = messageInput.value.trim();
 
-      if (message && currentConversationSid) {
-        try {
-          await axios.post(`/conversations/${currentConversationSid}/messages`, { message });
-          messageInput.value = '';
-          await loadMessages(currentConversationSid);
+  // **New Logging: Start**
+  console.log(`Attempting to send message: "${message}" in conversation SID: ${currentConversationSid}`);
+  // **New Logging: End**
 
-          // Update the conversation list after sending a message
-          await loadConversations();
-        } catch (error) {
-          console.error('Error sending message:', error);
-        }
-      }
+  if (message && currentConversationSid) {
+    try {
+      await axios.post(`/conversations/${currentConversationSid}/messages`, { message });
+      messageInput.value = '';
+      await loadMessages(currentConversationSid);
+
+      // **New Logging: Start**
+      console.log(`Message "${message}" sent successfully in conversation SID: ${currentConversationSid}`);
+      // **New Logging: End**
+
+      // Update the conversation list after sending a message
+      await loadConversations();
+    } catch (error) {
+      console.error('Error sending message:', error);
+
+      // **New Logging: Start**
+      console.error(`Failed to send message in conversation SID: ${currentConversationSid}`, error);
+      // **New Logging: End**
     }
+  }
+}
 
     function updateConversationPreview(conversationSid, latestMessage) {
       const conversationDiv = document.getElementById(`conv-${conversationSid}`);

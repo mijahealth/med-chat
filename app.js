@@ -54,17 +54,33 @@ app.post('/conversations/:sid/messages', async (req, res) => {
     const { sid } = req.params;
     const { message } = req.body;
 
+    // Logging: Start
+    console.log(`Attempting to send message to conversation SID: ${sid}`);
+    console.log(`Message content: "${message}"`);
+    // Logging: End
+
     // Fetch the participant's phone number if available
     const participants = await client.conversations.v1.conversations(sid).participants.list();
-    const participant = participants.find(part => part.messagingBinding.address);
+
+    // Determine the author based on whether the message is being sent from the UI
+    const author = process.env.TWILIO_PHONE_NUMBER; // Your Twilio phone number from the environment variables
+
+    // **New Logging: Start**
+    console.log(`Message will be sent with author: ${author}`);
+    console.log(`Participants for conversation SID ${sid}:`, participants);
+    // **New Logging: End**
 
     // Add a new message to the specified conversation
     const sentMessage = await client.conversations.v1.conversations(sid)
       .messages
       .create({ 
         body: message, 
-        author: participant ? participant.messagingBinding.address : 'unknown'
+        author: author // The Twilio phone number should be the author
       });
+
+    // Logging: Start
+    console.log(`Message sent with SID: ${sentMessage.sid}`);
+    // Logging: End
 
     res.json({ message: 'Message sent', sid: sentMessage.sid });
   } catch (err) {
