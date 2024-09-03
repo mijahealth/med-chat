@@ -44,7 +44,9 @@
       padding: 10px;
       box-sizing: border-box;
       background-color: var(--sidebar-background);
-      overflow-y: auto;
+      height: 100vh; /* Make the sidebar take the full height of the viewport */
+      display: flex;
+      flex-direction: column;
     }
 
     #message-pane {
@@ -135,6 +137,8 @@
       flex: 1;
       padding: 12px;
       font-size: 1rem;
+
+
       border-radius: 18px;
       border: 1px solid #ccc;
       outline: none;
@@ -167,12 +171,11 @@
     }
 
     .conversation {
-      cursor: pointer;
-      padding: 10px;
-      border-bottom: 1px solid #ccc;
       display: flex;
       align-items: center;
-      position: relative;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      cursor: pointer;
       transition: background-color 0.2s ease, transform 0.1s ease;
     }
 
@@ -201,7 +204,7 @@
     .conversation .time {
       font-size: 0.8em;
       color: #888;
-      margin-left: auto;
+      margin-left: 10px;
       text-align: right;
     }
 
@@ -221,13 +224,37 @@
       margin-left: 5px;
     }
 
+    .delete-btn-container {
+      display: flex;
+      align-items: center;
+      margin-left: auto;
+    }
+
+    .separator {
+      width: 1px;
+      height: 24px;
+      background-color: #ccc;
+      margin-right: 10px;
+    }
+
     .delete-btn {
       background: none;
       border: none;
       cursor: pointer;
       font-size: 1rem;
       color: #ff3b30;
-      margin-left: 10px;
+      padding: 5px;
+      transition: color 0.2s ease, background-color 0.2s ease;
+      outline: none; /* Remove the blue outline on focus */
+    }
+
+    .delete-btn:focus {
+      outline: none; /* Ensure no blue square on focus */
+    }
+
+    .delete-btn:hover {
+      color: #d32f2f; /* Darker red on hover */
+      background-color: #f0f0f0; /* Optional: add a subtle background to indicate it's clickable */
     }
 
     @media (max-width: 768px) {
@@ -276,24 +303,116 @@
    .message {
       animation: fadeIn 0.2s ease;
    }
+
+   .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #ffffff;
+      margin: auto;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 500px;
+      animation: fadeInModal 0.3s ease;
+    }
+
+    .modal h2 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: #333;
+      text-align: center;
+    }
+
+    .modal input[type="text"] {
+      width: calc(100% - 30px); /* Adjust width to fit inside modal */
+      padding: 12px 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      color: #333;
+      background-color: #f9f9f9;
+    }
+
+    .modal input[type="text"]:focus {
+      border-color: #007aff;
+      outline: none;
+    }
+
+    .modal textarea[name="message"] {
+      width: calc(100% - 30px); /* Adjust width to fit inside modal */
+      padding: 12px 15px;
+      height: 100px; /* Increase height */
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      color: #333;
+      background-color: #f9f9f9;
+      resize: none; /* Prevent users from resizing the box */
+    }
+
+    .modal button[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background-color: #007aff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .modal button[type="submit"]:hover {
+      background-color: #005bb5;
+    }
+
+    .close-modal {
+      float: right;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #aaa;
+      transition: color 0.3s ease;
+    }
+
+    .close-modal:hover {
+      color: #333;
+    }
+
+    @keyframes fadeInModal {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
 <body>
   <header>
     <div id="sidebar" role="navigation" aria-label="Conversation List">
-      <h2>Messages</h2>
-      <div id="conversations" aria-live="polite"></div>
-      <h2>Start a New Conversation</h2>
-      <form id="start-conversation-form" onsubmit="startConversation(event)">
-        <input type="text" name="phoneNumber" placeholder="Enter phone number" required aria-label="Phone Number">
-        <input type="text" name="message" placeholder="Enter a message" required aria-label="Message">
-        <button type="submit">Start Conversation</button>
-      </form>
-      <div style="margin-top: 10px;">
-        <label for="theme-toggle">Dark Mode</label>
-        <input type="checkbox" id="theme-toggle" aria-checked="false" onchange="toggleTheme()">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Messages</h2>
+        <button id="new-conversation-btn" aria-label="Start New Conversation">+</button>
       </div>
+      <div id="conversations" aria-live="polite"></div>
     </div>
   </header>
   <main id="message-pane">
@@ -310,12 +429,36 @@
       <button onclick="sendMessage()" aria-label="Send Message">Send</button>
     </div>
   </main>
+
+  <!-- Modal for starting a new conversation -->
+  <div id="new-conversation-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal()">&times;</span>
+      <h2>Start a New Conversation</h2>
+      <form id="start-conversation-form" onsubmit="startConversation(event)">
+        <input type="text" name="phoneNumber" placeholder="+1XXXXXXXXXX" required aria-label="Phone Number">
+        <textarea name="message" placeholder="Enter a message" required
+
+ aria-label="Message"></textarea>
+        <button type="submit">Start Conversation</button>
+      </form>
+    </div>
+  </div>
+
   <script>
     const TWILIO_PHONE_NUMBER = '+12136983410'.trim();
     let currentConversationSid = null;
     let currentTheme = 'light';
     let autoScrollEnabled = true;
     let pollingInterval;
+
+    document.getElementById('new-conversation-btn').addEventListener('click', function() {
+      document.getElementById('new-conversation-modal').style.display = 'flex';
+    });
+
+    function closeModal() {
+      document.getElementById('new-conversation-modal').style.display = 'none';
+    }
 
     function toggleTheme() {
       currentTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -332,63 +475,79 @@
     }
 
     async function loadConversations() {
-  try {
-    const response = await axios.get('/conversations');
-    let conversations = response.data;
+      try {
+        const response = await axios.get('/conversations');
+        let conversations = response.data;
 
-    console.log('Fetched Conversations:', conversations);
+        console.log('Fetched Conversations:', conversations);
 
-    conversations = await Promise.all(conversations.map(async conversation => {
-      const messagesResponse = await axios.get(`/conversations/${conversation.sid}/messages`);
-      const messages = messagesResponse.data;
-      const lastMessage = messages[messages.length - 1];
-      const lastMessageTime = lastMessage ? new Date(lastMessage.dateCreated).getTime() : 0;
-      conversation.lastMessageTime = lastMessageTime;
-      conversation.lastMessage = lastMessage ? lastMessage.body : ''; // Capture last message text
-      conversation.lastMessageAuthor = lastMessage ? lastMessage.author : ''; // Capture last message author
+        conversations = await Promise.all(conversations.map(async conversation => {
+          const messagesResponse = await axios.get(`/conversations/${conversation.sid}/messages`);
+          const messages = messagesResponse.data;
+          const lastMessage = messages[messages.length - 1];
+          const lastMessageTime = lastMessage ? new Date(lastMessage.dateCreated).getTime() : 0;
+          conversation.lastMessageTime = lastMessageTime;
+          conversation.lastMessage = lastMessage ? lastMessage.body : ''; // Capture last message text
+          conversation.lastMessageAuthor = lastMessage ? lastMessage.author : ''; // Capture last message author
 
-      console.log(`Processing conversation SID: ${conversation.sid} with friendlyName: ${conversation.friendlyName}`);
+          // Update conversation preview if needed
+          updateConversationPreview(conversation.sid, lastMessage);
 
-      return conversation;
-    }));
+          console.log(`Processing conversation SID: ${conversation.sid} with friendlyName: ${conversation.friendlyName}`);
 
-    conversations.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+          return conversation;
+        }));
 
-    const conversationList = conversations.map(conversation => {
-      const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        conversations.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
 
-      let displayName = conversation.friendlyName || conversation.sid;
-      if (displayName.startsWith("Conversation with ")) {
-        displayName = displayName.replace("Conversation with ", "");
+        const conversationList = conversations.map(conversation => {
+          const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          let displayName = conversation.friendlyName || conversation.sid;
+          if (displayName.startsWith("Conversation with ")) {
+            displayName = displayName.replace("Conversation with ", "");
+          }
+
+          const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
+          
+          // Determine if the respond icon should be shown
+          const showRespondIcon = conversation.lastMessageAuthor && conversation.lastMessageAuthor !== TWILIO_PHONE_NUMBER && conversation.lastMessageAuthor !== 'system';
+          const respondIconHtml = showRespondIcon ? '<span class="respond-icon">Respond</span>' : '';
+
+          return `
+            <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
+              ${respondIconHtml}
+              <div>
+                <strong>${displayName}</strong>
+                <div class="last-message">${lastMessageText}</div>
+              </div>
+              <span class="time">${lastMessageTime}</span>
+              <div class="delete-btn-container">
+                <div class="separator"></div>
+                <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
+              </div>
+            </div>
+          `;
+        });
+
+        document.getElementById('conversations').innerHTML = conversationList.join('');
+
+        // Reattach event listeners for delete buttons
+        document.querySelectorAll('.delete-btn').forEach(button => {
+          button.addEventListener('click', (event) => {
+            event.stopPropagation();  // Prevent the event from bubbling up and triggering multiple confirmations
+            const sid = event.target.getAttribute('data-sid');
+            confirmDeletion(sid);
+          });
+        });
+
+        if (currentConversationSid) {
+          document.getElementById(`conv-${currentConversationSid}`).classList.add('selected');
+        }
+      } catch (error) {
+        console.error('Error loading conversations:', error);
       }
-
-      const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
-      
-      // Determine if the respond icon should be shown
-      const showRespondIcon = conversation.lastMessageAuthor && conversation.lastMessageAuthor !== TWILIO_PHONE_NUMBER && conversation.lastMessageAuthor !== 'system';
-      const respondIconHtml = showRespondIcon ? '<span class="respond-icon">Respond</span>' : '';
-
-      return `
-        <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
-          ${respondIconHtml}
-          <div>
-            <strong>${displayName}</strong>
-            <div class="last-message">${lastMessageText}</div>
-          </div>
-          <span class="time">${lastMessageTime}</span>
-          <button class="delete-btn" onclick="window.deleteConversation('${conversation.sid}'); event.stopPropagation();" aria-label="Delete Conversation">🗑️</button>
-        </div>
-      `;
-    });
-
-    document.getElementById('conversations').innerHTML = conversationList.join('');
-    if (currentConversationSid) {
-      document.getElementById(`conv-${currentConversationSid}`).classList.add('selected');
     }
-  } catch (error) {
-    console.error('Error loading conversations:', error);
-  }
-}
 
     async function selectConversation(sid, displayName) {
       currentConversationSid = sid;
@@ -432,59 +591,61 @@
     // Auto-scroll to the bottom of the message list
     document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
 
+    // Update the conversation preview for this conversation
+    const latestMessage = messages[messages.length - 1];
+    updateConversationPreview(sid, latestMessage);
+
   } catch (error) {
     console.error('Error loading messages:', error);
   }
 }
 
-async function sendMessage() {
-  const messageInput = document.getElementById('new-message');
-  const message = messageInput.value.trim();
-
-  // **New Logging: Start**
-  console.log(`Attempting to send message: "${message}" in conversation SID: ${currentConversationSid}`);
-  // **New Logging: End**
-
-  if (message && currentConversationSid) {
-    try {
-      await axios.post(`/conversations/${currentConversationSid}/messages`, { message });
-      messageInput.value = '';
-      await loadMessages(currentConversationSid);
+    async function sendMessage() {
+      const messageInput = document.getElementById('new-message');
+      const message = messageInput.value.trim();
 
       // **New Logging: Start**
-      console.log(`Message "${message}" sent successfully in conversation SID: ${currentConversationSid}`);
+      console.log(`Attempting to send message: "${message}" in conversation SID: ${currentConversationSid}`);
       // **New Logging: End**
 
-      // Update the conversation list after sending a message
-      await loadConversations();
-    } catch (error) {
-      console.error('Error sending message:', error);
+      if (message && currentConversationSid) {
+        try {
+          await axios.post(`/conversations/${currentConversationSid}/messages`, { message });
+          messageInput.value = '';
+          await loadMessages(currentConversationSid);
 
-      // **New Logging: Start**
-      console.error(`Failed to send message in conversation SID: ${currentConversationSid}`, error);
-      // **New Logging: End**
+          // **New Logging: Start**
+          console.log(`Message "${message}" sent successfully in conversation SID: ${currentConversationSid}`);
+          // **New Logging: End**
+
+          // Update the conversation list after sending a message
+          await loadConversations();
+        } catch (error) {
+          console.error('Error sending message:', error);
+
+          // **New Logging: Start**
+          console.error(`Failed to send message in conversation SID: ${currentConversationSid}`, error);
+          // **New Logging: End**
+        }
+      }
     }
-  }
-}
 
-    function updateConversationPreview(conversationSid, latestMessage) {
-      const conversationDiv = document.getElementById(`conv-${conversationSid}`);
+    function confirmDeletion(sid) {
+      if (confirm("Are you sure you want to delete this conversation?")) {
+        deleteConversation(sid);
+      }
+    }
 
-      if (conversationDiv) {
-        const lastMessageDiv = conversationDiv.querySelector('.last-message');
-        if (lastMessageDiv) {
-          lastMessageDiv.textContent = latestMessage.body;
+    async function deleteConversation(sid) {
+      try {
+        await axios.delete(`/conversations/${sid}`);
+        loadConversations(); // Refresh the conversation list
+        if (currentConversationSid === sid) {
+          closeConversation(); // Close the conversation if it's currently open
         }
-
-        const respondIcon = conversationDiv.querySelector('.respond-icon');
-        const showRespondIcon = latestMessage && latestMessage.author !== TWILIO_PHONE_NUMBER && latestMessage.author !== 'system';
-
-        if (respondIcon && !showRespondIcon) {
-            respondIcon.remove();
-        } else if (!respondIcon && showRespondIcon) {
-            // Add Respond Icon if it should be shown and doesn't exist
-            conversationDiv.insertAdjacentHTML('afterbegin', '<span class="respond-icon">Respond</span>');
-        }
+      } catch (error) {
+        alert("Failed to delete conversation. Please try again later.");
+        console.error('Error deleting conversation:', error);
       }
     }
 
@@ -508,60 +669,70 @@ async function sendMessage() {
       }, 200); // 200ms delay, adjust as needed
     }
 
-    async function startConversation(event) {
-  event.preventDefault();
-  const form = event.target;
-  const phoneNumber = form.phoneNumber.value.trim();
-  const message = form.message.value.trim();
+    function updateConversationPreview(conversationSid, latestMessage) {
+  const conversationDiv = document.getElementById(`conv-${conversationSid}`);
 
-  if (phoneNumber && message) {
-    try {
-      const response = await axios.post('/start-conversation', { phoneNumber, message });
-
-      if (response.data.existing) {
-        const userConfirmed = confirm('This conversation already exists. Would you like to open it?');
-        if (userConfirmed) {
-          // Open the existing conversation
-          selectConversation(response.data.sid, phoneNumber);
-        }
-      } else {
-        // Refresh the conversation list to show the new conversation
-        form.reset();
-        loadConversations();
-      }
-    } catch (error) {
-      console.error('Error starting conversation:', error);
-      alert('Failed to start a new conversation. Please try again.');
+  if (conversationDiv) {
+    const lastMessageDiv = conversationDiv.querySelector('.last-message');
+    if (lastMessageDiv) {
+      lastMessageDiv.textContent = latestMessage.body;
     }
-  } else {
-    alert('Please enter both a phone number and a message.');
+
+    const respondIcon = conversationDiv.querySelector('.respond-icon');
+    const showRespondIcon = latestMessage && latestMessage.author !== TWILIO_PHONE_NUMBER && latestMessage.author !== 'system';
+
+    if (respondIcon && !showRespondIcon) {
+        respondIcon.remove();
+    } else if (!respondIcon && showRespondIcon) {
+        // Add Respond Icon if it should be shown and doesn't exist
+        conversationDiv.insertAdjacentHTML('afterbegin', '<span class="respond-icon">Respond</span>');
+    }
   }
 }
 
-    window.deleteConversation = async function(sid) {
-      if (confirm("Are you sure you want to delete this conversation?")) {
+    async function startConversation(event) {
+      event.preventDefault();
+      const form = event.target;
+      const phoneNumber = form.phoneNumber.value.trim();
+      const message = form.message.value.trim();
+
+      if (phoneNumber && message) {
         try {
-          await axios.delete(`/conversations/${sid}`);
-          loadConversations(); // Refresh the conversation list
-          if (currentConversationSid === sid) {
-            closeConversation(); // Close the conversation if it's currently open
+          const response = await axios.post('/start-conversation', { phoneNumber, message });
+
+          if (response.data.existing) {
+            const userConfirmed = confirm('This conversation already exists. Would you like to open it?');
+            if (userConfirmed) {
+              // Open the existing conversation
+              selectConversation(response.data.sid, phoneNumber);
+            }
+          } else {
+            // Refresh the conversation list to show the new conversation
+            form.reset();
+            await loadConversations();
+            closeModal(); // Close the modal after starting the conversation
+
+            // Automatically open the newly created conversation
+            selectConversation(response.data.sid, phoneNumber);
           }
         } catch (error) {
-          alert("Failed to delete conversation. Please try again later.");
-          console.error('Error deleting conversation:', error);
+          console.error('Error starting conversation:', error);
+          alert('Failed to start a new conversation. Please try again.');
         }
+      } else {
+        alert('Please enter both a phone number and a message.');
       }
-    };
+    }
 
     function startPolling() {
-      pollingInterval = setInterval(() => {
-        if (currentConversationSid) {
-          loadMessages(currentConversationSid, document.getElementById('conversation-title').textContent);
-        } else {
-          loadConversations();
-        }
-      }, 5000);
+  pollingInterval = setInterval(async () => {
+    if (currentConversationSid) {
+      await loadMessages(currentConversationSid, document.getElementById('conversation-title').textContent);
     }
+    // Always reload the conversations to update the left pane
+    await loadConversations(); 
+  }, 5000); // Polling every 5 seconds
+}
 
     function stopPolling() {
       clearInterval(pollingInterval);
