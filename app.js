@@ -4,6 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
+const { body, param, validationResult } = require('express-validator'); // Import express-validator
 
 // Create an Express application
 const app = express();
@@ -32,7 +33,15 @@ app.get('/conversations', async (req, res) => {
 });
 
 // Endpoint to delete a conversation
-app.delete('/conversations/:sid', async (req, res) => {
+app.delete('/conversations/:sid', [
+  param('sid').isString().withMessage('Conversation SID must be a string')
+], async (req, res) => {
+  // Check for validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     const { sid } = req.params;
@@ -48,7 +57,16 @@ app.delete('/conversations/:sid', async (req, res) => {
 });
 
 // Endpoint to add a message to a conversation
-app.post('/conversations/:sid/messages', async (req, res) => {
+app.post('/conversations/:sid/messages', [
+  param('sid').isString().withMessage('Conversation SID must be a string'),
+  body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
+], async (req, res) => {
+  // Check for validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     const { sid } = req.params;
@@ -90,7 +108,15 @@ app.post('/conversations/:sid/messages', async (req, res) => {
 });
 
 // Endpoint to get messages from a specific conversation
-app.get('/conversations/:sid/messages', async (req, res) => {
+app.get('/conversations/:sid/messages', [
+  param('sid').isString().withMessage('Conversation SID must be a string')
+], async (req, res) => {
+  // Check for validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     const { sid } = req.params;
@@ -107,17 +133,22 @@ app.get('/conversations/:sid/messages', async (req, res) => {
   }
 });
 
-app.post('/start-conversation', async (req, res) => {
+// Endpoint to start a new conversation
+app.post('/start-conversation', [
+  body('phoneNumber').matches(/^\+\d{10,15}$/).withMessage('Invalid phone number format'),
+  body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
+], async (req, res) => {
+  // Check for validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     const { phoneNumber, message } = req.body;
 
     console.log(`Attempting to start a conversation with phoneNumber: ${phoneNumber}`);
-
-    // Ensure phone numbers are in the correct E.164 format
-    if (!/^\+\d{10,15}$/.test(phoneNumber)) {
-      throw new Error('Invalid phone number format');
-    }
 
     // Check if a conversation already exists with the given phone number
     const conversations = await client.conversations.v1.conversations.list();
