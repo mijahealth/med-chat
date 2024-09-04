@@ -4,7 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
-const { body, param, validationResult } = require('express-validator'); // Import express-validator
+const { body, param, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 
 // Create an Express application
@@ -32,38 +32,50 @@ app.get('/conversations', async (req, res) => {
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-    // Fetch all conversations
     const conversations = await client.conversations.v1.conversations.list();
 
-    // Send the conversation list as JSON to the client
-    res.json(conversations);
+    const conversationSummaries = await Promise.all(conversations.map(async conversation => {
+      const messages = await client.conversations.v1.conversations(conversation.sid).messages.list({ limit: 1 });
+      const lastMessage = messages.length > 0 ? messages[0] : null;
+      return {
+        sid: conversation.sid,
+        friendlyName: conversation.friendlyName,
+        lastMessage: lastMessage ? lastMessage.body : 'No messages yet',
+        lastMessageTime: lastMessage ? lastMessage.dateCreated : null
+      };
+    }));
+
+    res.json(conversationSummaries);
   } catch (err) {
     console.error('Error fetching conversations:', err.stack);
     res.status(500).json({ error: 'Failed to fetch conversations', details: err.message });
   }
 });
 
-// Endpoint to delete a conversation
+// Endpoint to delete a conversation with confirmation
 app.delete('/conversations/:sid', [
   param('sid').isString().withMessage('Conversation SID must be a string')
 ], async (req, res) => {
-  // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
+  const { sid } = req.params;
+  const { confirmToken } = req.body;
+
+  if (confirmToken !== 'CONFIRM_DELETE') {
+    return res.status(400).json({ error: 'Invalid confirmation token. Action not allowed.' });
+  }
+
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const { sid } = req.params;
-
-    // Delete the conversation by SID
     await client.conversations.v1.conversations(sid).remove();
-
+    console.log(`Conversation ${sid} deleted.`);  // Ensure log is printed to the terminal
     res.json({ message: `Conversation ${sid} deleted successfully.` });
   } catch (err) {
-    console.error(`Error deleting conversation ${req.params.sid}:`, err.stack);
-    res.status(500).json({ error: `Failed to delete conversation ${req.params.sid}`, details: err.message });
+    console.error(`Error deleting conversation ${sid}:`, err.stack);  // Ensure error is logged
+    res.status(500).json({ error: `Failed to delete conversation ${sid}`, details: err.message });
   }
 });
 
@@ -72,7 +84,6 @@ app.post('/conversations/:sid/messages', [
   param('sid').isString().withMessage('Conversation SID must be a string'),
   body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
 ], async (req, res) => {
-  // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -91,13 +102,10 @@ app.post('/conversations/:sid/messages', [
     // Fetch the participant's phone number if available
     const participants = await client.conversations.v1.conversations(sid).participants.list();
 
-    // Determine the author based on whether the message is being sent from the UI
-    const author = process.env.TWILIO_PHONE_NUMBER; // Your Twilio phone number from the environment variables
+    const author = process.env.TWILIO_PHONE_NUMBER;
 
-    // **New Logging: Start**
     console.log(`Message will be sent with author: ${author}`);
     console.log(`Participants for conversation SID ${sid}:`, participants);
-    // **New Logging: End**
 
     // Add a new message to the specified conversation
     const sentMessage = await client.conversations.v1.conversations(sid)
@@ -122,7 +130,6 @@ app.post('/conversations/:sid/messages', [
 app.get('/conversations/:sid/messages', [
   param('sid').isString().withMessage('Conversation SID must be a string')
 ], async (req, res) => {
-  // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -149,7 +156,6 @@ app.post('/start-conversation', [
   body('phoneNumber').matches(/^\+\d{10,15}$/).withMessage('Invalid phone number format'),
   body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
 ], async (req, res) => {
-  // Check for validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -195,7 +201,7 @@ app.post('/start-conversation', [
       } catch (err) {
         if (err.message.includes('A binding for this participant and proxy address already exists')) {
           console.log(`Binding already exists. Cleaning up new conversation with SID: ${conversation.sid}`);
-          await client.conversations.v1.conversations(conversation.sid).remove(); // Clean up the newly created conversation
+          await client.conversations.v1.conversations(conversation.sid).remove();
           res.json({ sid: existingConversation.sid, existing: true });
         } else {
           throw err;
