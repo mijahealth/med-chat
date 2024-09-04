@@ -403,6 +403,22 @@ body {
     transform: translateY(0);
   }
 }
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid #007aff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  display: none; /* Initially hidden */
+  margin: auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
   </style>
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
@@ -424,10 +440,16 @@ body {
       <span id="conversation-title" role="heading" aria-level="1"></span>
       <span class="close-button" onclick="closeConversation()" style="cursor: pointer;" aria-label="Close Conversation">✕</span>
     </div>
+  
+    <!-- Add this spinner element here -->
+    <div id="loading-spinner" class="spinner"></div>
+  
     <div id="no-conversation" style="display: flex; justify-content: center; align-items: center; height: 100%; font-size: 1.5rem;">
       No conversation selected
     </div>
+  
     <div id="messages" onscroll="checkScrollPosition()" aria-live="polite"></div>
+  
     <div id="message-input" role="form">
       <input type="text" id="new-message" placeholder="Message..." aria-label="New Message">
       <button onclick="sendMessage()" aria-label="Send Message">Send</button>
@@ -558,20 +580,39 @@ body {
     }
 
     async function selectConversation(sid, displayName) {
-      currentConversationSid = sid;
+  currentConversationSid = sid;
 
-      document.querySelectorAll('.conversation').forEach(conv => {
-        conv.classList.remove('selected');
-      });
-      document.getElementById(`conv-${sid}`).classList.add('selected');
+  // Add spinner visibility before loading messages
+  document.getElementById('loading-spinner').style.display = 'block';
 
-      document.getElementById('messages-title').style.display = 'flex';
-      document.getElementById('no-conversation').style.display = 'none';
-      document.getElementById('messages').style.display = 'block';
-      document.getElementById('message-input').style.display = 'flex';
+  // Hide other elements while loading
+  document.getElementById('messages').style.display = 'none';
+  document.getElementById('message-input').style.display = 'none';
+  
+  try {
+    // Clear previous selections
+    document.querySelectorAll('.conversation').forEach(conv => {
+      conv.classList.remove('selected');
+    });
+    document.getElementById(`conv-${sid}`).classList.add('selected');
 
-      loadMessages(sid, displayName);
-    }
+    // Show conversation title and prepare to load messages
+    document.getElementById('messages-title').style.display = 'flex';
+    document.getElementById('no-conversation').style.display = 'none';
+
+    // Load the messages for this conversation
+    await loadMessages(sid, displayName);
+
+    // After messages are loaded, show the message pane and input
+    document.getElementById('messages').style.display = 'block';
+    document.getElementById('message-input').style.display = 'flex';
+  } catch (error) {
+    console.error('Error loading conversation:', error);
+  } finally {
+    // Hide spinner once messages are loaded
+    document.getElementById('loading-spinner').style.display = 'none';
+  }
+}
 
     async function loadMessages(sid, displayName) {
       try {

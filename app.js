@@ -5,6 +5,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
 const { body, param, validationResult } = require('express-validator'); // Import express-validator
+const rateLimit = require('express-rate-limit');
 
 // Create an Express application
 const app = express();
@@ -15,6 +16,16 @@ app.use(bodyParser.json());
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
+
+// Define the rate limiter for all requests
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window (here, per 15 minutes)
+  message: 'Too many requests from this IP, please try again later.',
+});
+
+// Apply the rate limiter to routes
+app.use(apiLimiter);
 
 // Endpoint to list all conversations
 app.get('/conversations', async (req, res) => {
