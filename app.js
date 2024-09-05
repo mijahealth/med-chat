@@ -28,7 +28,6 @@ const apiLimiter = rateLimit({
 app.use(apiLimiter);
 
 // Endpoint to list all conversations
-// Endpoint to list all conversations
 app.get('/conversations', async (req, res) => {
   // Disable caching of conversation data
   res.set('Cache-Control', 'no-store');  
@@ -56,7 +55,7 @@ app.get('/conversations', async (req, res) => {
   }
 });
 
-// Endpoint to delete a conversation with confirmation
+// Enhanced Error Handling and Refactored Confirmation for Deleting a Conversation
 app.delete('/conversations/:sid', [
   param('sid').isString().withMessage('Conversation SID must be a string')
 ], async (req, res) => {
@@ -68,22 +67,30 @@ app.delete('/conversations/:sid', [
   const { sid } = req.params;
   const { confirmToken } = req.body;
 
-  if (confirmToken !== 'CONFIRM_DELETE') {
-    return res.status(400).json({ error: 'Invalid confirmation token. Action not allowed.' });
+  // Improved confirmation process for better user experience
+  if (!confirmToken || confirmToken !== 'CONFIRM_DELETE') {
+    return res.status(400).json({ error: 'Invalid or missing confirmation token. Action not allowed. Please type "CONFIRM_DELETE" to confirm.' });
   }
 
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     await client.conversations.v1.conversations(sid).remove();
-    console.log(`Conversation ${sid} deleted.`);  // Ensure log is printed to the terminal
+
+    console.log(`Conversation ${sid} deleted successfully.`);  
     res.json({ message: `Conversation ${sid} deleted successfully.` });
   } catch (err) {
-    console.error(`Error deleting conversation ${sid}:`, err.stack);  // Ensure error is logged
-    res.status(500).json({ error: `Failed to delete conversation ${sid}`, details: err.message });
+    console.error(`Error deleting conversation ${sid}:`, err.stack);
+
+    // Specific error handling for Twilio-related issues
+    if (err.code === 20404) {
+      res.status(404).json({ error: `Conversation ${sid} not found. It may have already been deleted.`, details: err.message });
+    } else {
+      res.status(500).json({ error: `Failed to delete conversation ${sid}`, details: err.message });
+    }
   }
 });
 
-// Endpoint to add a message to a conversation
+// Enhanced Error Handling for Adding a Message to a Conversation
 app.post('/conversations/:sid/messages', [
   param('sid').isString().withMessage('Conversation SID must be a string'),
   body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
@@ -98,14 +105,11 @@ app.post('/conversations/:sid/messages', [
     const { sid } = req.params;
     const { message } = req.body;
 
-    // Logging: Start
     console.log(`Attempting to send message to conversation SID: ${sid}`);
     console.log(`Message content: "${message}"`);
-    // Logging: End
 
     // Fetch the participant's phone number if available
     const participants = await client.conversations.v1.conversations(sid).participants.list();
-
     const author = process.env.TWILIO_PHONE_NUMBER;
 
     console.log(`Message will be sent with author: ${author}`);
@@ -116,21 +120,25 @@ app.post('/conversations/:sid/messages', [
       .messages
       .create({ 
         body: message, 
-        author: author // The Twilio phone number should be the author
+        author: author 
       });
 
-    // Logging: Start
     console.log(`Message sent with SID: ${sentMessage.sid}`);
-    // Logging: End
 
     res.json({ message: 'Message sent', sid: sentMessage.sid });
   } catch (err) {
     console.error(`Error adding message to conversation ${req.params.sid}:`, err.stack);
-    res.status(500).json({ error: `Failed to send message to conversation ${req.params.sid}`, details: err.message });
+    
+    // Specific error handling for Twilio-related issues
+    if (err.code === 20404) {
+      res.status(404).json({ error: `Conversation ${req.params.sid} not found.`, details: err.message });
+    } else {
+      res.status(500).json({ error: `Failed to send message to conversation ${req.params.sid}`, details: err.message });
+    }
   }
 });
 
-// Endpoint to get messages from a specific conversation
+// Enhanced Error Handling for Fetching Messages from a Specific Conversation
 app.get('/conversations/:sid/messages', [
   param('sid').isString().withMessage('Conversation SID must be a string')
 ], async (req, res) => {
@@ -151,11 +159,17 @@ app.get('/conversations/:sid/messages', [
     res.json(messages);
   } catch (err) {
     console.error(`Error fetching messages for conversation ${req.params.sid}:`, err.stack);
-    res.status(500).json({ error: `Failed to fetch messages for conversation ${req.params.sid}`, details: err.message });
+    
+    // Specific error handling for Twilio-related issues
+    if (err.code === 20404) {
+      res.status(404).json({ error: `Conversation ${req.params.sid} not found.`, details: err.message });
+    } else {
+      res.status(500).json({ error: `Failed to fetch messages for conversation ${req.params.sid}`, details: err.message });
+    }
   }
 });
 
-// Endpoint to start a new conversation
+// Start a new conversation with enhanced error handling
 app.post('/start-conversation', [
   body('phoneNumber').matches(/^\+\d{10,15}$/).withMessage('Invalid phone number format'),
   body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
@@ -179,7 +193,6 @@ app.post('/start-conversation', [
 
     if (existingConversation) {
       console.log(`Existing conversation found with SID: ${existingConversation.sid}`);
-      // Respond to the front-end that the conversation already exists
       res.json({ sid: existingConversation.sid, existing: true });
     } else {
       // Create a new conversation if none exists
@@ -206,11 +219,11 @@ app.post('/start-conversation', [
 
         res.json({ sid: conversation.sid, existing: false });
       } catch (err) {
-        // Handle "A binding for this participant already exists" error
+        // Handle specific Twilio-related errors
         if (err.message.includes('A binding for this participant and proxy address already exists')) {
           console.log(`Binding already exists. Cleaning up new conversation with SID: ${conversation.sid}`);
-          await client.conversations.v1.conversations(conversation.sid).remove(); // Clean up newly created conversation
-          res.json({ sid: conversation.sid, existing: true });  // Return new conversation SID, not existingConversation.sid
+          await client.conversations.v1.conversations(conversation.sid).remove(); 
+          res.json({ sid: conversation.sid, existing: true });
         } else {
           throw err;
         }
