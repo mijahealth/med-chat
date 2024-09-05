@@ -28,7 +28,11 @@ const apiLimiter = rateLimit({
 app.use(apiLimiter);
 
 // Endpoint to list all conversations
+// Endpoint to list all conversations
 app.get('/conversations', async (req, res) => {
+  // Disable caching of conversation data
+  res.set('Cache-Control', 'no-store');  
+
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -175,6 +179,7 @@ app.post('/start-conversation', [
 
     if (existingConversation) {
       console.log(`Existing conversation found with SID: ${existingConversation.sid}`);
+      // Respond to the front-end that the conversation already exists
       res.json({ sid: existingConversation.sid, existing: true });
     } else {
       // Create a new conversation if none exists
@@ -185,6 +190,7 @@ app.post('/start-conversation', [
       console.log(`New conversation created with SID: ${conversation.sid} and friendlyName: ${conversation.friendlyName}`);
 
       try {
+        // Add participant to the conversation
         await client.conversations.v1.conversations(conversation.sid)
           .participants
           .create({
@@ -193,16 +199,18 @@ app.post('/start-conversation', [
             'messagingBinding.type': 'sms'
           });
 
+        // Send the initial message
         await client.conversations.v1.conversations(conversation.sid)
           .messages
           .create({ body: message, author: process.env.TWILIO_PHONE_NUMBER });
 
         res.json({ sid: conversation.sid, existing: false });
       } catch (err) {
+        // Handle "A binding for this participant already exists" error
         if (err.message.includes('A binding for this participant and proxy address already exists')) {
           console.log(`Binding already exists. Cleaning up new conversation with SID: ${conversation.sid}`);
-          await client.conversations.v1.conversations(conversation.sid).remove();
-          res.json({ sid: existingConversation.sid, existing: true });
+          await client.conversations.v1.conversations(conversation.sid).remove(); // Clean up newly created conversation
+          res.json({ sid: conversation.sid, existing: true });  // Return new conversation SID, not existingConversation.sid
         } else {
           throw err;
         }
