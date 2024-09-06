@@ -19,6 +19,9 @@ app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+// Set EJS as the templating engine
+app.set('view engine', 'ejs');
+
 // Serve the EJS layout instead of index.html
 app.get('/', (req, res) => {
   res.render('layout'); // This replaces your static HTML file
