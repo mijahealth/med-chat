@@ -1,35 +1,40 @@
 // Load environment variables from .env file
 require('dotenv').config();
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
 const { body, param, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 
-// Create an Express application
 const app = express();
+
+// Set up the view engine for EJS templates
+app.set('view engine', 'ejs');
+app.set('views', __dirname + '/views');
+
+// Serve static files from the /public directory
+app.use(express.static(__dirname + '/public'));
+
+// Middleware to handle POST data
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Serve the HTML file for the conversation UI
+// Serve the EJS layout instead of index.html
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+  res.render('layout'); // This replaces your static HTML file
 });
 
-// Define the rate limiter for all requests
+// Apply rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per window (here, per 15 minutes)
   message: 'Too many requests from this IP, please try again later.',
 });
 
-// Apply the rate limiter to routes
 app.use(apiLimiter);
 
-// Endpoint to list all conversations
+// Twilio API: Fetch Conversations
 app.get('/conversations', async (req, res) => {
-  // Disable caching of conversation data
   res.set('Cache-Control', 'no-store');  
 
   try {
@@ -55,7 +60,7 @@ app.get('/conversations', async (req, res) => {
   }
 });
 
-// Enhanced Error Handling and Refactored Confirmation for Deleting a Conversation
+// Twilio API: Delete a Conversation
 app.delete('/conversations/:sid', [
   param('sid').isString().withMessage('Conversation SID must be a string')
 ], async (req, res) => {
@@ -67,7 +72,6 @@ app.delete('/conversations/:sid', [
   const { sid } = req.params;
   const { confirmToken } = req.body;
 
-  // Improved confirmation process for better user experience
   if (!confirmToken || confirmToken !== 'CONFIRM_DELETE') {
     return res.status(400).json({ error: 'Invalid or missing confirmation token. Action not allowed. Please type "CONFIRM_DELETE" to confirm.' });
   }
@@ -81,7 +85,6 @@ app.delete('/conversations/:sid', [
   } catch (err) {
     console.error(`Error deleting conversation ${sid}:`, err.stack);
 
-    // Specific error handling for Twilio-related issues
     if (err.code === 20404) {
       res.status(404).json({ error: `Conversation ${sid} not found. It may have already been deleted.`, details: err.message });
     } else {
@@ -90,7 +93,7 @@ app.delete('/conversations/:sid', [
   }
 });
 
-// Enhanced Error Handling for Adding a Message to a Conversation
+// Enhanced Error Handling: Add a Message to a Conversation
 app.post('/conversations/:sid/messages', [
   param('sid').isString().withMessage('Conversation SID must be a string'),
   body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
@@ -138,7 +141,7 @@ app.post('/conversations/:sid/messages', [
   }
 });
 
-// Enhanced Error Handling for Fetching Messages from a Specific Conversation
+// Enhanced Error Handling: Fetch Messages from a Conversation
 app.get('/conversations/:sid/messages', [
   param('sid').isString().withMessage('Conversation SID must be a string')
 ], async (req, res) => {
@@ -169,7 +172,7 @@ app.get('/conversations/:sid/messages', [
   }
 });
 
-// Start a new conversation with enhanced error handling
+// Enhanced Error Handling: Start a New Conversation
 app.post('/start-conversation', [
   body('phoneNumber').matches(/^\+\d{10,15}$/).withMessage('Invalid phone number format'),
   body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')

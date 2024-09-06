@@ -1,0 +1,25 @@
+#sidebar {
+    width: 400px;
+    border-right: 1px solid #ccc;
+    padding: 10px;
+    background-color: var(--sidebar-background);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.conversation {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.conversation:hover {
+    background-color: var(--conversation-hover);
+    transform: scale(1.02);
+}
+
+.conversation.selected {
+    background-color: var(--conversation-selected);
+}

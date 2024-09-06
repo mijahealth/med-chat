@@ -1,0 +1,11 @@
+<div id="new-conversation-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal()">×</span>
+      <h2>Start a New Conversation</h2>
+      <form id="start-conversation-form" onsubmit="startConversation(event)">
+        <input type="text" name="phoneNumber" placeholder="+1XXXXXXXXXX" required>
+        <textarea name="message" placeholder="Enter a message" required></textarea>
+        <button type="submit">Start Conversation</button>
+      </form>
+    </div>
+  </div>

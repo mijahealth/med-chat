@@ -1,0 +1,27 @@
+:root {
+    --background-color: white;
+    --text-color: black;
+    --sidebar-background: #f9f9f9;
+    --message-right: #007aff;
+    --message-left: #f1f1f1;
+    --time-color: #CCCCCC;
+}
+
+[data-theme="dark"] {
+    --background-color: #000000;
+    --text-color: #e0e0e0;
+    --sidebar-background: #1c1c1e;
+    --message-right: #0a84ff;
+    --message-left: #3a3a3c;
+    --time-color: #a1a1a1;
+}
+
+body {
+    display: flex;
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", "Segoe UI", sans-serif;
+    font-size: 1.2rem;
+    height: 100vh;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
