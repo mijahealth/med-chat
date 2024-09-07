@@ -6,16 +6,15 @@ const bodyParser = require('body-parser');
 const twilio = require('twilio');
 const { body, param, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 // Create an Express application
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Serve the HTML file for the conversation UI
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
+// Serve static files from the "public" directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Define the rate limiter for all requests
 const apiLimiter = rateLimit({
@@ -235,8 +234,8 @@ app.post('/start-conversation', [
   }
 });
 
-// Start the server on port 3000
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
