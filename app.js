@@ -10,21 +10,91 @@ const path = require('path');
 
 // Create an Express application
 const app = express();
-app.use(bodyParser.urlencoded({ extended: true }));
+
+// Middleware setup
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Define the rate limiter for all requests
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window (here, per 15 minutes)
-  message: 'Too many requests from this IP, please try again later.',
+// Webhook route
+app.post('/twilio-webhook', (req, res) => {
+  res.set('bypass-tunnel-reminder', 'true');
+  res.set('User-Agent', 'TwilioWebhookAgent');
+  console.log('Received a request to /twilio-webhook');
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+
+  const eventType = req.body.EventType;
+  const conversationSid = req.body.ConversationSid;
+
+  console.log(`Received webhook: ${eventType} for conversation ${conversationSid}`);
+
+  if (eventType === 'onMessageAdded') {
+    const messageSid = req.body.MessageSid;
+    const messageBody = req.body.Body;
+    const author = req.body.Author;
+    console.log(`New message in conversation ${conversationSid}:`);
+    console.log(`  Message SID: ${messageSid}`);
+    console.log(`  Author: ${author}`);
+    console.log(`  Body: ${messageBody}`);
+    
+    // Here you can add logic to update your app's state or notify clients
+    // For example, you could emit a socket event if you're using Socket.io
+  } else {
+    console.log(`Received unexpected event type: ${eventType}`);
+  }
+
+  // Always respond to Twilio to acknowledge receipt of the webhook
+  res.sendStatus(200);
 });
 
-// Apply the rate limiter to routes
-app.use(apiLimiter);
+// Also update your test route
+app.get('/tunnel-test', (req, res) => {
+  res.set('bypass-tunnel-reminder', 'true');
+  res.set('User-Agent', 'TunnelTestAgent');
+  console.log('Received a request to /tunnel-test');
+  res.send('Localtunnel is working!');
+});
+
+// Add this new route to your app.js file
+
+app.get('/send-test-message', async (req, res) => {
+  try {
+    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    const serviceSid = process.env.TWILIO_CONVERSATIONS_SERVICE_SID;
+
+    if (!serviceSid) {
+      throw new Error('TWILIO_CONVERSATIONS_SERVICE_SID is not set in the environment variables');
+    }
+
+    // Fetch the first conversation in the service
+    const conversations = await client.conversations.v1.services(serviceSid)
+      .conversations
+      .list({limit: 1});
+
+    if (conversations.length === 0) {
+      throw new Error('No conversations found in the service');
+    }
+
+    const conversationSid = conversations[0].sid;
+
+    const message = await client.conversations.v1.services(serviceSid)
+      .conversations(conversationSid)
+      .messages
+      .create({
+        author: process.env.TWILIO_PHONE_NUMBER,
+        body: 'This is a test message sent from the /send-test-message route'
+      });
+
+    console.log('Test message sent with SID:', message.sid);
+    res.send('Test message sent. Check your server logs for webhook events.');
+  } catch (error) {
+    console.error('Error sending test message:', error);
+    res.status(500).send('Error sending test message: ' + error.message);
+  }
+});
 
 // Endpoint to list all conversations
 app.get('/conversations', async (req, res) => {
