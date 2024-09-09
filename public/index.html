@@ -58,7 +58,6 @@
     let currentTheme = 'light';
     let autoScrollEnabled = true;
     let conversationsLoaded = false;
-    let pollingInterval;
     let socket;
 
     // WebSocket connection setup
@@ -171,78 +170,83 @@
     }
 
     async function loadConversations() {
-      document.getElementById('loading-spinner').style.display = 'block';  // Show loading spinner
+  document.getElementById('loading-spinner').style.display = 'block';
 
-      try {
-        const response = await axios.get('/conversations');
-        let conversations = response.data;
+  try {
+    const response = await axios.get('/conversations');
+    let conversations = response.data;
 
-        conversations = await Promise.all(conversations.map(async conversation => {
-          const messagesResponse = await axios.get(`/conversations/${conversation.sid}/messages`);
-          const messages = messagesResponse.data;
-          const lastMessage = messages[messages.length - 1];
-          const lastMessageTime = lastMessage ? new Date(lastMessage.dateCreated).getTime() : 0;
-          conversation.lastMessageTime = lastMessageTime;
-          conversation.lastMessage = lastMessage ? lastMessage.body : '';
-          conversation.lastMessageAuthor = lastMessage ? lastMessage.author : '';
+    conversations = await Promise.all(conversations.map(async conversation => {
+      const messagesResponse = await axios.get(`/conversations/${conversation.sid}/messages`);
+      const messages = messagesResponse.data;
+      const lastMessage = messages[messages.length - 1];
+      const lastMessageTime = lastMessage ? new Date(lastMessage.dateCreated).getTime() : 0;
+      conversation.lastMessageTime = lastMessageTime;
+      conversation.lastMessage = lastMessage ? lastMessage.body : '';
+      conversation.lastMessageAuthor = lastMessage ? lastMessage.author : '';
 
-          updateConversationPreview(conversation.sid, lastMessage);
+      return conversation;
+    }));
 
-          return conversation;
-        }));
+    conversations.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
 
-        conversations.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+    const conversationList = conversations.map(conversation => {
+      const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        const conversationList = conversations.map(conversation => {
-          const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-          let displayName = conversation.friendlyName || conversation.sid;
-          if (displayName.startsWith("Conversation with ")) {
-            displayName = displayName.replace("Conversation with ", "");
-          }
-
-          const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
-
-          const showRespondIcon = conversation.lastMessageAuthor && conversation.lastMessageAuthor !== TWILIO_PHONE_NUMBER && conversation.lastMessageAuthor !== 'system';
-          const respondIconHtml = showRespondIcon ? '<span class="respond-icon">Respond</span>' : '<span class="respond-icon hidden"></span>';
-
-          return `
-            <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
-              <div class="conversation-header">
-                ${respondIconHtml}
-                <strong>${displayName}</strong>
-                <span class="time">${lastMessageTime}</span>
-                <div class="delete-btn-container">
-                  <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
-                </div>
-              </div>
-              <div class="conversation-content">
-                <div class="last-message">${lastMessageText}</div>
-              </div>
-            </div>
-          `;
-        });
-        document.getElementById('conversations').innerHTML = conversationList.join('');
-
-        document.querySelectorAll('.delete-btn').forEach(button => {
-          button.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const sid = event.target.getAttribute('data-sid');
-            deleteConversation(sid);
-          });
-        });
-
-        if (currentConversationSid) {
-          document.getElementById(`conv-${currentConversationSid}`).classList.add('selected');
-        }
-
-        conversationsLoaded = true;  // Mark conversations as loaded
-      } catch (error) {
-        console.error('Error loading conversations:', error);
-      } finally {
-        document.getElementById('loading-spinner').style.display = 'none';  // Hide spinner
+      let displayName = conversation.friendlyName || conversation.sid;
+      if (displayName.startsWith("Conversation with ")) {
+        displayName = displayName.replace("Conversation with ", "");
       }
+
+      const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
+
+      const showRespondIcon = conversation.lastMessageAuthor && conversation.lastMessageAuthor !== TWILIO_PHONE_NUMBER && conversation.lastMessageAuthor !== 'system';
+      const respondIconHtml = showRespondIcon ? '<span class="respond-icon">Respond</span>' : '<span class="respond-icon hidden"></span>';
+
+      return `
+        <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
+          <div class="conversation-header">
+            ${respondIconHtml}
+            <strong>${displayName}</strong>
+            <span class="time">${lastMessageTime}</span>
+            <div class="delete-btn-container">
+              <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
+            </div>
+          </div>
+          <div class="conversation-content">
+            <div class="last-message">${lastMessageText}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('conversations').innerHTML = conversationList;
+
+    document.querySelectorAll('.delete-btn').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const sid = event.target.getAttribute('data-sid');
+        deleteConversation(sid);
+      });
+    });
+
+    if (currentConversationSid) {
+      document.getElementById(`conv-${currentConversationSid}`).classList.add('selected');
     }
+
+    conversationsLoaded = true;
+  } catch (error) {
+    console.error('Error loading conversations:', error);
+  } finally {
+    document.getElementById('loading-spinner').style.display = 'none';
+  }
+}
+
+// Add this event listener to load conversations when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  loadConversations();
+  setupWebSocket();
+});
 
     async function selectConversation(sid, displayName) {
       if (!conversationsLoaded) {
@@ -429,24 +433,6 @@
       }
     }
 
-    function startPolling() {
-      pollingInterval = setInterval(async () => {
-        if (currentConversationSid && conversationsLoaded) {
-          await loadMessages(currentConversationSid, document.getElementById('conversation-title').textContent);
-        }
-        if (conversationsLoaded) {
-          await loadConversations();
-        }
-      }, 5000);
-    }
-
-    function stopPolling() {
-      clearInterval(pollingInterval);
-    }
-
-    setupWebSocket();
-    startPolling();
-    loadConversations();
 </script>
 </body>
 </html>

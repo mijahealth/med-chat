@@ -192,10 +192,15 @@
       font-size: 0.8rem;
       min-width: 50px;
       text-align: center;
+      display: none;  /* Default to hidden */
     }
-
+    
+    .respond-icon.visible {
+      display: inline-block;  /* Make it visible when .visible is added */
+    }
+    
     .respond-icon.hidden {
-      display: none;
+      display: none;  /* Still use this to hide when .hidden is applied */
     }
 
     .conversation .time {

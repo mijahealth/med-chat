@@ -55,6 +55,9 @@ app.post('/twilio-webhook', (req, res) => {
     console.log(`  Author: ${author}`);
     console.log(`  Body: ${messageBody}`);
     
+     // Determine if a response is needed (message from the user's phone)
+     const needsResponse = author === process.env.USER_PHONE_NUMBER;
+
     // Broadcast the new message to all connected clients
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
@@ -63,7 +66,9 @@ app.post('/twilio-webhook', (req, res) => {
           conversationSid,
           messageSid,
           author,
-          body: messageBody
+          body: messageBody,
+          needsResponse
+
         }));
       }
     });
@@ -217,6 +222,22 @@ app.post('/conversations/:sid/messages', [
       });
 
     console.log(`Message sent with SID: ${sentMessage.sid}`);
+
+    // Broadcast the new message to all connected WebSocket clients
+wss.clients.forEach((client) => {
+  if (client.readyState === WebSocket.OPEN) {
+    const message = JSON.stringify({
+      type: 'newMessage',
+      conversationSid,
+      messageSid,
+      author,
+      body: messageBody,
+      needsResponse
+    });
+    console.log('Broadcasting WebSocket message:', message);
+    client.send(message);
+  }
+});
 
     res.json({ message: 'Message sent', sid: sentMessage.sid });
   } catch (err) {
