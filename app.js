@@ -206,12 +206,7 @@ app.post('/conversations/:sid/messages', [
     console.log(`Attempting to send message to conversation SID: ${sid}`);
     console.log(`Message content: "${message}"`);
 
-    // Fetch the participant's phone number if available
-    const participants = await client.conversations.v1.conversations(sid).participants.list();
     const author = process.env.TWILIO_PHONE_NUMBER;
-
-    console.log(`Message will be sent with author: ${author}`);
-    console.log(`Participants for conversation SID ${sid}:`, participants);
 
     // Add a new message to the specified conversation
     const sentMessage = await client.conversations.v1.conversations(sid)
@@ -224,26 +219,23 @@ app.post('/conversations/:sid/messages', [
     console.log(`Message sent with SID: ${sentMessage.sid}`);
 
     // Broadcast the new message to all connected WebSocket clients
-wss.clients.forEach((client) => {
-  if (client.readyState === WebSocket.OPEN) {
-    const message = JSON.stringify({
-      type: 'newMessage',
-      conversationSid,
-      messageSid,
-      author,
-      body: messageBody,
-      needsResponse
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'newMessage',
+          conversationSid: sid,
+          messageSid: sentMessage.sid,
+          author: author,
+          body: message,
+          needsResponse: false
+        }));
+      }
     });
-    console.log('Broadcasting WebSocket message:', message);
-    client.send(message);
-  }
-});
 
     res.json({ message: 'Message sent', sid: sentMessage.sid });
   } catch (err) {
     console.error(`Error adding message to conversation ${req.params.sid}:`, err.stack);
     
-    // Specific error handling for Twilio-related issues
     if (err.code === 20404) {
       res.status(404).json({ error: `Conversation ${req.params.sid} not found.`, details: err.message });
     } else {

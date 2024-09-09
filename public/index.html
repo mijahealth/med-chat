@@ -70,13 +70,13 @@
         };
 
         socket.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            console.log('Received WebSocket message:', data);
+  const data = JSON.parse(event.data);
+  console.log('Received WebSocket message:', data);
 
-            if (data.type === 'newMessage') {
-                handleNewMessage(data);
-            }
-        };
+  if (data.type === 'newMessage') {
+    handleNewMessage(data);
+  }
+};
 
         socket.onclose = function(event) {
             console.log('WebSocket connection closed');
@@ -89,39 +89,37 @@
     }
 
     function handleNewMessage(data) {
-        updateConversationPreview(data.conversationSid, {
-            body: data.body,
-            author: data.author,
-            dateCreated: new Date().toISOString()
-        });
+  // Update the conversation preview in the left pane
+  updateConversationPreview(data.conversationSid, {
+    body: data.body,
+    author: data.author,
+    dateCreated: new Date().toISOString()
+  });
 
-        if (currentConversationSid === data.conversationSid) {
-            appendMessage(data);
-        } else {
-            // If we're not in the conversation that received a new message,
-            // update its preview in the left pane
-            updateConversationPreviewInList(data.conversationSid, data.body);
-        }
+  // If the current conversation is open, append the message
+  if (currentConversationSid === data.conversationSid) {
+    appendMessage(data);
+  }
 
-        // Move the updated conversation to the top of the list
-        moveConversationToTop(data.conversationSid);
-    }
+  // Move the updated conversation to the top of the list
+  moveConversationToTop(data.conversationSid);
+}
 
-    function appendMessage(message) {
-        const messagesDiv = document.getElementById('messages');
-        const messageClass = (message.author === TWILIO_PHONE_NUMBER || message.author === 'system') ? 'right' : 'left';
-        const messageHtml = `
-            <div class="message ${messageClass}">
-                <span>${message.body}</span>
-                <time>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
-            </div>
-        `;
-        messagesDiv.insertAdjacentHTML('beforeend', messageHtml);
+function appendMessage(message) {
+  const messagesDiv = document.getElementById('messages');
+  const messageClass = (message.author === TWILIO_PHONE_NUMBER) ? 'right' : 'left';
+  const messageHtml = `
+    <div class="message ${messageClass}">
+      <span>${message.body}</span>
+      <time>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+    </div>
+  `;
+  messagesDiv.insertAdjacentHTML('beforeend', messageHtml);
 
-        if (autoScrollEnabled) {
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-    }
+  if (autoScrollEnabled) {
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+}
 
     function updateConversationPreviewInList(conversationSid, lastMessageBody) {
         const conversationDiv = document.getElementById(`conv-${conversationSid}`);
@@ -320,19 +318,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function sendMessage() {
-      const messageInput = document.getElementById('new-message');
-      const message = messageInput.value.trim();
+  const messageInput = document.getElementById('new-message');
+  const message = messageInput.value.trim();
 
-      if (message && currentConversationSid) {
-        try {
-          await axios.post(`/conversations/${currentConversationSid}/messages`, { message, phoneNumber: document.getElementById('conversation-title').textContent.trim() });
-          messageInput.value = '';
-          await loadMessages(currentConversationSid, document.getElementById('conversation-title').textContent);
-        } catch (error) {
-          console.error('Error sending message:', error);
-        }
-      }
+  if (message && currentConversationSid) {
+    try {
+      const response = await axios.post(`/conversations/${currentConversationSid}/messages`, { message });
+      messageInput.value = '';
+      
+      // The UI will be updated by the WebSocket message handler
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
     }
+  }
+}
 
     document.getElementById('new-message').addEventListener('keypress', function (e) {
       if (e.key === 'Enter') {
