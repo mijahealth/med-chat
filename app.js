@@ -2,6 +2,8 @@
 require('dotenv').config();
 
 const express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
 const { body, param, validationResult } = require('express-validator');
@@ -10,6 +12,8 @@ const path = require('path');
 
 // Create an Express application
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
 // Middleware setup
 app.use(bodyParser.json());
@@ -18,10 +22,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// WebSocket connection handling
+wss.on('connection', (ws) => {
+  console.log('New WebSocket connection');
+  
+  ws.on('message', (message) => {
+    console.log('Received message:', message);
+  });
+  
+  ws.on('close', () => {
+    console.log('WebSocket connection closed');
+  });
+});
+
 // Webhook route
 app.post('/twilio-webhook', (req, res) => {
   console.log('Webhook received at:', new Date().toISOString());
-  console.log('Received a request to /twilio-webhook');
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
   console.log('Body:', JSON.stringify(req.body, null, 2));
 
@@ -39,13 +55,22 @@ app.post('/twilio-webhook', (req, res) => {
     console.log(`  Author: ${author}`);
     console.log(`  Body: ${messageBody}`);
     
-    // Here you can add logic to update your app's state or notify clients
-    // For example, you could emit a socket event if you're using Socket.io
+    // Broadcast the new message to all connected clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'newMessage',
+          conversationSid,
+          messageSid,
+          author,
+          body: messageBody
+        }));
+      }
+    });
   } else {
     console.log(`Received unexpected event type: ${eventType}`);
   }
 
-  // Always respond to Twilio to acknowledge receipt of the webhook
   res.sendStatus(200);
 });
 
@@ -305,6 +330,6 @@ app.post('/start-conversation', [
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
