@@ -20,8 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Webhook route
 app.post('/twilio-webhook', (req, res) => {
-  res.set('bypass-tunnel-reminder', 'true');
-  res.set('User-Agent', 'TwilioWebhookAgent');
+  console.log('Webhook received at:', new Date().toISOString());
   console.log('Received a request to /twilio-webhook');
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
   console.log('Body:', JSON.stringify(req.body, null, 2));
