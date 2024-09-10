@@ -154,13 +154,9 @@ const conversationList = conversations.map(conversation => {
 
   const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
 
-  const showRespondIcon = conversation.lastMessageAuthor && conversation.lastMessageAuthor !== TWILIO_PHONE_NUMBER && conversation.lastMessageAuthor !== 'system';
-  const respondIconHtml = showRespondIcon ? '<span class="respond-icon">Respond</span>' : '<span class="respond-icon hidden"></span>';
-
   return `
     <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
       <div class="conversation-header">
-        ${respondIconHtml}
         <strong>${displayName}</strong>
         <span class="time">${lastMessageTime}</span>
         <div class="delete-btn-container">
@@ -349,15 +345,6 @@ function updateConversationPreview(conversationSid, latestMessage) {
     const lastMessageDiv = conversationDiv.querySelector('.last-message');
     if (lastMessageDiv && latestMessage) {
       lastMessageDiv.textContent = latestMessage.body;
-    }
-
-    const respondIcon = conversationDiv.querySelector('.respond-icon');
-    const showRespondIcon = latestMessage && latestMessage.author !== TWILIO_PHONE_NUMBER && latestMessage.author !== 'system';
-
-    if (showRespondIcon) {
-      respondIcon.classList.add('visible');
-    } else {
-      respondIcon.classList.remove('visible');
     }
   }
 }
