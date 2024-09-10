@@ -15,12 +15,16 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+// Serve static files from the "public" directory
+console.log('Setting up static file serving...');
+app.use(express.static(path.join(__dirname, 'public')));
+console.log('Static file serving set up');
+
 // Middleware setup
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
+
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
