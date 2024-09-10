@@ -59,8 +59,8 @@ app.post('/twilio-webhook', (req, res) => {
     console.log(`  Author: ${author}`);
     console.log(`  Body: ${messageBody}`);
     
-     // Determine if a response is needed (message from the user's phone)
-     const needsResponse = author === process.env.USER_PHONE_NUMBER;
+    // Determine if a response is needed (message from the user's phone)
+    const needsResponse = author === process.env.USER_PHONE_NUMBER;
 
     // Broadcast the new message to all connected clients
     wss.clients.forEach((client) => {
@@ -72,7 +72,6 @@ app.post('/twilio-webhook', (req, res) => {
           author,
           body: messageBody,
           needsResponse
-
         }));
       }
     });
@@ -80,53 +79,9 @@ app.post('/twilio-webhook', (req, res) => {
     console.log(`Received unexpected event type: ${eventType}`);
   }
 
-  res.sendStatus(200);
-});
-
-// Also update your test route
-app.get('/tunnel-test', (req, res) => {
-  res.set('bypass-tunnel-reminder', 'true');
-  res.set('User-Agent', 'TunnelTestAgent');
-  console.log('Received a request to /tunnel-test');
-  res.send('Localtunnel is working!');
-});
-
-// Add this new route to your app.js file
-
-app.get('/send-test-message', async (req, res) => {
-  try {
-    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const serviceSid = process.env.TWILIO_CONVERSATIONS_SERVICE_SID;
-
-    if (!serviceSid) {
-      throw new Error('TWILIO_CONVERSATIONS_SERVICE_SID is not set in the environment variables');
-    }
-
-    // Fetch the first conversation in the service
-    const conversations = await client.conversations.v1.services(serviceSid)
-      .conversations
-      .list({limit: 1});
-
-    if (conversations.length === 0) {
-      throw new Error('No conversations found in the service');
-    }
-
-    const conversationSid = conversations[0].sid;
-
-    const message = await client.conversations.v1.services(serviceSid)
-      .conversations(conversationSid)
-      .messages
-      .create({
-        author: process.env.TWILIO_PHONE_NUMBER,
-        body: 'This is a test message sent from the /send-test-message route'
-      });
-
-    console.log('Test message sent with SID:', message.sid);
-    res.send('Test message sent. Check your server logs for webhook events.');
-  } catch (error) {
-    console.error('Error sending test message:', error);
-    res.status(500).send('Error sending test message: ' + error.message);
-  }
+  // Twilio response to stop the default auto-response
+  const twiml = new twilio.twiml.MessagingResponse();
+  res.type('text/xml').send(twiml.toString());  // This acts as a 200 OK response to Twilio.
 });
 
 // Endpoint to list all conversations
@@ -279,7 +234,6 @@ app.get('/conversations/:sid/messages', [
   }
 });
 
-// Start a new conversation with enhanced error handling
 app.post('/start-conversation', [
   body('phoneNumber').matches(/^\+\d{10,15}$/).withMessage('Invalid phone number format'),
   body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
@@ -322,10 +276,13 @@ app.post('/start-conversation', [
             'messagingBinding.type': 'sms'
           });
 
-        // Send the initial message
+        // Append the disclaimer to the first message
+        const firstMessage = `${message} (Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)`;
+
+        // Send the initial message with the disclaimer
         await client.conversations.v1.conversations(conversation.sid)
           .messages
-          .create({ body: message, author: process.env.TWILIO_PHONE_NUMBER });
+          .create({ body: firstMessage, author: process.env.TWILIO_PHONE_NUMBER });
 
         res.json({ sid: conversation.sid, existing: false });
       } catch (err) {

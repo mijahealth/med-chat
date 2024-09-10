@@ -1,13 +1,8 @@
-console.log('Client.js is loading...');
-
-const TWILIO_PHONE_NUMBER = '+12136983410'.trim();
 let currentConversationSid = null;
 let currentTheme = 'light';
 let autoScrollEnabled = true;
 let conversationsLoaded = false;
 let socket;
-console.log('Variables initialized');
-
 
 // WebSocket connection setup
 function setupWebSocket() {
@@ -245,9 +240,6 @@ async function loadMessages(sid, displayName) {
     const messageList = messages.map(message => {
       const author = message.author.trim();
       const displayAuthor = author.startsWith('CH') ? displayName : author;
-
-      const messageClass = (displayAuthor === TWILIO_PHONE_NUMBER || displayAuthor === 'system') ? 'right' : 'left';
-
       return `
         <div class="message ${messageClass}">
           <span>${message.body}</span>
@@ -379,4 +371,3 @@ async function startConversation(event) {
     alert('Please enter both a phone number and a message.');
   }
 }
-console.log('Client.js fully loaded');
