@@ -176,44 +176,22 @@
 
     .conversation-header {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start; /* Change from space-between to flex-start */
       align-items: center;
       width: 100%;
       padding-right: 10px;
       position: relative;
     }
 
-    .respond-icon {
-      background-color: #ffeef0;
-      color: #ff3b30;
-      padding: 1px 5px;
-      border-radius: 12px;
-      margin-right: 10px;
-      font-size: 0.8rem;
-      min-width: 50px;
-      text-align: center;
-      display: none;  /* Default to hidden */
-    }
-    
-    .respond-icon.visible {
-      display: inline-block;  /* Make it visible when .visible is added */
-    }
-    
-    .respond-icon.hidden {
-      display: none;  /* Still use this to hide when .hidden is applied */
-    }
-
     .conversation .time {
-      position: absolute;
-      right: 50px;
+      position: static; /* Change from absolute to static */
+      margin-left: auto; /* Add this to push the time to the right */
       color: #888;
       font-size: 0.8em;
       white-space: nowrap;
     }
 
     .delete-btn-container {
-      display: flex;
-      align-items: center;
       margin-left: 10px;
     }
 
