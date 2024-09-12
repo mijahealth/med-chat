@@ -4,6 +4,22 @@ let autoScrollEnabled = true;
 let conversationsLoaded = false;
 let socket;
 
+let TWILIO_PHONE_NUMBER;
+
+async function initializeApp() {
+  try {
+    const response = await axios.get('/config');
+    TWILIO_PHONE_NUMBER = response.data.TWILIO_PHONE_NUMBER;
+    // Continue with the rest of your app initialization
+    loadConversations();
+  } catch (error) {
+    console.error('Error fetching configuration:', error);
+  }
+}
+
+// Call this function when your app starts
+document.addEventListener('DOMContentLoaded', initializeApp);
+
 // WebSocket connection setup
 function setupWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -231,56 +247,40 @@ document.getElementById('loading-spinner').style.display = 'none';
 }
 
 async function loadMessages(sid, displayName) {
-  try {
-    const response = await axios.get(`/conversations/${sid}/messages`);
-    const messages = response.data;
-
-    document.getElementById('conversation-title').textContent = displayName;
-
-    const messageList = messages.map(message => {
-      const author = message.author.trim();
-      const displayAuthor = author.startsWith('CH') ? displayName : author;
-      return `
-        <div class="message ${messageClass}">
-          <span>${message.body}</span>
-          <time>${new Date(message.dateCreated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
-        </div>
-      `;
-    }).join('');
-
-    document.getElementById('messages').innerHTML = messageList;
-
-    document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-
-    const latestMessage = messages[messages.length - 1];
-    updateConversationPreview(sid, latestMessage);
-
-  } catch (error) {
-    if (error.response && error.response.status === 404) {
-      console.error(`Conversation ${sid} was not found, it may have been deleted.`);
-      closeConversation();
-    } else {
-      console.error(`Error fetching messages for conversation ${sid}:`, error);
+    try {
+      const response = await axios.get(`/conversations/${sid}/messages`);
+      const messages = response.data;
+  
+      document.getElementById('conversation-title').textContent = displayName;
+  
+      const messageList = messages.map(message => {
+        const author = message.author.trim();
+        const displayAuthor = author.startsWith('CH') ? displayName : author;
+        const messageClass = (author === TWILIO_PHONE_NUMBER) ? 'right' : 'left';
+        return `
+          <div class="message ${messageClass}">
+            <span>${message.body}</span>
+            <time>${new Date(message.dateCreated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+          </div>
+        `;
+      }).join('');
+  
+      document.getElementById('messages').innerHTML = messageList;
+  
+      document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+  
+      const latestMessage = messages[messages.length - 1];
+      updateConversationPreview(sid, latestMessage);
+  
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        console.error(`Conversation ${sid} was not found, it may have been deleted.`);
+        closeConversation();
+      } else {
+        console.error(`Error fetching messages for conversation ${sid}:`, error);
+      }
     }
   }
-}
-
-async function sendMessage() {
-const messageInput = document.getElementById('new-message');
-const message = messageInput.value.trim();
-
-if (message && currentConversationSid) {
-try {
-  const response = await axios.post(`/conversations/${currentConversationSid}/messages`, { message });
-  messageInput.value = '';
-  
-  // The UI will be updated by the WebSocket message handler
-} catch (error) {
-  console.error('Error sending message:', error);
-  alert('Failed to send message. Please try again.');
-}
-}
-}
 
 document.getElementById('new-message').addEventListener('keypress', function (e) {
   if (e.key === 'Enter') {

@@ -24,7 +24,12 @@ console.log('Static file serving set up');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
+// Allow client.js to process.env variables
+app.get('/config', (req, res) => {
+  res.json({
+    TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER
+  });
+});
 
 // WebSocket connection handling
 wss.on('connection', (ws) => {
