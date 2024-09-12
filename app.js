@@ -241,7 +241,9 @@ app.get('/conversations/:sid/messages', [
 
 app.post('/start-conversation', [
   body('phoneNumber').matches(/^\+\d{10,15}$/).withMessage('Invalid phone number format'),
-  body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty')
+  body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty'),
+  body('name').optional().isString().trim(), // Validate name as an optional string
+  body('email').optional().isEmail().withMessage('Invalid email format') // Validate email as an optional field
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -250,20 +252,29 @@ app.post('/start-conversation', [
 
   try {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    const { phoneNumber, message } = req.body;
+    const { phoneNumber, message, name, email } = req.body;
 
-    console.log(`Attempting to start a conversation with phoneNumber: ${phoneNumber}`);
+    console.log(`Attempting to start a conversation with Phone: ${phoneNumber}, Name: ${name}, Email: ${email}`);
 
-    // Check if a conversation already exists with the given phone number
+    // Additional metadata for attributes
+    const attributes = JSON.stringify({
+      email: email,
+      name: name // Include name in attributes for data management
+    });
+
+    // Modified existing conversation check to include 'name'
     const conversations = await client.conversations.v1.conversations.list();
     const existingConversation = conversations.find(conv => 
-      conv.friendlyName === `Conversation with ${phoneNumber}`
+      conv.friendlyName === name || conv.friendlyName === `Conversation with ${phoneNumber}`
     );
 
     if (existingConversation) {
       console.log(`Existing conversation found with SID: ${existingConversation.sid}`);
-      
-      // Send a WebSocket event for the existing conversation (optional, depending on whether you want to notify this)
+      // Update existing conversation attributes
+      await client.conversations.v1.conversations(existingConversation.sid)
+        .update({ attributes: attributes });
+
+      // Notify existing WebSocket clients
       wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
@@ -277,54 +288,42 @@ app.post('/start-conversation', [
 
       res.json({ sid: existingConversation.sid, existing: true });
     } else {
-      // Create a new conversation if none exists
+      // Create a new conversation with name and attributes
       const conversation = await client.conversations.v1.conversations.create({
-        friendlyName: phoneNumber,  // Just use the phone number as the friendlyName
+        friendlyName: name || `Conversation with ${phoneNumber}`,
+        attributes: attributes
       });
 
-      console.log(`New conversation created with SID: ${conversation.sid} and friendlyName: ${conversation.friendlyName}`);
+      console.log(`New conversation created with SID: ${conversation.sid} and Friendly Name: ${conversation.friendlyName}`);
 
-      try {
-        // Add participant to the conversation
-        await client.conversations.v1.conversations(conversation.sid)
-          .participants
-          .create({
-            'messagingBinding.address': phoneNumber,
-            'messagingBinding.proxyAddress': process.env.TWILIO_PHONE_NUMBER,
-            'messagingBinding.type': 'sms'
-          });
-
-        // Append the disclaimer to the first message
-        const firstMessage = `${message} (Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)`;
-
-        // Send the initial message with the disclaimer
-        await client.conversations.v1.conversations(conversation.sid)
-          .messages
-          .create({ body: firstMessage, author: process.env.TWILIO_PHONE_NUMBER });
-
-        // Broadcast the new conversation to all connected clients via WebSocket
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'newConversation',
-              conversationSid: conversation.sid,
-              friendlyName: conversation.friendlyName,
-              lastMessage: firstMessage // This would include the message sent
-            }));
-          }
+      // Add participant to the conversation
+      await client.conversations.v1.conversations(conversation.sid)
+        .participants
+        .create({
+          'messagingBinding.address': phoneNumber,
+          'messagingBinding.proxyAddress': process.env.TWILIO_PHONE_NUMBER,
+          'messagingBinding.type': 'sms'
         });
 
-        res.json({ sid: conversation.sid, existing: false });
-      } catch (err) {
-        // Handle specific Twilio-related errors
-        if (err.message.includes('A binding for this participant and proxy address already exists')) {
-          console.log(`Binding already exists. Cleaning up new conversation with SID: ${conversation.sid}`);
-          await client.conversations.v1.conversations(conversation.sid).remove(); 
-          res.json({ sid: conversation.sid, existing: true });
-        } else {
-          throw err;
+      // Send the initial message with a disclaimer
+      const firstMessage = `${message} (Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)`;
+      await client.conversations.v1.conversations(conversation.sid)
+        .messages
+        .create({ body: firstMessage, author: process.env.TWILIO_PHONE_NUMBER });
+
+      // Broadcast the new conversation to all connected clients via WebSocket
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'newConversation',
+            conversationSid: conversation.sid,
+            friendlyName: conversation.friendlyName,
+            lastMessage: firstMessage
+          }));
         }
-      }
+      });
+
+      res.json({ sid: conversation.sid, existing: false });
     }
   } catch (err) {
     console.error('Error starting a new conversation:', err.stack);
