@@ -30,13 +30,18 @@ function setupWebSocket() {
     };
 
     socket.onmessage = function(event) {
-const data = JSON.parse(event.data);
-console.log('Received WebSocket message:', data);
-
-if (data.type === 'newMessage') {
-handleNewMessage(data);
-}
-};
+        const data = JSON.parse(event.data);
+        console.log('Received WebSocket message:', data);
+      
+        if (data.type === 'newMessage') {
+          handleNewMessage(data);
+        }
+      
+        // Handle new conversation event
+        if (data.type === 'newConversation') {
+          handleNewConversation(data);
+        }
+      };
 
     socket.onclose = function(event) {
         console.log('WebSocket connection closed');
@@ -47,6 +52,36 @@ handleNewMessage(data);
         console.error('WebSocket error:', error);
     };
 }
+
+function handleNewConversation(data) {
+    const conversationsDiv = document.getElementById('conversations');
+  
+    const newConversationHtml = `
+      <div class="conversation" id="conv-${data.conversationSid}" onclick="selectConversation('${data.conversationSid}', '${data.friendlyName}')">
+        <div class="conversation-header">
+          <strong>${data.friendlyName}</strong>
+          <span class="time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          <div class="delete-btn-container">
+            <button class="delete-btn" data-sid="${data.conversationSid}" aria-label="Delete Conversation">🗑️</button>
+          </div>
+        </div>
+        <div class="conversation-content">
+          <div class="last-message">${data.lastMessage}</div>
+        </div>
+      </div>
+    `;
+  
+    conversationsDiv.insertAdjacentHTML('afterbegin', newConversationHtml);
+  
+    // Re-attach event listeners for the delete buttons
+    document.querySelectorAll('.delete-btn').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const sid = event.target.getAttribute('data-sid');
+        deleteConversation(sid);
+      });
+    });
+  }
 
 function handleNewMessage(data) {
 // Update the conversation preview in the left pane
@@ -280,6 +315,24 @@ async function loadMessages(sid, displayName) {
         console.error(`Error fetching messages for conversation ${sid}:`, error);
       }
     }
+  }
+
+  function sendMessage() {
+    const inputField = document.getElementById('new-message');
+    const message = inputField.value.trim();
+  
+    if (message === '') {
+      return;  // Don't send an empty message
+    }
+  
+    axios.post(`/conversations/${currentConversationSid}/messages`, {
+      message: message
+    }).then(response => {
+      inputField.value = '';  // Clear the input field after sending the message
+      console.log('Message sent:', response.data);
+    }).catch(error => {
+      console.error('Error sending message:', error);
+    });
   }
 
 document.getElementById('new-message').addEventListener('keypress', function (e) {

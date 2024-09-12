@@ -262,11 +262,24 @@ app.post('/start-conversation', [
 
     if (existingConversation) {
       console.log(`Existing conversation found with SID: ${existingConversation.sid}`);
+      
+      // Send a WebSocket event for the existing conversation (optional, depending on whether you want to notify this)
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'existingConversation',
+            conversationSid: existingConversation.sid,
+            friendlyName: existingConversation.friendlyName,
+            lastMessage: message // Optionally send the last message added
+          }));
+        }
+      });
+
       res.json({ sid: existingConversation.sid, existing: true });
     } else {
       // Create a new conversation if none exists
       const conversation = await client.conversations.v1.conversations.create({
-        friendlyName: `Conversation with ${phoneNumber}`,
+        friendlyName: phoneNumber,  // Just use the phone number as the friendlyName
       });
 
       console.log(`New conversation created with SID: ${conversation.sid} and friendlyName: ${conversation.friendlyName}`);
@@ -288,6 +301,18 @@ app.post('/start-conversation', [
         await client.conversations.v1.conversations(conversation.sid)
           .messages
           .create({ body: firstMessage, author: process.env.TWILIO_PHONE_NUMBER });
+
+        // Broadcast the new conversation to all connected clients via WebSocket
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'newConversation',
+              conversationSid: conversation.sid,
+              friendlyName: conversation.friendlyName,
+              lastMessage: firstMessage // This would include the message sent
+            }));
+          }
+        });
 
         res.json({ sid: conversation.sid, existing: false });
       } catch (err) {
