@@ -61,6 +61,7 @@
       padding: 10px;
       border-bottom: 1px solid #ccc;
     }
+    
 
     #no-conversation {
       flex: 1 1 auto;
@@ -399,15 +400,57 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* Add this to your existing CSS */
+    #call-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.5rem;
+      padding: 5px;
+      transition: transform 0.2s ease;
+      color: var(--text-color);
+    }
+
+    #call-btn:hover {
+      transform: scale(1.1);
+    }
+
+#call-controls {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 10px;
+}
+
+Updated styles.css with improved call controls styling
+
+/* ... (keep existing styles) */
+
+#messages-title {
+  flex: 0 0 auto;
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.2em;
+  font-weight: bold;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+#call-controls {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 10px;
+}
+
 #call-btn {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 1.5rem;
-  margin-right: 10px;
   padding: 5px;
   transition: transform 0.2s ease;
+  color: var(--text-color);
 }
 
 #call-btn:hover {
@@ -429,6 +472,20 @@
   color: #4CAF50; /* Green for 'In call' state */
 }
 
-#call-status.ended {
+#call-status.call-ended {
   color: #f44336; /* Red for 'Call ended' state */
+}
+
+.close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--text-color);
+  padding: 5px;
+  transition: transform 0.2s ease;
+}
+
+.close-button:hover {
+  transform: scale(1.1);
 }

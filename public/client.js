@@ -36,6 +36,7 @@ function setupWebSocket() {
         console.log('Received WebSocket message:', data);
       
         if (data.type === 'newMessage') {
+            console.log('Processing new message:', data);
           handleNewMessage(data);
         }
       
@@ -43,7 +44,7 @@ function setupWebSocket() {
         if (data.type === 'newConversation') {
           handleNewConversation(data);
         }
-      };
+    };
 
     socket.onclose = function(event) {
         console.log('WebSocket connection closed');
@@ -57,7 +58,18 @@ function setupWebSocket() {
 
 function handleNewConversation(data) {
     const conversationsDiv = document.getElementById('conversations');
-  
+    const existingConversation = document.getElementById(`conv-${data.conversationSid}`);
+    
+    if (existingConversation) {
+        console.log('Conversation already exists, updating:', data.conversationSid);
+        updateConversationPreview(data.conversationSid, {
+            body: data.lastMessage,
+            dateCreated: new Date().toISOString()
+        });
+        moveConversationToTop(data.conversationSid);
+        return;
+    }
+
     const newConversationHtml = `
       <div class="conversation" id="conv-${data.conversationSid}" onclick="selectConversation('${data.conversationSid}', '${data.friendlyName}')">
         <div class="conversation-header">
@@ -76,31 +88,34 @@ function handleNewConversation(data) {
     conversationsDiv.insertAdjacentHTML('afterbegin', newConversationHtml);
   
     // Re-attach event listeners for the delete buttons
-    document.querySelectorAll('.delete-btn').forEach(button => {
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const sid = event.target.getAttribute('data-sid');
-        deleteConversation(sid);
-      });
+    attachDeleteListeners();
+}
+
+  function handleNewMessage(data) {
+    // Generate a unique identifier for the message
+    const messageId = `${data.conversationSid}-${data.messageSid || Date.now()}`;
+  
+    // Check if the message has already been added to the UI
+    if (document.getElementById(messageId)) {
+      console.log('Message already displayed, skipping:', messageId);
+      return;
+    }
+  
+    // Append the message if it's for the current conversation
+    if (currentConversationSid === data.conversationSid) {
+      appendMessage(data, messageId);
+    }
+    
+    // Always update the conversation preview, regardless of whether it's the current conversation
+    updateConversationPreview(data.conversationSid, {
+      body: data.body,
+      author: data.author,
+      dateCreated: new Date().toISOString()
     });
+  
+    // Move the updated conversation to the top of the list
+    moveConversationToTop(data.conversationSid);
   }
-
-function handleNewMessage(data) {
-// Update the conversation preview in the left pane
-updateConversationPreview(data.conversationSid, {
-body: data.body,
-author: data.author,
-dateCreated: new Date().toISOString()
-});
-
-// If the current conversation is open, append the message
-if (currentConversationSid === data.conversationSid) {
-appendMessage(data);
-}
-
-// Move the updated conversation to the top of the list
-moveConversationToTop(data.conversationSid);
-}
 
 function scrollToBottom(elementId) {
 const element = document.getElementById(elementId);
@@ -110,20 +125,23 @@ element.scrollTop = element.scrollHeight;
 }
 
 function appendMessage(message) {
-const messagesDiv = document.getElementById('messages');
-const messageClass = (message.author === TWILIO_PHONE_NUMBER) ? 'right' : 'left';
-const messageHtml = `
-<div class="message ${messageClass}">
-  <span>${message.body}</span>
-  <time>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
-</div>
-`;
-messagesDiv.insertAdjacentHTML('beforeend', messageHtml);
-
-if (autoScrollEnabled) {
-messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-}
+    const messagesContainer = document.getElementById('messages');
+    if (document.querySelector(`[data-message-id="${message.messageSid}"]`)) {
+      console.log('Message already exists, skipping:', message.messageSid);
+      return;
+    }
+    
+    const messageClass = (message.author === TWILIO_PHONE_NUMBER) ? 'right' : 'left';
+    const messageHtml = `
+      <div class="message ${messageClass}" data-message-id="${message.messageSid}">
+        <span>${message.body}</span>
+        <time>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+      </div>
+    `;
+    messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
+  
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
 
 function updateConversationPreviewInList(conversationSid, lastMessageBody) {
     const conversationDiv = document.getElementById(`conv-${conversationSid}`);
@@ -135,6 +153,7 @@ function updateConversationPreviewInList(conversationSid, lastMessageBody) {
     }
 }
 
+// Ensure this function is correctly implemented
 function moveConversationToTop(conversationSid) {
     const conversationsDiv = document.getElementById('conversations');
     const conversationDiv = document.getElementById(`conv-${conversationSid}`);
@@ -171,73 +190,70 @@ function checkScrollPosition() {
   }
 }
 
+// Modify the loadConversations function
 async function loadConversations() {
-document.getElementById('loading-spinner').style.display = 'block';
+    document.getElementById('loading-spinner').style.display = 'block';
 
-try {
-const response = await axios.get('/conversations');
-let conversations = response.data;
+    try {
+        const response = await axios.get('/conversations');
+        let conversations = response.data;
 
-conversations = await Promise.all(conversations.map(async conversation => {
-  const messagesResponse = await axios.get(`/conversations/${conversation.sid}/messages`);
-  const messages = messagesResponse.data;
-  const lastMessage = messages[messages.length - 1];
-  const lastMessageTime = lastMessage ? new Date(lastMessage.dateCreated).getTime() : 0;
-  conversation.lastMessageTime = lastMessageTime;
-  conversation.lastMessage = lastMessage ? lastMessage.body : '';
-  conversation.lastMessageAuthor = lastMessage ? lastMessage.author : '';
+        conversations.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
 
-  return conversation;
-}));
+        const conversationsDiv = document.getElementById('conversations');
+        conversationsDiv.innerHTML = ''; // Clear existing conversations
 
-conversations.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+        conversations.forEach(conversation => {
+            const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-const conversationList = conversations.map(conversation => {
-  const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            let displayName = conversation.friendlyName || conversation.sid;
+            if (displayName.startsWith("Conversation with ")) {
+                displayName = displayName.replace("Conversation with ", "");
+            }
 
-  let displayName = conversation.friendlyName || conversation.sid;
-  if (displayName.startsWith("Conversation with ")) {
-    displayName = displayName.replace("Conversation with ", "");
-  }
+            const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
 
-  const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
+            const conversationHtml = `
+                <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
+                    <div class="conversation-header">
+                        <strong>${displayName}</strong>
+                        <span class="time">${lastMessageTime}</span>
+                        <div class="delete-btn-container">
+                            <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="conversation-content">
+                        <div class="last-message">${lastMessageText}</div>
+                    </div>
+                </div>
+            `;
 
-  return `
-    <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
-      <div class="conversation-header">
-        <strong>${displayName}</strong>
-        <span class="time">${lastMessageTime}</span>
-        <div class="delete-btn-container">
-          <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
-        </div>
-      </div>
-      <div class="conversation-content">
-        <div class="last-message">${lastMessageText}</div>
-      </div>
-    </div>
-  `;
-}).join('');
+            conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
+        });
 
-document.getElementById('conversations').innerHTML = conversationList;
+        attachDeleteListeners();
 
-document.querySelectorAll('.delete-btn').forEach(button => {
-  button.addEventListener('click', (event) => {
-    event.stopPropagation();
-    const sid = event.target.getAttribute('data-sid');
-    deleteConversation(sid);
-  });
-});
+        if (currentConversationSid) {
+            document.getElementById(`conv-${currentConversationSid}`)?.classList.add('selected');
+        }
 
-if (currentConversationSid) {
-  document.getElementById(`conv-${currentConversationSid}`).classList.add('selected');
+        conversationsLoaded = true;
+    } catch (error) {
+        console.error('Error loading conversations:', error);
+    } finally {
+        document.getElementById('loading-spinner').style.display = 'none';
+    }
 }
 
-conversationsLoaded = true;
-} catch (error) {
-console.error('Error loading conversations:', error);
-} finally {
-document.getElementById('loading-spinner').style.display = 'none';
-}
+// Helper function to attach delete listeners
+function attachDeleteListeners() {
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const sid = event.target.getAttribute('data-sid');
+            deleteConversation(sid);
+        });
+    });
 }
 
 // Add this event listener to load conversations when the page loads
@@ -281,11 +297,16 @@ async function setupDevice() {
       device.on('connect', function(conn) {
         console.log('Successfully established call!');
         updateCallStatus('In call');
+        startCallDurationTimer();
       });
-  
+    
       device.on('disconnect', function(conn) {
         console.log('Call ended.');
         updateCallStatus('Call ended');
+        stopCallDurationTimer();
+        setTimeout(() => {
+          updateCallStatus('');
+        }, 3000);
       });
   
       console.log('Twilio.Device setup complete');
@@ -303,9 +324,28 @@ async function setupDevice() {
     }
   }
   
+  function startCallDurationTimer() {
+    callStartTime = new Date();
+    callDurationInterval = setInterval(updateCallDuration, 1000);
+  }
+  
+  function stopCallDurationTimer() {
+    clearInterval(callDurationInterval);
+  }
+  
+  function updateCallDuration() {
+    const now = new Date();
+    const duration = now - callStartTime;
+    const minutes = Math.floor(duration / 60000);
+    const seconds = Math.floor((duration % 60000) / 1000);
+    const formattedDuration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    updateCallStatus(`In call - ${formattedDuration}`);
+  }
+  
   function updateCallStatus(status) {
     if (callStatusElement) {
       callStatusElement.textContent = status;
+      callStatusElement.className = status.toLowerCase().replace(' ', '-');
     } else {
       console.warn('Call status element not found');
     }
@@ -432,31 +472,33 @@ async function setupDevice() {
     }
   }
 
-async function loadMessages(sid, displayName) {
+  async function loadMessages(sid, displayName) {
     try {
       const response = await axios.get(`/conversations/${sid}/messages`);
       const messages = response.data;
   
       document.getElementById('conversation-title').textContent = displayName;
   
+      const messagesContainer = document.getElementById('messages');
       const messageList = messages.map(message => {
         const author = message.author.trim();
         const displayAuthor = author.startsWith('CH') ? displayName : author;
         const messageClass = (author === TWILIO_PHONE_NUMBER) ? 'right' : 'left';
         return `
-          <div class="message ${messageClass}">
+          <div class="message ${messageClass}" data-message-id="${message.sid}">
             <span>${message.body}</span>
             <time>${new Date(message.dateCreated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
           </div>
         `;
       }).join('');
   
-      document.getElementById('messages').innerHTML = messageList;
-  
-      document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+      messagesContainer.innerHTML = messageList;
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
   
       const latestMessage = messages[messages.length - 1];
-      updateConversationPreview(sid, latestMessage);
+      if (latestMessage) {
+        updateConversationPreview(sid, latestMessage);
+      }
   
     } catch (error) {
       if (error.response && error.response.status === 404) {
@@ -468,23 +510,26 @@ async function loadMessages(sid, displayName) {
     }
   }
 
-  function sendMessage() {
-    const inputField = document.getElementById('new-message');
-    const message = inputField.value.trim();
-  
-    if (message === '') {
-      return;  // Don't send an empty message
-    }
-  
-    axios.post(`/conversations/${currentConversationSid}/messages`, {
-      message: message
-    }).then(response => {
-      inputField.value = '';  // Clear the input field after sending the message
-      console.log('Message sent:', response.data);
-    }).catch(error => {
-      console.error('Error sending message:', error);
-    });
+function sendMessage() {
+  const inputField = document.getElementById('new-message');
+  const message = inputField.value.trim();
+
+  if (message === '') {
+    return;  // Don't send an empty message
   }
+
+  axios.post(`/conversations/${currentConversationSid}/messages`, {
+    message: message
+  }).then(response => {
+    inputField.value = '';  // Clear the input field after sending the message
+    console.log('Message sent:', response.data);
+    
+    // Don't append the message here. Let the WebSocket handle it.
+    // The server should echo back the sent message through the WebSocket.
+  }).catch(error => {
+    console.error('Error sending message:', error);
+  });
+}
 
 document.getElementById('new-message').addEventListener('keypress', function (e) {
   if (e.key === 'Enter') {
@@ -536,16 +581,30 @@ function closeConversation() {
     }, 200);
   }
 
+ // Update the updateConversationPreview function
 function updateConversationPreview(conversationSid, latestMessage) {
-  const conversationDiv = document.getElementById(`conv-${conversationSid}`);
+    const conversationDiv = document.getElementById(`conv-${conversationSid}`);
 
-  if (conversationDiv) {
-    const lastMessageDiv = conversationDiv.querySelector('.last-message');
-    if (lastMessageDiv && latestMessage) {
-      lastMessageDiv.textContent = latestMessage.body;
+    if (conversationDiv) {
+        const lastMessageDiv = conversationDiv.querySelector('.last-message');
+        const timeDiv = conversationDiv.querySelector('.time');
+        if (lastMessageDiv && latestMessage) {
+            lastMessageDiv.textContent = latestMessage.body;
+            if (timeDiv) {
+                timeDiv.textContent = new Date(latestMessage.dateCreated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+    } else {
+        console.log(`Conversation preview not found for SID: ${conversationSid}`);
+        // If the conversation doesn't exist, we might want to add it
+        handleNewConversation({
+            conversationSid: conversationSid,
+            friendlyName: 'New Conversation',
+            lastMessage: latestMessage.body
+        });
     }
-  }
 }
+
 
 async function startConversation(event) {
   event.preventDefault();
