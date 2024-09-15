@@ -331,6 +331,39 @@ app.post('/start-conversation', [
   }
 });
 
+// Update your /make-call/:sid route in app.js
+
+app.post('/make-call/:sid', async (req, res) => {
+  const { sid } = req.params;
+
+  try {
+    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    
+    // Fetch the conversation to get the participant's phone number
+    const participants = await client.conversations.v1.conversations(sid).participants.list();
+    const userParticipant = participants.find(p => p.messagingBinding.type === 'sms');
+
+    if (!userParticipant) {
+      return res.status(400).json({ error: 'No SMS participant found in this conversation' });
+    }
+
+    const userPhoneNumber = userParticipant.messagingBinding.address;
+
+    // Initiate the call
+    const call = await client.calls.create({
+      twiml: '<Response><Say>Hello, this is a call from your Twilio application.</Say></Response>',
+      to: userPhoneNumber,
+      from: process.env.TWILIO_PHONE_NUMBER
+    });
+
+    console.log(`Call initiated with SID: ${call.sid}`);
+    res.json({ message: 'Call initiated', callSid: call.sid });
+  } catch (err) {
+    console.error('Error initiating call:', err);
+    res.status(500).json({ error: 'Failed to initiate call', details: err.message });
+  }
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

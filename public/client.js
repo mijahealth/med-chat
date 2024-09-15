@@ -244,42 +244,68 @@ loadConversations();
 setupWebSocket();
 });
 
-// Modify your selectConversation function
-async function selectConversation(sid, displayName) {
-if (!conversationsLoaded) {
-alert('Please wait until conversations are fully loaded.');
-return;
-}
+// Add these new functions to your client.js file
 
-currentConversationSid = sid;
+async function makeCall() {
+    if (!currentConversationSid) {
+      alert('Please select a conversation before making a call.');
+      return;
+    }
+  
+    try {
+      const response = await axios.post(`/make-call/${currentConversationSid}`);
+      console.log('Call initiated:', response.data);
+      alert('Call initiated successfully!');
+    } catch (error) {
+      console.error('Error making call:', error);
+      alert('Failed to initiate call. Please try again.');
+    }
+  }
 
-document.getElementById('loading-spinner').style.display = 'block';
-
-document.getElementById('messages').style.display = 'none';
-document.getElementById('message-input').style.display = 'none';
-
-try {
-document.querySelectorAll('.conversation').forEach(conv => {
-  conv.classList.remove('selected');
-});
-document.getElementById(`conv-${sid}`).classList.add('selected');
-
-document.getElementById('messages-title').style.display = 'flex';
-document.getElementById('no-conversation').style.display = 'none';
-
-await loadMessages(sid, displayName);
-
-document.getElementById('messages').style.display = 'block';
-document.getElementById('message-input').style.display = 'flex';
-
-// Add this line to scroll to the bottom after loading messages
-scrollToBottom('messages');
-} catch (error) {
-console.error('Error loading conversation:', error);
-} finally {
-document.getElementById('loading-spinner').style.display = 'none';
-}
-}
+  
+  // Modify your selectConversation function to show the call button
+  async function selectConversation(sid, displayName) {
+    if (!conversationsLoaded) {
+      alert('Please wait until conversations are fully loaded.');
+      return;
+    }
+  
+    currentConversationSid = sid;
+  
+    document.getElementById('loading-spinner').style.display = 'block';
+  
+    document.getElementById('messages').style.display = 'none';
+    document.getElementById('message-input').style.display = 'none';
+  
+    try {
+      document.querySelectorAll('.conversation').forEach(conv => {
+        conv.classList.remove('selected');
+      });
+      document.getElementById(`conv-${sid}`).classList.add('selected');
+  
+      document.getElementById('messages-title').style.display = 'flex';
+      document.getElementById('no-conversation').style.display = 'none';
+      document.getElementById('call-btn').style.display = 'block'; // Show call button
+  
+      await loadMessages(sid, displayName);
+  
+      document.getElementById('messages').style.display = 'block';
+      document.getElementById('message-input').style.display = 'flex';
+  
+      scrollToBottom('messages');
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    } finally {
+      document.getElementById('loading-spinner').style.display = 'none';
+    }
+  }
+  
+  // Add this event listener when the page loads
+  document.addEventListener('DOMContentLoaded', () => {
+    loadConversations();
+    setupWebSocket();
+    document.getElementById('call-btn').addEventListener('click', makeCall);
+  });
 
 async function loadMessages(sid, displayName) {
     try {
@@ -365,23 +391,25 @@ function deleteConversation(sid) {
   }
 }
 
+// Update your closeConversation function to hide the call button
 function closeConversation() {
-  currentConversationSid = null;
-  document.getElementById('conversation-title').textContent = '';
-  document.getElementById('messages').innerHTML = '';
-  document.getElementById('message-input').style.display = 'none';
-  document.getElementById('messages-title').style.display = 'none';
-  document.getElementById('messages').style.display = 'none';
-  document.getElementById('no-conversation').style.display = 'flex';
-
-  document.querySelectorAll('.conversation').forEach(conv => {
-    conv.classList.remove('selected');
-  });
-
-  setTimeout(() => {
-    loadConversations();
-  }, 200);
-}
+    currentConversationSid = null;
+    document.getElementById('conversation-title').textContent = '';
+    document.getElementById('messages').innerHTML = '';
+    document.getElementById('message-input').style.display = 'none';
+    document.getElementById('messages-title').style.display = 'none';
+    document.getElementById('messages').style.display = 'none';
+    document.getElementById('no-conversation').style.display = 'flex';
+    document.getElementById('call-btn').style.display = 'none'; // Hide call button
+  
+    document.querySelectorAll('.conversation').forEach(conv => {
+      conv.classList.remove('selected');
+    });
+  
+    setTimeout(() => {
+      loadConversations();
+    }, 200);
+  }
 
 function updateConversationPreview(conversationSid, latestMessage) {
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
