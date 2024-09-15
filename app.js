@@ -6,14 +6,26 @@ const http = require('http');
 const WebSocket = require('ws');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
+const AccessToken = require('twilio').jwt.AccessToken;
+const VoiceGrant = AccessToken.VoiceGrant;
 const { body, param, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const NGROK_URL = 'https://7229-47-154-125-116.ngrok-free.app';
+const crypto = require('crypto');
 
 // Create an Express application
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+
+
+// Middleware to set CORS headers
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, ngrok-skip-browser-warning');
+  next();
+});
 
 // Serve static files from the "public" directory
 console.log('Setting up static file serving...');
@@ -43,6 +55,125 @@ wss.on('connection', (ws) => {
     console.log('WebSocket connection closed');
   });
 });
+
+app.get('/token', (req, res) => {
+  console.log('Token request received');
+  try {
+    const requiredEnvVars = [
+      'TWILIO_ACCOUNT_SID',
+      'TWILIO_API_KEY',
+      'TWILIO_API_SECRET',
+      'TWILIO_TWIML_APP_SID'
+    ];
+
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+    if (missingVars.length > 0) {
+      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    }
+
+    // Generate a unique identity for this token
+    const identity = 'browser-user-' + crypto.randomBytes(6).toString('hex');
+
+    console.log('Creating AccessToken...');
+    const accessToken = new AccessToken(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_API_KEY,
+      process.env.TWILIO_API_SECRET,
+      { identity: identity }
+    );
+    console.log('AccessToken created for identity:', identity);
+
+    console.log('Creating VoiceGrant...');
+    const grant = new VoiceGrant({
+      outgoingApplicationSid: process.env.TWILIO_TWIML_APP_SID,
+      incomingAllow: true
+    });
+    console.log('VoiceGrant created with outgoingApplicationSid:', process.env.TWILIO_TWIML_APP_SID);
+
+    accessToken.addGrant(grant);
+    console.log('Grant added to AccessToken');
+
+    const token = accessToken.toJwt();
+    console.log('JWT token generated successfully');
+
+    // Log the first and last 10 characters of the token for debugging
+    console.log('Token preview:', `${token.substr(0, 10)}...${token.substr(-10)}`);
+
+    res.json({ token: token, identity: identity });
+  } catch (error) {
+    console.error('Error generating token:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to generate token', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+app.get('/call-params/:sid', async (req, res) => {
+  const { sid } = req.params;
+  console.log(`Call parameters requested for conversation SID: ${sid}`);
+
+  try {
+    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
+      throw new Error('Missing required environment variables for Twilio client');
+    }
+
+    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    
+    console.log('Fetching participants for the conversation...');
+    const participants = await client.conversations.v1.conversations(sid).participants.list();
+    console.log(`Found ${participants.length} participants in the conversation`);
+
+    const userParticipant = participants.find(p => p.messagingBinding && p.messagingBinding.type === 'sms');
+
+    if (!userParticipant) {
+      console.log('No SMS participant found in the conversation');
+      return res.status(400).json({ error: 'No SMS participant found in this conversation' });
+    }
+
+    const userPhoneNumber = userParticipant.messagingBinding.address;
+    console.log(`User phone number found: ${userPhoneNumber}`);
+
+    const callParams = {
+      To: userPhoneNumber,
+      From: process.env.TWILIO_PHONE_NUMBER
+    };
+
+    console.log('Call parameters prepared:', callParams);
+    res.json(callParams);
+  } catch (err) {
+    console.error('Error fetching call parameters:', err);
+    res.status(500).json({ error: 'Failed to fetch call parameters', details: err.message });
+  }
+});
+
+app.post('/voice', (req, res) => {
+  console.log('Received request from Twilio:', req.body);  // Log the incoming request body
+
+  const { To } = req.body;  // Extract the "To" parameter
+
+  if (!To) {
+    console.error('Missing "To" phone number.');
+    return res.status(400).send('Missing "To" phone number.');
+  }
+
+  const twiml = new twilio.twiml.VoiceResponse();
+
+  // Generate TwiML to dial the specified number
+  twiml.dial({
+    callerId: process.env.TWILIO_PHONE_NUMBER
+  }, To);
+
+  // Log the TwiML response
+  console.log('Generated TwiML:', twiml.toString());
+
+  res.type('text/xml');
+  res.send(twiml.toString());
+});
+
 
 // Webhook route
 app.post('/twilio-webhook', (req, res) => {
@@ -364,8 +495,29 @@ app.post('/make-call/:sid', async (req, res) => {
   }
 });
 
+app.get('/check-env', (req, res) => {
+  const envVars = [
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_API_KEY',
+    'TWILIO_API_SECRET',
+    'TWILIO_TWIML_APP_SID',
+    'TWILIO_PHONE_NUMBER',
+    'NGROK_URL'
+  ];
+
+  const missingVars = envVars.filter(varName => !process.env[varName]);
+
+  if (missingVars.length === 0) {
+    res.json({ message: 'All required environment variables are set.' });
+  } else {
+    res.status(500).json({ error: 'Missing environment variables', missingVars });
+  }
+});
+
 // Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`ngrok URL: ${NGROK_URL}`);
 });

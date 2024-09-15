@@ -1,9 +1,11 @@
-let currentConversationSid = null;
+let currentConversationSid;
 let currentTheme = 'light';
 let autoScrollEnabled = true;
 let conversationsLoaded = false;
 let socket;
-
+const NGROK_URL = 'https://7229-47-154-125-116.ngrok-free.app';
+let device;
+let callStatusElement;
 let TWILIO_PHONE_NUMBER;
 
 async function initializeApp() {
@@ -244,23 +246,153 @@ loadConversations();
 setupWebSocket();
 });
 
-// Add these new functions to your client.js file
+// calling
 
-async function makeCall() {
+async function setupDevice() {
+    try {
+      console.log('Fetching token from server...');
+      const response = await axios.get(`${NGROK_URL}/token`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      console.log('Token response:', response.data);
+  
+      if (!response.data || !response.data.token) {
+        throw new Error('No token received from server');
+      }
+  
+      console.log('Initializing Twilio.Device...');
+      device = new Twilio.Device(response.data.token, {
+        codecPreferences: ['opus', 'pcmu'],
+        fakeLocalDTMF: true,
+        debug: true,
+        enableRingingState: true
+      });
+  
+      device.on('ready', function(device) {
+        console.log('Twilio.Device Ready!');
+      });
+  
+      device.on('error', function(error) {
+        console.error('Twilio.Device Error:', error);
+      });
+  
+      device.on('connect', function(conn) {
+        console.log('Successfully established call!');
+        updateCallStatus('In call');
+      });
+  
+      device.on('disconnect', function(conn) {
+        console.log('Call ended.');
+        updateCallStatus('Call ended');
+      });
+  
+      console.log('Twilio.Device setup complete');
+    } catch (error) {
+      console.error('Error setting up Twilio device:', error);
+      if (error.response) {
+        console.error('Server response status:', error.response.status);
+        console.error('Server response data:', error.response.data);
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+      } else {
+        console.error('Error details:', error.message);
+      }
+      throw error;
+    }
+  }
+  
+  function updateCallStatus(status) {
+    if (callStatusElement) {
+      callStatusElement.textContent = status;
+    } else {
+      console.warn('Call status element not found');
+    }
+  }
+  
+  async function makeCall() {
     if (!currentConversationSid) {
       alert('Please select a conversation before making a call.');
       return;
     }
   
     try {
-      const response = await axios.post(`/make-call/${currentConversationSid}`);
-      console.log('Call initiated:', response.data);
-      alert('Call initiated successfully!');
+      if (!device) {
+        console.log('Twilio Device not set up. Attempting to set up...');
+        await setupDevice();
+      }
+  
+      console.log('Fetching call parameters...');
+      const response = await axios.get(`${NGROK_URL}/call-params/${currentConversationSid}`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      const params = response.data;
+      console.log('Call parameters:', params);
+  
+      // Make sure the To parameter is included in the request to /voice
+      await axios.post(`${NGROK_URL}/voice`, { To: params.To })
+        .then(response => {
+          console.log('Call initiated:', response.data);
+        })
+        .catch(error => {
+          console.error('Error initiating call:', error);
+          alert('Failed to initiate call. Please check the console for more details.');
+          return;
+        });
+  
+      console.log('Initiating call...');
+      const call = await device.connect({ To: params.To, From: params.From });
+      updateCallStatus('Calling...');
+  
+      call.on('accept', () => {
+        console.log('Call accepted');
+        updateCallStatus('In call');
+      });
+  
+      call.on('disconnect', () => {
+        console.log('Call disconnected');
+        updateCallStatus('Call ended');
+      });
+  
+      call.on('error', (error) => {
+        console.error('Call error:', error);
+        updateCallStatus('Call error');
+      });
+  
     } catch (error) {
       console.error('Error making call:', error);
-      alert('Failed to initiate call. Please try again.');
+      if (error.response) {
+        console.error('Server responded with:', error.response.data);
+      }
+      alert('Failed to initiate call. Please check the console for more details.');
     }
   }
+  
+  // Initialize the device when the page loads
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeApp();
+    loadConversations();
+    setupWebSocket();
+    
+    callStatusElement = document.getElementById('call-status');
+    
+    const callButton = document.getElementById('call-btn');
+    if (callButton) {
+      callButton.addEventListener('click', makeCall);
+    } else {
+      console.error('Call button not found in the DOM');
+    }
+  });
+  
+  function endCall() {
+    if (device) {
+      device.disconnectAll();
+    }
+  }
+  
 
   
   // Modify your selectConversation function to show the call button
@@ -299,13 +431,6 @@ async function makeCall() {
       document.getElementById('loading-spinner').style.display = 'none';
     }
   }
-  
-  // Add this event listener when the page loads
-  document.addEventListener('DOMContentLoaded', () => {
-    loadConversations();
-    setupWebSocket();
-    document.getElementById('call-btn').addEventListener('click', makeCall);
-  });
 
 async function loadMessages(sid, displayName) {
     try {

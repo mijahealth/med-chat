@@ -413,3 +413,22 @@
 #call-btn:hover {
   transform: scale(1.1);
 }
+
+#call-status {
+  margin-left: 10px;
+  font-size: 0.9em;
+  color: var(--text-color);
+}
+
+/* You might want to add specific styles for different call states */
+#call-status.calling {
+  color: #ffa500; /* Orange for 'Calling...' state */
+}
+
+#call-status.in-call {
+  color: #4CAF50; /* Green for 'In call' state */
+}
+
+#call-status.ended {
+  color: #f44336; /* Red for 'Call ended' state */
+}

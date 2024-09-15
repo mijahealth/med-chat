@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Twilio Conversations</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <script src="https://sdk.twilio.com/js/client/v1.14/twilio.min.js"></script>
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
 <body>
@@ -24,6 +25,7 @@
     <div id="messages-title">
       <span id="conversation-title" role="heading" aria-level="1"></span>
       <button id="call-btn" aria-label="Start Call" style="display: none;">📞</button>
+      <div id="call-status"></div>
       <span class="close-button" onclick="closeConversation()" style="cursor: pointer;" aria-label="Close Conversation">✕</span>
     </div>
 
