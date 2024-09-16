@@ -9,52 +9,46 @@ let callStatusElement;
 let TWILIO_PHONE_NUMBER;
 
 async function initializeApp() {
-  try {
-    const response = await axios.get('/config');
-    TWILIO_PHONE_NUMBER = response.data.TWILIO_PHONE_NUMBER;
-    // Continue with the rest of your app initialization
-    loadConversations();
-  } catch (error) {
-    console.error('Error fetching configuration:', error);
+    try {
+      const response = await axios.get('/config');
+      TWILIO_PHONE_NUMBER = response.data.TWILIO_PHONE_NUMBER;
+      // Any other initialization code
+    } catch (error) {
+      console.error('Error fetching configuration:', error);
+    }
   }
-}
-
-// Call this function when your app starts
-document.addEventListener('DOMContentLoaded', initializeApp);
 
 // WebSocket connection setup
 function setupWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     socket = new WebSocket(`${protocol}//${window.location.host}`);
-
+  
     socket.onopen = function(event) {
-        console.log('WebSocket connection established');
+      console.log('WebSocket connection established');
     };
-
+  
     socket.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        console.log('Received WebSocket message:', data);
-      
-        if (data.type === 'newMessage') {
-            console.log('Processing new message:', data);
-          handleNewMessage(data);
-        }
-      
-        // Handle new conversation event
-        if (data.type === 'newConversation') {
-          handleNewConversation(data);
-        }
+      const data = JSON.parse(event.data);
+      console.log('Received WebSocket message:', data);
+  
+      if (data.type === 'newMessage') {
+        handleNewMessage(data);
+      }
+  
+      if (data.type === 'newConversation') {
+        handleNewConversation(data);
+      }
     };
-
+  
     socket.onclose = function(event) {
-        console.log('WebSocket connection closed');
-        setTimeout(setupWebSocket, 5000); // Attempt to reconnect after 5 seconds
+      console.log('WebSocket connection closed');
+      setTimeout(setupWebSocket, 5000); // Attempt to reconnect after 5 seconds
     };
-
+  
     socket.onerror = function(error) {
-        console.error('WebSocket error:', error);
+      console.error('WebSocket error:', error);
     };
-}
+  }
 
 function handleNewConversation(data) {
     const conversationsDiv = document.getElementById('conversations');
@@ -91,31 +85,22 @@ function handleNewConversation(data) {
     attachDeleteListeners();
 }
 
-  function handleNewMessage(data) {
-    // Generate a unique identifier for the message
-    const messageId = `${data.conversationSid}-${data.messageSid || Date.now()}`;
-  
-    // Check if the message has already been added to the UI
-    if (document.getElementById(messageId)) {
-      console.log('Message already displayed, skipping:', messageId);
-      return;
-    }
-  
-    // Append the message if it's for the current conversation
-    if (currentConversationSid === data.conversationSid) {
-      appendMessage(data, messageId);
-    }
-    
-    // Always update the conversation preview, regardless of whether it's the current conversation
-    updateConversationPreview(data.conversationSid, {
-      body: data.body,
-      author: data.author,
-      dateCreated: new Date().toISOString()
-    });
-  
-    // Move the updated conversation to the top of the list
-    moveConversationToTop(data.conversationSid);
+function handleNewMessage(data) {
+  // Append the message if it's for the current conversation
+  if (currentConversationSid === data.conversationSid) {
+    appendMessage(data);
   }
+
+  // Always update the conversation preview
+  updateConversationPreview(data.conversationSid, {
+    body: data.body,
+    author: data.author,
+    dateCreated: new Date().toISOString()
+  });
+
+  // Move the updated conversation to the top of the list
+  moveConversationToTop(data.conversationSid);
+}
 
 function scrollToBottom(elementId) {
 const element = document.getElementById(elementId);
@@ -126,20 +111,15 @@ element.scrollTop = element.scrollHeight;
 
 function appendMessage(message) {
     const messagesContainer = document.getElementById('messages');
-    if (document.querySelector(`[data-message-id="${message.messageSid}"]`)) {
-      console.log('Message already exists, skipping:', message.messageSid);
-      return;
-    }
-    
+  
     const messageClass = (message.author === TWILIO_PHONE_NUMBER) ? 'right' : 'left';
     const messageHtml = `
-      <div class="message ${messageClass}" data-message-id="${message.messageSid}">
+      <div class="message ${messageClass}">
         <span>${message.body}</span>
         <time>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
       </div>
     `;
     messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
-  
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
@@ -255,12 +235,6 @@ function attachDeleteListeners() {
         });
     });
 }
-
-// Add this event listener to load conversations when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-loadConversations();
-setupWebSocket();
-});
 
 // calling
 
@@ -410,22 +384,6 @@ async function setupDevice() {
       alert('Failed to initiate call. Please check the console for more details.');
     }
   }
-  
-  // Initialize the device when the page loads
-  document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
-    loadConversations();
-    setupWebSocket();
-    
-    callStatusElement = document.getElementById('call-status');
-    
-    const callButton = document.getElementById('call-btn');
-    if (callButton) {
-      callButton.addEventListener('click', makeCall);
-    } else {
-      console.error('Call button not found in the DOM');
-    }
-  });
   
   function endCall() {
     if (device) {
@@ -605,7 +563,6 @@ function updateConversationPreview(conversationSid, latestMessage) {
     }
 }
 
-
 async function startConversation(event) {
   event.preventDefault();
   const form = event.target;
@@ -636,3 +593,22 @@ async function startConversation(event) {
     alert('Please enter both a phone number and a message.');
   }
 }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      await initializeApp();
+      await loadConversations();
+      setupWebSocket();
+  
+      callStatusElement = document.getElementById('call-status');
+  
+      const callButton = document.getElementById('call-btn');
+      if (callButton) {
+        callButton.addEventListener('click', makeCall);
+      } else {
+        console.error('Call button not found in the DOM');
+      }
+    } catch (error) {
+      console.error('Error during initialization:', error);
+    }
+  });
