@@ -34,12 +34,10 @@ function setupWebSocket() {
   socket.onmessage = function (event) {
     const data = JSON.parse(event.data);
     console.log('Received WebSocket message:', data);
-
+  
     if (data.type === 'newMessage') {
       handleNewMessage(data);
-    }
-
-    if (data.type === 'newConversation') {
+    } else if (data.type === 'newConversation') {
       handleNewConversation(data);
     }
   };
@@ -96,44 +94,48 @@ function playNotificationSound() {
     }
   }
 
-function handleNewConversation(data) {
-  const conversationsDiv = document.getElementById('conversations');
-  const existingConversation = document.getElementById(`conv-${data.conversationSid}`);
-
-  if (existingConversation) {
-    console.log('Conversation already exists, updating:', data.conversationSid);
-    updateConversationPreview(data.conversationSid, {
-      body: data.lastMessage,
-      dateCreated: new Date().toISOString(),
-    });
-    moveConversationToTop(data.conversationSid);
-    return;
-  }
-
-  const conversationHtml = `
-  <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
-    <div class="conversation-header">
-      <div class="header-left">
-        <div class="unread-indicator">
-          <!-- Unread badge will be inserted here if needed -->
+  function handleNewConversation(data) {
+    const conversationsDiv = document.getElementById('conversations');
+    const existingConversation = document.getElementById(`conv-${data.conversationSid}`);
+  
+    if (existingConversation) {
+      console.log('Conversation already exists, updating:', data.conversationSid);
+      updateConversationPreview(data.conversationSid, {
+        body: data.lastMessage,
+        dateCreated: new Date().toISOString(),
+      });
+      moveConversationToTop(data.conversationSid);
+      return;
+    }
+  
+    const displayName = data.friendlyName || data.conversationSid;
+    const lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const lastMessageText = data.lastMessage || 'No messages yet';
+  
+    const newConversationHtml = `
+      <div class="conversation" id="conv-${data.conversationSid}" onclick="selectConversation('${data.conversationSid}', '${displayName}')">
+        <div class="conversation-header">
+          <div class="header-left">
+            <div class="unread-indicator">
+              <!-- Unread badge will be inserted here if needed -->
+            </div>
+            <strong>${displayName}</strong>
+          </div>
+          <div class="header-right">
+            <span class="time">${lastMessageTime}</span>
+            <button class="delete-btn" data-sid="${data.conversationSid}" aria-label="Delete Conversation">🗑️</button>
+          </div>
         </div>
-        <strong>${displayName}</strong>
+        <div class="conversation-content">
+          <div class="last-message">${lastMessageText}</div>
+        </div>
       </div>
-      <div class="header-right">
-        <span class="time">${lastMessageTime}</span>
-        <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
-      </div>
-    </div>
-    <div class="conversation-content">
-      <div class="last-message">${lastMessageText}</div>
-    </div>
-  </div>
-`;
-  conversationsDiv.insertAdjacentHTML('afterbegin', newConversationHtml);
-  // Re-attach event listeners for the delete buttons
-  attachDeleteListeners();
-}
-
+    `;
+    
+    conversationsDiv.insertAdjacentHTML('afterbegin', newConversationHtml);
+    attachDeleteListeners();
+  }
+  
 function appendMessage(message) {
   const messagesContainer = document.getElementById('messages');
 
@@ -265,6 +267,8 @@ async function selectConversation(sid, displayName) {
     document.getElementById('loading-spinner').style.display = 'block';
     document.getElementById('messages').style.display = 'none';
     document.getElementById('message-input').style.display = 'none';
+    document.getElementById('messages-title').style.display = 'flex';
+    document.getElementById('no-conversation').style.display = 'none';
   
     // Clear unread indicator
     const conversationDiv = document.getElementById(`conv-${sid}`);
@@ -445,7 +449,6 @@ function closeConversation() {
     document.getElementById('messages-title').style.display = 'none';
     document.getElementById('messages').innerHTML = '';
     document.getElementById('message-input').style.display = 'none';
-    document.getElementById('messages').style.display = 'none';
     document.getElementById('no-conversation').style.display = 'flex';
   
     // Deselect conversations
@@ -626,11 +629,17 @@ function endCall() {
       await initializeApp();
       loadConversations();
       setupWebSocket();
+      
+      // Hide messages title and show 'No conversation selected' message
+      document.getElementById('messages-title').style.display = 'none';
+      document.getElementById('no-conversation').style.display = 'flex';
+      
+      // Clear any existing conversation details
+      document.getElementById('messages').innerHTML = '';
+      document.getElementById('message-input').style.display = 'none';
     } catch (error) {
       console.error('Error during initialization:', error);
     }
-    // Remove or comment out the following line:
-    // updateCallControls(false);
   });
 
 // Additional functions for call duration and status updates
