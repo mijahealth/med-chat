@@ -338,43 +338,70 @@
   font-size: 1rem; /* Slightly larger font for the name */
 }
  
- .conversation-header {
+.conversation-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
- }
+}
  
- .header-left {
+.header-left {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
- }
- 
+}
+
+.header-left strong {
+  font-size: 1rem;
+}
+
  .header-right {
   display: flex;
   align-items: center;
  }
+
+ .phone-number {
+  font-size: 0.8rem;
+  color: #666;
+}
  
- .unread-indicator {
+.unread-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: transparent;
+  list-style-type: none;
+}
+
+.conversation.unread .unread-indicator {
+  background-color: #007aff;
+}
+
+.unread-indicator-column {
   width: 20px;
   margin-right: 10px;
- }
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.conversation-details {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
  
- .time {
+.time {
+  font-size: 0.8rem;
   color: #888;
-  font-size: 0.7em;
-  white-space: nowrap;
- }
+  margin-right: 10px;
+}
  
- .delete-btn {
+.delete-btn {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 1rem;
   color: #ff3b30;
-  padding: 5px;
-  margin-left: 10px;
- }
+}
  
  .conversation-content {
   display: flex;
@@ -405,9 +432,13 @@
  
  /* Unread Badge */
  .unread-badge {
-  color: blue;
+  color: #007aff;
   font-size: 1.2em;
- }
+}
+
+.conversation:not(.unread) .unread-indicator {
+  display: none;
+}
  
  /* Animations */
  @keyframes fadeIn {

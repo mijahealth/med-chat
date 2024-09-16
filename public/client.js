@@ -11,6 +11,8 @@ let TWILIO_PHONE_NUMBER;
 let NGROK_URL;
 let call;
 let isMuted = false;
+let userInteracted = false;
+
 
 async function initializeApp() {
     try {
@@ -52,44 +54,49 @@ function setupWebSocket() {
   };
 }
 
-function handleNewMessage(data) {
-  // Play notification sound if the message is not from us
-  if (data.author !== TWILIO_PHONE_NUMBER) {
-    playNotificationSound();
-  }
-
-  if (currentConversationSid === data.conversationSid) {
-    appendMessage(data);
-  }
-
-  updateConversationPreview(data.conversationSid, {
-    body: data.body,
-    author: data.author,
-    dateCreated: new Date().toISOString(),
+document.addEventListener('click', () => {
+    userInteracted = true;
   });
 
-  moveConversationToTop(data.conversationSid);
 
-  if (currentConversationSid !== data.conversationSid) {
-    markConversationAsUnread(data.conversationSid);
+function handleNewMessage(data) {
+    // Play notification sound if the message is not from us
+    if (data.author !== TWILIO_PHONE_NUMBER) {
+      playNotificationSound();
+    }
+  
+    if (currentConversationSid === data.conversationSid) {
+      appendMessage(data);
+    } else {
+      markConversationAsUnread(data.conversationSid);
+    }
+  
+    updateConversationPreview(data.conversationSid, {
+      body: data.body,
+      author: data.author,
+      dateCreated: new Date().toISOString(),
+    });
+  
+    moveConversationToTop(data.conversationSid);
   }
-}
 
 function playNotificationSound() {
+  if (userInteracted) {
     const audio = new Audio('/sounds/notification.mp3');
     audio.play().catch((error) => {
       console.error('Error playing sound:', error);
     });
+  } else {
+    console.log('User hasn\'t interacted with the page yet. Sound not played.');
   }
-
+}
   function markConversationAsUnread(conversationSid) {
     const conversationDiv = document.getElementById(`conv-${conversationSid}`);
     if (conversationDiv) {
       conversationDiv.classList.add('unread');
       const unreadIndicator = conversationDiv.querySelector('.unread-indicator');
-      if (unreadIndicator && !unreadIndicator.querySelector('.unread-badge')) {
-        const badgeHtml = `<span class="unread-badge">●</span>`;
-        unreadIndicator.innerHTML = badgeHtml;
+      if (unreadIndicator) {
+        unreadIndicator.innerHTML = '<span class="unread-badge">●</span>';
       }
     }
   }
@@ -185,40 +192,45 @@ function moveConversationToTop(conversationSid) {
 }
 
 function loadConversations() {
-  document.getElementById('loading-spinner').style.display = 'block';
-
-  axios
-    .get('/conversations')
-    .then((response) => {
-      const conversations = response.data;
-
-      conversations.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
-
-      const conversationsDiv = document.getElementById('conversations');
-      conversationsDiv.innerHTML = ''; // Clear existing conversations
-
-      conversations.forEach((conversation) => {
-        const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-
-        let displayName = conversation.friendlyName || conversation.sid;
-        if (displayName.startsWith('Conversation with ')) {
-          displayName = displayName.replace('Conversation with ', '');
-        }
-
-        const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
-        const conversationHtml = `
-          <div class="conversation" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
+    document.getElementById('loading-spinner').style.display = 'block';
+  
+    axios
+      .get('/conversations')
+      .then((response) => {
+        const conversations = response.data;
+  
+        conversations.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+  
+        const conversationsDiv = document.getElementById('conversations');
+        conversationsDiv.innerHTML = ''; // Clear existing conversations
+  
+        conversations.forEach((conversation) => {
+          const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+  
+          let displayName = conversation.friendlyName || conversation.sid;
+          if (displayName.startsWith('Conversation with ')) {
+            displayName = displayName.replace('Conversation with ', '');
+          }
+  
+          const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
+          const conversationHtml = `
+          <div class="conversation ${conversation.unread ? 'unread' : ''}" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
             <div class="conversation-header">
-              <div class="header-left">
-                <strong>${displayName}</strong>
-                <span>${conversation.phoneNumber || ''}</span>
+              <div class="unread-indicator-column">
+                <div class="unread-indicator"></div>
               </div>
-              <div class="header-right">
-                <span class="time">${lastMessageTime}</span>
-                <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
+              <div class="conversation-details">
+                <div class="header-left">
+                  <strong>${displayName}</strong>
+                  <span class="phone-number">${conversation.phoneNumber || ''}</span>
+                </div>
+                <div class="header-right">
+                  <span class="time">${lastMessageTime}</span>
+                  <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
+                </div>
               </div>
             </div>
             <div class="conversation-content">
@@ -226,25 +238,25 @@ function loadConversations() {
             </div>
           </div>
         `;
-
-        conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
+  
+          conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
+        });
+  
+        attachDeleteListeners();
+  
+        if (currentConversationSid) {
+          document.getElementById(`conv-${currentConversationSid}`)?.classList.add('selected');
+        }
+  
+        conversationsLoaded = true;
+      })
+      .catch((error) => {
+        console.error('Error loading conversations:', error);
+      })
+      .finally(() => {
+        document.getElementById('loading-spinner').style.display = 'none';
       });
-
-      attachDeleteListeners();
-
-      if (currentConversationSid) {
-        document.getElementById(`conv-${currentConversationSid}`)?.classList.add('selected');
-      }
-
-      conversationsLoaded = true;
-    })
-    .catch((error) => {
-      console.error('Error loading conversations:', error);
-    })
-    .finally(() => {
-      document.getElementById('loading-spinner').style.display = 'none';
-    });
-}
+  }
 
 // Helper function to attach delete listeners
 function attachDeleteListeners() {
@@ -276,7 +288,7 @@ async function selectConversation(sid, displayName) {
       conversationDiv.classList.remove('unread');
       const unreadIndicator = conversationDiv.querySelector('.unread-indicator');
       if (unreadIndicator) {
-        unreadIndicator.innerHTML = ''; // Clear the unread badge
+        unreadIndicator.innerHTML = '';
       }
     }
   
@@ -297,27 +309,28 @@ async function selectConversation(sid, displayName) {
   
       // Inject the conversation header and call controls
       document.getElementById('messages-title').innerHTML = `
-      <div class="conversation-info">
-        <strong class="contact-name">${name}</strong>
-        <span class="contact-phone">${phoneNumber}</span>
-        <a class="contact-email" href="mailto:${email}">${email}</a>
-      </div>
-      <div class="header-controls">
-        <div id="call-controls">
-          <button id="call-btn" aria-label="Start Call" title="Start Call">
-            <i class="fas fa-phone"></i>
-          </button>
-          <button id="mute-btn" aria-label="Mute Call" title="Mute Call" style="display: none;">
-            <i class="fas fa-microphone-slash"></i>
-          </button>
-          <button id="end-call-btn" aria-label="End Call" title="End Call" style="display: none;">
-            <i class="fas fa-phone-slash"></i>
-          </button>
-          <span id="call-status"></span>
+        <div class="conversation-info">
+          <strong class="contact-name">${name}</strong>
+          <span class="contact-phone">${phoneNumber}</span>
+          <a class="contact-email" href="mailto:${email}">${email}</a>
         </div>
-        <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">✕</button>
-      </div>
-    `;
+        <div class="header-controls">
+          <div id="call-controls">
+            <button id="call-btn" aria-label="Start Call" title="Start Call">
+              <i class="fas fa-phone"></i>
+            </button>
+            <button id="mute-btn" aria-label="Mute Call" title="Mute Call" style="display: none;">
+              <i class="fas fa-microphone-slash"></i>
+            </button>
+            <button id="end-call-btn" aria-label="End Call" title="End Call" style="display: none;">
+              <i class="fas fa-phone-slash"></i>
+            </button>
+            <span id="call-status"></span>
+          </div>
+          <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">✕</button>
+        </div>
+      `;
+  
       // Initialize callStatusElement
       callStatusElement = document.getElementById('call-status');
   
