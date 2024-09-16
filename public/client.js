@@ -294,13 +294,11 @@ async function selectConversation(sid, displayName) {
       // Inject the conversation header and call controls
       document.getElementById('messages-title').innerHTML = `
       <div class="conversation-info">
-        <div class="contact-details">
-          <strong>${name}</strong>
-          <span>${phoneNumber}</span>
-          <a href="mailto:${email}" target="_blank">${email}</a>
-        </div>
+        <strong class="contact-name">${name}</strong>
+        <span class="contact-phone">${phoneNumber}</span>
+        <a class="contact-email" href="mailto:${email}">${email}</a>
       </div>
-      <div>
+      <div class="header-controls">
         <div id="call-controls">
           <button id="call-btn" aria-label="Start Call" title="Start Call">
             <i class="fas fa-phone"></i>

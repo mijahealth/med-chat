@@ -58,13 +58,12 @@
  
  /* Messages Title */
  #messages-title {
-  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #ccc;
- }
+}
  
  #conversation-title {
   font-size: 1rem;
@@ -80,12 +79,38 @@
   text-decoration: none;
  }
  
+ .conversation-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0; /* Allows text to truncate if necessary */
+}
+
+.contact-name {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.contact-phone, .contact-email {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+}
+
  /* Call Controls */
  #call-controls {
   display: flex;
   align-items: center;
   margin-right: 10px;
- }
+}
  
  #call-controls button {
   background-color: #007bff;
@@ -96,6 +121,7 @@
   font-size: 1.2rem;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-right: 5px;
  }
  
  #call-controls button:hover {
@@ -161,19 +187,18 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-color);
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   padding: 5px;
-  margin-left: 10px;
-  transition: transform 0.2s ease;
- }
+}
  
  /* Conversation Info */
  .conversation-info {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   flex: 1;
- }
+  min-width: 0; /* Allows text to truncate if necessary */
+}
  
  .contact-details {
   display: flex;
@@ -301,43 +326,28 @@
  
  /* Conversations */
  .conversation {
+  font-size: 0.9rem; /* Reduced overall font size */
   display: flex;
   flex-direction: column;
   padding: 15px;
   border-bottom: 1px solid #ccc;
   transition: background-color 0.2s ease;
  }
+
+ .conversation strong {
+  font-size: 1rem; /* Slightly larger font for the name */
+}
  
  .conversation-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
  }
  
  .header-left {
   display: flex;
-  flex-grow: 1;
- }
- 
- .unread-indicator {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-right: 10px;
- }
- 
- .unread-badge {
-  width: 10px;
-  height: 10px;
-  background-color: blue;
-  border-radius: 50%;
- }
- 
- .name-and-preview {
-  display: flex;
   flex-direction: column;
+  flex-grow: 1;
  }
  
  .header-right {
@@ -345,9 +355,14 @@
   align-items: center;
  }
  
+ .unread-indicator {
+  width: 20px;
+  margin-right: 10px;
+ }
+ 
  .time {
   color: #888;
-  font-size: 0.8em;
+  font-size: 0.7em;
   white-space: nowrap;
  }
  
@@ -364,11 +379,14 @@
  .conversation-content {
   display: flex;
   margin-top: 5px;
-  margin-left: 30px;
+ }
+ 
+ .conversation-info strong {
+  font-size: 1rem;
  }
  
  .last-message {
-  font-size: 0.9em;
+  font-size: 0.8em;
   color: #888;
   white-space: nowrap;
   overflow: hidden;
@@ -385,9 +403,10 @@
   background-color: var(--conversation-selected);
  }
  
- .header-controls {
-  display: flex;
-  align-items: center;
+ /* Unread Badge */
+ .unread-badge {
+  color: blue;
+  font-size: 1.2em;
  }
  
  /* Animations */
