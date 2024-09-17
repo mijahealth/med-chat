@@ -220,7 +220,9 @@ function loadConversations() {
           const conversationHtml = `
           <div class="conversation ${conversation.unread ? 'unread' : ''}" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
             <div class="conversation-header">
-              <div class="unread-indicator"></div>
+              <div class="unread-indicator-column">
+                <div class="unread-indicator"></div>
+              </div>
               <div class="conversation-details">
                 <div class="header-left">
                   <strong>${displayName}</strong>

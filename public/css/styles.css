@@ -369,7 +369,6 @@
   height: 10px;
   border-radius: 50%;
   background-color: transparent;
-  margin-right: 10px;
 }
 
 .conversation.unread .unread-indicator {
@@ -406,7 +405,7 @@
 }
  
 .conversation-content {
-  padding-left: 20px; /* Aligns with the text in the header */
+  padding-left: 30px; /* Aligns with the text in the header */
   margin-top: 5px;
 }
  
