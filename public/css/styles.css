@@ -329,7 +329,8 @@
   font-size: 0.9rem; /* Reduced overall font size */
   display: flex;
   flex-direction: column;
-  padding: 15px;
+  position: relative;
+  padding: 10px 15px;
   border-bottom: 1px solid #ccc;
   transition: background-color 0.2s ease;
  }
@@ -340,9 +341,7 @@
  
 .conversation-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding-left: 15px; /* Adjust padding for proper alignment */
 }
  
 .header-left {
@@ -350,14 +349,15 @@
   flex-direction: column;
 }
 
+
 .header-left strong {
   font-size: 1rem;
 }
 
- .header-right {
+.header-right {
   display: flex;
   align-items: center;
- }
+}
 
  .phone-number {
   font-size: 0.8rem;
@@ -369,7 +369,7 @@
   height: 10px;
   border-radius: 50%;
   background-color: transparent;
-  list-style-type: none;
+  margin-right: 10px;
 }
 
 .conversation.unread .unread-indicator {
@@ -406,9 +406,8 @@
 }
  
 .conversation-content {
-  display: flex;
-  padding-left: 15px; /* Match this padding with .conversation-header */
-  margin-top: 5px; /* Add a little space between the header and the preview */
+  padding-left: 20px; /* Aligns with the text in the header */
+  margin-top: 5px;
 }
  
  .conversation-info strong {
