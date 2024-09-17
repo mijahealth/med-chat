@@ -7,6 +7,13 @@
  <title>Twilio Conversations</title>
  <!-- Stylesheets -->
  <link rel="stylesheet" href="/css/styles.css" />
+ <link rel="icon" type="image/x-icon" href="/favicon.ico">
+ <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+ <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+ <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+ <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+ <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+ 
  <!-- Font Awesome for icons -->
  <link
    rel="stylesheet"
@@ -30,24 +37,9 @@
    </div>
  </header>
  <main id="message-pane">
-  <div id="messages-title">
-    <div class="conversation-info">
-      <div class="contact-details">
-        <strong>Matt W refactor</strong>
-        <span>+15306130918</span>
-        <a href="mailto:mattryanward@gmail.com">mattryanward@gmail.com</a>
-      </div>
-    </div>
-    <div>
-      <div id="call-controls">
-        <button id="call-btn" aria-label="Start Call" title="Start Call">
-          <i class="fas fa-phone"></i>
-        </button>
-        <!-- Other call control buttons -->
-      </div>
-      <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">✕</button>
-    </div>
-  </div>
+   <div id="messages-title">
+     <!-- The conversation header and call controls will be injected here by client.js -->
+   </div>
 
    <!-- Loading Spinner -->
    <div id="loading-spinner" class="spinner"></div>

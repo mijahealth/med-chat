@@ -444,9 +444,13 @@ function deleteConversation(sid) {
           .delete(`/conversations/${sid}`, { data: { confirmToken: 'CONFIRM_DELETE' } })
           .then(() => {
             console.log(`Conversation ${sid} deleted successfully.`);
-            loadConversations(); // Refresh the conversation list after deletion
+            // Remove the conversation from the UI immediately
+            const conversationElement = document.getElementById(`conv-${sid}`);
+            if (conversationElement) {
+              conversationElement.remove();
+            }
             if (currentConversationSid === sid) {
-              closeConversation();
+              closeConversation(true);  // Pass true to indicate the conversation was deleted
             }
           });
       } catch (error) {
@@ -457,33 +461,42 @@ function deleteConversation(sid) {
   }
 }
 
-function closeConversation() {
-    currentConversationSid = null;
-    document.getElementById('messages-title').innerHTML = '';
-    document.getElementById('messages-title').style.display = 'none';
-    document.getElementById('messages').innerHTML = '';
-    document.getElementById('message-input').style.display = 'none';
-    document.getElementById('no-conversation').style.display = 'flex';
-  
-    // Deselect conversations
-    document.querySelectorAll('.conversation').forEach((conv) => {
-      conv.classList.remove('selected');
-    });
-  
-    // Reload conversations to update previews
-    loadConversations();
-  // Fetch the latest message for the closed conversation
-  axios.get(`/conversations/${lastConversationSid}/messages?limit=1&order=desc`)
-    .then(response => {
-      const messages = response.data;
-      const latestMessage = messages[0];
-      if (latestMessage) {
-        updateConversationPreview(lastConversationSid, latestMessage);
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching latest message:', error);
-    });
+function closeConversation(wasDeleted = false) {
+  const lastConversationSid = currentConversationSid;
+  currentConversationSid = null;
+  document.getElementById('messages-title').innerHTML = '';
+  document.getElementById('messages-title').style.display = 'none';
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('message-input').style.display = 'none';
+  document.getElementById('no-conversation').style.display = 'flex';
+
+  // Deselect conversations
+  document.querySelectorAll('.conversation').forEach((conv) => {
+    conv.classList.remove('selected');
+  });
+
+  // Reload conversations to update previews
+  loadConversations();
+
+  // Only fetch the latest message if the conversation wasn't deleted
+  if (lastConversationSid && !wasDeleted) {
+      axios.get(`/conversations/${lastConversationSid}/messages?limit=1&order=desc`)
+          .then(response => {
+              const messages = response.data;
+              const latestMessage = messages[0];
+              if (latestMessage) {
+                  updateConversationPreview(lastConversationSid, latestMessage);
+              }
+          })
+          .catch(error => {
+              if (error.response && error.response.status === 404) {
+                  console.log(`Conversation ${lastConversationSid} not found, it may have been deleted.`);
+                  // Optionally, you can remove the conversation from the UI here
+              } else {
+                  console.error('Error fetching latest message:', error);
+              }
+          });
+  }
 }
 
 // Call controls
