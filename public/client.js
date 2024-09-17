@@ -59,7 +59,7 @@ document.addEventListener('click', () => {
   });
 
 
-function handleNewMessage(data) {
+  function handleNewMessage(data) {
     // Play notification sound if the message is not from us
     if (data.author !== TWILIO_PHONE_NUMBER) {
       playNotificationSound();
@@ -68,7 +68,19 @@ function handleNewMessage(data) {
     if (currentConversationSid === data.conversationSid) {
       appendMessage(data);
     } else {
-      markConversationAsUnread(data.conversationSid);
+      const conversationDiv = document.getElementById(`conv-${data.conversationSid}`);
+      if (conversationDiv) {
+        conversationDiv.classList.add('unread');
+        let unreadBadge = conversationDiv.querySelector('.unread-badge');
+        if (unreadBadge) {
+          const currentCount = parseInt(unreadBadge.textContent) || 0;
+          unreadBadge.textContent = currentCount + 1;
+        } else {
+          conversationDiv.querySelector('.unread-indicator-column').innerHTML = `
+            <span class="unread-badge">1</span>
+          `;
+        }
+      }
     }
   
     updateConversationPreview(data.conversationSid, {
@@ -88,12 +100,6 @@ function playNotificationSound() {
     });
   } else {
     console.log('User hasn\'t interacted with the page yet. Sound not played.');
-  }
-}
-function markConversationAsUnread(conversationSid) {
-  const conversationDiv = document.getElementById(`conv-${conversationSid}`);
-  if (conversationDiv) {
-    conversationDiv.classList.add('unread');
   }
 }
 
@@ -193,71 +199,75 @@ function moveConversationToTop(conversationSid) {
 }
 
 function loadConversations() {
-    document.getElementById('loading-spinner').style.display = 'block';
-  
-    axios
-      .get('/conversations')
-      .then((response) => {
-        const conversations = response.data;
-  
-        conversations.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
-  
-        const conversationsDiv = document.getElementById('conversations');
-        conversationsDiv.innerHTML = ''; // Clear existing conversations
-  
-        conversations.forEach((conversation) => {
-          const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          });
-  
-          let displayName = conversation.friendlyName || conversation.sid;
-          if (displayName.startsWith('Conversation with ')) {
-            displayName = displayName.replace('Conversation with ', '');
-          }
-  
-          const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
-          const conversationHtml = `
-          <div class="conversation ${conversation.unread ? 'unread' : ''}" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
-            <div class="conversation-header">
-              <div class="unread-indicator-column">
-                <div class="unread-indicator"></div>
-              </div>
-              <div class="conversation-details">
-                <div class="header-left">
-                  <strong>${displayName}</strong>
-                  <span class="phone-number">${conversation.phoneNumber || ''}</span>
-                </div>
-                <div class="header-right">
-                  <span class="time">${lastMessageTime}</span>
-                  <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
-                </div>
-              </div>
+  document.getElementById('loading-spinner').style.display = 'block';
+
+  axios
+    .get('/conversations')
+    .then((response) => {
+      const conversations = response.data;
+
+      conversations.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+
+      const conversationsDiv = document.getElementById('conversations');
+      conversationsDiv.innerHTML = ''; // Clear existing conversations
+
+      conversations.forEach((conversation) => {
+        const lastMessageTime = new Date(conversation.lastMessageTime).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        let displayName = conversation.friendlyName || conversation.sid;
+        if (displayName.startsWith('Conversation with ')) {
+          displayName = displayName.replace('Conversation with ', '');
+        }
+
+        const lastMessageText = conversation.lastMessage ? conversation.lastMessage : 'No messages yet';
+        const unreadBadge = conversation.unreadCount > 0 
+          ? `<span class="unread-badge">${conversation.unreadCount}</span>` 
+          : '<span class="unread-indicator"></span>'; // Always include a span for consistent layout
+
+        const conversationHtml = `
+        <div class="conversation ${conversation.unreadCount > 0 ? 'unread' : ''}" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
+          <div class="conversation-header">
+            <div class="unread-indicator-column">
+              ${unreadBadge}
             </div>
-            <div class="conversation-content">
-              <div class="last-message">${lastMessageText}</div>
+            <div class="conversation-details">
+              <div class="header-left">
+                <strong>${displayName}</strong>
+                <span class="phone-number">${conversation.attributes ? conversation.attributes.phoneNumber : ''}</span>
+              </div>
+              <div class="header-right">
+                <span class="time">${lastMessageTime}</span>
+                <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
+              </div>
             </div>
           </div>
-        `;
-  
-          conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
-        });
-  
-        attachDeleteListeners();
-  
-        if (currentConversationSid) {
-          document.getElementById(`conv-${currentConversationSid}`)?.classList.add('selected');
-        }
-  
-        conversationsLoaded = true;
-      })
-      .catch((error) => {
-        console.error('Error loading conversations:', error);
-      })
-      .finally(() => {
-        document.getElementById('loading-spinner').style.display = 'none';
+          <div class="conversation-content">
+            <div class="last-message">${lastMessageText}</div>
+          </div>
+        </div>
+      `;
+
+        conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
       });
-  }
+
+      attachDeleteListeners();
+
+      if (currentConversationSid) {
+        document.getElementById(`conv-${currentConversationSid}`)?.classList.add('selected');
+      }
+
+      conversationsLoaded = true;
+    })
+    .catch((error) => {
+      console.error('Error loading conversations:', error);
+    })
+    .finally(() => {
+      document.getElementById('loading-spinner').style.display = 'none';
+    });
+}
 
 // Helper function to attach delete listeners
 function attachDeleteListeners() {
@@ -271,91 +281,92 @@ function attachDeleteListeners() {
 }
 
 async function selectConversation(sid, displayName) {
-    if (!conversationsLoaded) {
-      alert('Please wait until conversations are fully loaded.');
-      return;
-    }
-  
-    currentConversationSid = sid;
-    document.getElementById('loading-spinner').style.display = 'block';
-    document.getElementById('messages').style.display = 'none';
-    document.getElementById('message-input').style.display = 'none';
-    document.getElementById('messages-title').style.display = 'flex';
-    document.getElementById('no-conversation').style.display = 'none';
-  
-    // Clear unread indicator
-    const conversationDiv = document.getElementById(`conv-${sid}`);
-    if (conversationDiv) {
-      conversationDiv.classList.remove('unread');
-      const unreadIndicator = conversationDiv.querySelector('.unread-indicator');
-      if (unreadIndicator) {
-        unreadIndicator.innerHTML = '';
-      }
-    }
-  
-    try {
-      // Deselect other conversations
-      document.querySelectorAll('.conversation').forEach((conv) => {
-        conv.classList.remove('selected');
-      });
-      document.getElementById(`conv-${sid}`).classList.add('selected');
-  
-      // Fetch conversation details
-      const response = await axios.get(`/conversations/${sid}`);
-      const conversation = response.data;
-      const attributes = conversation.attributes || {};
-      const name = attributes.name || displayName;
-      const email = attributes.email || '';
-      const phoneNumber = attributes.phoneNumber || '';
-  
-      // Inject the conversation header and call controls
-      document.getElementById('messages-title').innerHTML = `
-        <div class="conversation-info">
-          <strong class="contact-name">${name}</strong>
-          <span class="contact-phone">${phoneNumber}</span>
-          <a class="contact-email" href="mailto:${email}">${email}</a>
-        </div>
-        <div class="header-controls">
-          <div id="call-controls">
-            <button id="call-btn" aria-label="Start Call" title="Start Call">
-              <i class="fas fa-phone"></i>
-            </button>
-            <button id="mute-btn" aria-label="Mute Call" title="Mute Call" style="display: none;">
-              <i class="fas fa-microphone-slash"></i>
-            </button>
-            <button id="end-call-btn" aria-label="End Call" title="End Call" style="display: none;">
-              <i class="fas fa-phone-slash"></i>
-            </button>
-            <span id="call-status"></span>
-          </div>
-          <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">✕</button>
-        </div>
-      `;
-  
-      // Initialize callStatusElement
-      callStatusElement = document.getElementById('call-status');
-  
-      // Attach event listeners for the call controls
-      document.getElementById('call-btn').addEventListener('click', makeCall);
-      document.getElementById('mute-btn').addEventListener('click', toggleMute);
-      document.getElementById('end-call-btn').addEventListener('click', endCall);
-  
-      // Show the messages title
-      document.getElementById('messages-title').style.display = 'flex';
-      document.getElementById('no-conversation').style.display = 'none';
-  
-      await loadMessages(sid, name);
-      document.getElementById('messages').style.display = 'block';
-      document.getElementById('message-input').style.display = 'flex';
-  
-      scrollToBottom('messages');
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-    } finally {
-      document.getElementById('loading-spinner').style.display = 'none';
-    }
+  if (!conversationsLoaded) {
+    alert('Please wait until conversations are fully loaded.');
+    return;
   }
 
+  currentConversationSid = sid;
+  document.getElementById('loading-spinner').style.display = 'block';
+  document.getElementById('messages').style.display = 'none';
+  document.getElementById('message-input').style.display = 'none';
+  document.getElementById('messages-title').style.display = 'flex';
+  document.getElementById('no-conversation').style.display = 'none';
+
+  try {
+    // Deselect other conversations
+    document.querySelectorAll('.conversation').forEach((conv) => {
+      conv.classList.remove('selected');
+    });
+    document.getElementById(`conv-${sid}`).classList.add('selected');
+
+    // Fetch conversation details
+    const response = await axios.get(`/conversations/${sid}`);
+    const conversation = response.data;
+    const attributes = conversation.attributes || {};
+    const name = attributes.name || displayName;
+    const email = attributes.email || '';
+    const phoneNumber = attributes.phoneNumber || '';
+
+    // Inject the conversation header and call controls
+    document.getElementById('messages-title').innerHTML = `
+      <div class="conversation-info">
+        <strong class="contact-name">${name}</strong>
+        <span class="contact-phone">${phoneNumber}</span>
+        <a class="contact-email" href="mailto:${email}">${email}</a>
+      </div>
+      <div class="header-controls">
+        <div id="call-controls">
+          <button id="call-btn" aria-label="Start Call" title="Start Call">
+            <i class="fas fa-phone"></i>
+          </button>
+          <button id="mute-btn" aria-label="Mute Call" title="Mute Call" style="display: none;">
+            <i class="fas fa-microphone-slash"></i>
+          </button>
+          <button id="end-call-btn" aria-label="End Call" title="End Call" style="display: none;">
+            <i class="fas fa-phone-slash"></i>
+          </button>
+          <span id="call-status"></span>
+        </div>
+        <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">✕</button>
+      </div>
+    `;
+
+    // Initialize callStatusElement
+    callStatusElement = document.getElementById('call-status');
+
+    // Attach event listeners for the call controls
+    document.getElementById('call-btn').addEventListener('click', makeCall);
+    document.getElementById('mute-btn').addEventListener('click', toggleMute);
+    document.getElementById('end-call-btn').addEventListener('click', endCall);
+
+    // Show the messages title
+    document.getElementById('messages-title').style.display = 'flex';
+    document.getElementById('no-conversation').style.display = 'none';
+
+    await loadMessages(sid, name);
+    document.getElementById('messages').style.display = 'block';
+    document.getElementById('message-input').style.display = 'flex';
+
+    scrollToBottom('messages');
+
+    // Mark messages as read
+    await axios.post(`/conversations/${sid}/mark-read`);
+    
+    // Update UI to remove unread indicators
+    const conversationDiv = document.getElementById(`conv-${sid}`);
+    conversationDiv.classList.remove('unread');
+    const unreadBadge = conversationDiv.querySelector('.unread-badge');
+    if (unreadBadge) {
+      unreadBadge.remove();
+    }
+
+  } catch (error) {
+    console.error('Error loading conversation:', error);
+  } finally {
+    document.getElementById('loading-spinner').style.display = 'none';
+  }
+}
 async function loadMessages(sid, displayName) {
   try {
     const response = await axios.get(`/conversations/${sid}/messages`);

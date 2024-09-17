@@ -240,13 +240,20 @@ app.get('/conversations', async (req, res) => {
       conversations.map(async (conversation) => {
         const messages = await client.conversations.v1
           .conversations(conversation.sid)
-          .messages.list({ limit: 1, order: 'desc' }); // Added order: 'desc'
+          .messages.list({ limit: 100, order: 'desc' });
         const lastMessage = messages.length > 0 ? messages[0] : null;
+        
+        const unreadCount = messages.filter(message => 
+          !JSON.parse(message.attributes || '{}').read &&
+          message.author !== process.env.TWILIO_PHONE_NUMBER
+        ).length;
+
         return {
           sid: conversation.sid,
           friendlyName: conversation.friendlyName,
           lastMessage: lastMessage ? lastMessage.body : 'No messages yet',
           lastMessageTime: lastMessage ? lastMessage.dateCreated : null,
+          unreadCount: unreadCount
         };
       })
     );
@@ -257,7 +264,6 @@ app.get('/conversations', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch conversations', details: err.message });
   }
 });
-
 // Delete a conversation
 app.delete(
   '/conversations/:sid',
@@ -528,13 +534,24 @@ app.get('/conversations/:sid', async (req, res) => {
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
     const conversation = await client.conversations.v1.conversations(sid).fetch();
-
     const attributes = JSON.parse(conversation.attributes || '{}');
+
+    // Fetch messages to count unread
+    const messages = await client.conversations.v1
+      .conversations(sid)
+      .messages
+      .list();
+
+    const unreadCount = messages.filter(message => 
+      !JSON.parse(message.attributes || '{}').read &&
+      message.author !== process.env.TWILIO_PHONE_NUMBER
+    ).length;
 
     res.json({
       sid: conversation.sid,
       friendlyName: conversation.friendlyName,
       attributes: attributes,
+      unreadCount: unreadCount
     });
   } catch (err) {
     console.error(`Error fetching conversation ${req.params.sid}:`, err);
@@ -558,4 +575,34 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`ngrok URL: ${process.env.NGROK_URL}`);
+});
+
+// New endpoint to mark messages as read
+app.post('/conversations/:sid/mark-read', async (req, res) => {
+  try {
+    const { sid } = req.params;
+    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+    // Fetch all messages from the conversation
+    const messages = await client.conversations.v1
+      .conversations(sid)
+      .messages
+      .list();
+
+    // Mark each message as read
+    for (const message of messages) {
+      await client.conversations.v1
+        .conversations(sid)
+        .messages(message.sid)
+        .update({ attributes: JSON.stringify({ read: true }) });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(`Error marking messages as read in conversation ${req.params.sid}:`, err);
+    res.status(500).json({
+      error: `Failed to mark messages as read in conversation ${req.params.sid}`,
+      details: err.message,
+    });
+  }
 });

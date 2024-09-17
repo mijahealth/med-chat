@@ -433,8 +433,19 @@
  
  /* Unread Badge */
  .unread-badge {
-  color: #007aff;
-  font-size: 1.2em;
+  background-color: #007aff;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.8em;
+}
+.conversation.unread {
+  font-weight: bold;
+  background-color: rgba(0, 122, 255, 0.1);
 }
 
 .conversation:not(.unread) .unread-indicator {
