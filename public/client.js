@@ -41,6 +41,8 @@ function setupWebSocket() {
       handleNewMessage(data);
     } else if (data.type === 'newConversation') {
       handleNewConversation(data);
+    } else if (data.type === 'updateConversation') {
+      handleUpdateConversation(data);
     }
   };
 
@@ -90,6 +92,46 @@ document.addEventListener('click', () => {
     });
   
     moveConversationToTop(data.conversationSid);
+  }
+
+  function handleUpdateConversation(data) {
+    const conversationDiv = document.getElementById(`conv-${data.conversationSid}`);
+    if (conversationDiv) {
+      // Update the last message
+      const lastMessageDiv = conversationDiv.querySelector('.last-message');
+      if (lastMessageDiv) {
+        lastMessageDiv.textContent = data.lastMessage;
+      }
+  
+      // Update the time
+      const timeDiv = conversationDiv.querySelector('.time');
+      if (timeDiv) {
+        timeDiv.textContent = new Date(data.lastMessageTime).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+  
+      // Update the stored attributes
+      conversationDiv.dataset.fullDetails = JSON.stringify(data.attributes);
+  
+      // Move the conversation to the top of the list
+      moveConversationToTop(data.conversationSid);
+  
+      // If this is not the currently selected conversation, mark it as unread
+      if (currentConversationSid !== data.conversationSid) {
+        conversationDiv.classList.add('unread');
+        let unreadBadge = conversationDiv.querySelector('.unread-badge');
+        if (unreadBadge) {
+          const currentCount = parseInt(unreadBadge.textContent) || 0;
+          unreadBadge.textContent = currentCount + 1;
+        } else {
+          conversationDiv.querySelector('.unread-indicator-column').innerHTML = `
+            <span class="unread-badge">1</span>
+          `;
+        }
+      }
+    }
   }
 
 function playNotificationSound() {
@@ -769,31 +811,81 @@ function startConversation(event) {
   const message = form.message.value.trim();
   const name = form.name.value.trim();
   const email = form.email.value.trim();
+  const dob = form.dob.value.trim();
 
-  if (phoneNumber && message) {
+  // Additional validation
+  if (!/^\+[0-9]{10,15}$/.test(phoneNumber)) {
+    alert('Please enter a valid phone number in the format +XXXXXXXXXXX');
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    alert('Please enter a valid email address');
+    return;
+  }
+
+  if (!isValidDate(dob)) {
+    alert('Please enter a valid date of birth');
+    return;
+  }
+
+  if (phoneNumber && message && name && email && dob) {
     axios
-      .post('/start-conversation', { phoneNumber, message, name, email })
+      .post('/start-conversation', { phoneNumber, message, name, email, dob })
       .then(async (response) => {
         if (response.data.existing) {
           const userConfirmed = confirm(
             'This conversation already exists. Would you like to open it?'
           );
           if (userConfirmed) {
-            closeModal(); // Close modal after selecting existing conversation
-            selectConversation(response.data.sid, phoneNumber);
+            closeModal();
+            selectConversation(response.data.sid, name);
           }
         } else {
-          form.reset();
           await loadConversations();
           closeModal();
-          selectConversation(response.data.sid, phoneNumber);
+          selectConversation(response.data.sid, name);
         }
+        // Clear the form regardless of whether a new conversation was created or not
+        clearNewConversationForm();
       })
       .catch((error) => {
         console.error('Error starting conversation:', error);
         alert('Failed to start a new conversation. Please try again.');
       });
   } else {
-    alert('Please enter both a phone number and a message.');
+    alert('Please fill in all fields.');
   }
 }
+
+// Helper function to clear the new conversation form
+function clearNewConversationForm() {
+  const form = document.querySelector('#new-conversation-modal form');
+  if (form) {
+    form.reset();
+  }
+}
+
+// Helper function to validate date
+function isValidDate(dateString) {
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateString)) return false;
+  
+  const date = new Date(dateString);
+  const timestamp = date.getTime();
+  
+  if (typeof timestamp !== 'number' || Number.isNaN(timestamp)) {
+    return false;
+  }
+  
+  return date.toISOString().startsWith(dateString);
+}
+
+// Add this function to clear the form when the modal is opened
+function openNewConversationModal() {
+  clearNewConversationForm();
+  document.getElementById('new-conversation-modal').style.display = 'flex';
+}
+
+// Update the event listener for the new conversation button
+document.getElementById('new-conversation-btn').addEventListener('click', openNewConversationModal);

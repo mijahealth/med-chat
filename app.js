@@ -446,8 +446,11 @@ app.post(
       const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
       const { phoneNumber, message, name, email, dob } = req.body;
 
+      // Check if the request is coming from Zapier
+      const isZapierRequest = req.headers['user-agent'] && req.headers['user-agent'].includes('Zapier');
+
       console.log(
-        `Attempting to start a conversation with Phone: ${phoneNumber}, Name: ${name}, Email: ${email}, DOB: ${dob}`
+        `Attempting to start a conversation with Phone: ${phoneNumber}, Name: ${name}, Email: ${email}, DOB: ${dob}, Zapier: ${isZapierRequest}`
       );
 
       // Additional metadata for attributes
@@ -461,25 +464,48 @@ app.post(
       // Check for existing conversation
       const conversations = await client.conversations.v1.conversations.list();
       const existingConversation = conversations.find(
-        (conv) =>
-          conv.friendlyName === name ||
-          conv.friendlyName === `Conversation with ${phoneNumber}`
+        (conv) => {
+          const convAttributes = JSON.parse(conv.attributes || '{}');
+          return convAttributes.phoneNumber === phoneNumber;
+        }
       );
 
       if (existingConversation) {
         console.log(`Existing conversation found with SID: ${existingConversation.sid}`);
+        
         // Update existing conversation attributes
         await client.conversations.v1
           .conversations(existingConversation.sid)
           .update({ attributes: attributes });
+        
+        console.log(`Updated attributes for conversation: ${existingConversation.sid}`);
 
-        // Add the new message to the existing conversation
-        await client.conversations.v1
-          .conversations(existingConversation.sid)
-          .messages.create({
-            body: message,
-            author: process.env.TWILIO_PHONE_NUMBER,
+        // Add the new message to the existing conversation if it's a Zapier request
+        if (isZapierRequest) {
+          const newMessage = await client.conversations.v1
+            .conversations(existingConversation.sid)
+            .messages.create({
+              body: message,
+              author: process.env.TWILIO_PHONE_NUMBER,
+            });
+          console.log(`New message added to existing conversation: ${message}`);
+
+          // Broadcast the updated conversation to all connected clients via WebSocket
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(
+                JSON.stringify({
+                  type: 'updateConversation',
+                  conversationSid: existingConversation.sid,
+                  friendlyName: name || `Conversation with ${phoneNumber}`,
+                  lastMessage: message,
+                  lastMessageTime: newMessage.dateCreated,
+                  attributes: JSON.parse(attributes),
+                })
+              );
+            }
           });
+        }
 
         res.json({ sid: existingConversation.sid, existing: true });
       } else {
@@ -504,7 +530,7 @@ app.post(
 
         // Send the initial message with a disclaimer
         const firstMessage = `${message} (Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)`;
-        await client.conversations.v1
+        const newMessage = await client.conversations.v1
           .conversations(conversation.sid)
           .messages.create({
             body: firstMessage,
@@ -520,6 +546,7 @@ app.post(
                 conversationSid: conversation.sid,
                 friendlyName: conversation.friendlyName,
                 lastMessage: firstMessage,
+                lastMessageTime: newMessage.dateCreated,
                 attributes: JSON.parse(attributes),
               })
             );
