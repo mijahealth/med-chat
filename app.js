@@ -166,9 +166,7 @@ app.post('/voice', (req, res) => {
   res.send(twiml.toString());
 });
 
-// Twilio webhook to receive incoming messages and events
-// Twilio webhook to receive incoming messages and events
-app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), (req, res) => {
+app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (req, res) => {
   console.log('Webhook received at:', new Date().toISOString());
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
   console.log('Body:', JSON.stringify(req.body, null, 2));
@@ -190,21 +188,29 @@ app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), (req, re
       console.log(`  Author: ${author}`);
       console.log(`  Body: ${messageBody}`);
 
-      // Broadcast the new message to all connected clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(
-            JSON.stringify({
-              type: 'updateConversation',
-              conversationSid: existingConversation.sid,
-              friendlyName: name, // Make sure this is included
-              lastMessage: message,
-              lastMessageTime: newMessage.dateCreated,
-              attributes: JSON.parse(attributes),
-            })
-          );
-        }
-      });
+      try {
+        // Fetch conversation details
+        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        const conversation = await client.conversations.v1.conversations(conversationSid).fetch();
+        
+        // Broadcast the new message to all connected clients
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                type: 'updateConversation',
+                conversationSid: conversation.sid,
+                friendlyName: conversation.friendlyName,
+                lastMessage: messageBody,
+                lastMessageTime: req.body.DateCreated,
+                attributes: JSON.parse(conversation.attributes || '{}'),
+              })
+            );
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching conversation details:', error);
+      }
     } else {
       console.log(`Received unexpected event type: ${eventType}`);
     }

@@ -508,6 +508,15 @@ document.getElementById('new-message').addEventListener('keypress', function (e)
   }
 });
 
+function checkScrollPosition() {
+  const messagesDiv = document.getElementById('messages');
+  if (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 10) {
+    autoScrollEnabled = true;
+  } else {
+    autoScrollEnabled = false;
+  }
+}
+
 function deleteConversation(sid) {
   if (!conversationsLoaded) {
     alert('Please wait until conversations are fully loaded.');
@@ -741,6 +750,13 @@ function endCall() {
       // Clear any existing conversation details
       document.getElementById('messages').innerHTML = '';
       document.getElementById('message-input').style.display = 'none';
+  
+      // Add scroll event listener to messages div
+      const messagesDiv = document.getElementById('messages');
+      if (messagesDiv) {
+        messagesDiv.addEventListener('scroll', checkScrollPosition);
+      }
+  
     } catch (error) {
       console.error('Error during initialization:', error);
     }
