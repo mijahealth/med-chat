@@ -635,3 +635,9 @@
   color: #333;
   background-color: #f9f9f9;
 }
+
+.contact-state {
+  font-size: 0.9rem;
+  color: #666;
+  margin-left: 10px;
+}

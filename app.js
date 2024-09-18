@@ -195,11 +195,12 @@ app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), (req, re
         if (client.readyState === WebSocket.OPEN) {
           client.send(
             JSON.stringify({
-              type: 'newMessage',
-              conversationSid,
-              messageSid,
-              author,
-              body: messageBody,
+              type: 'updateConversation',
+              conversationSid: existingConversation.sid,
+              friendlyName: name, // Make sure this is included
+              lastMessage: message,
+              lastMessageTime: newMessage.dateCreated,
+              attributes: JSON.parse(attributes),
             })
           );
         }
@@ -435,6 +436,7 @@ app.post(
     body('name').optional().isString().trim(),
     body('email').optional().isEmail().withMessage('Invalid email format'),
     body('dob').optional().isString().withMessage('Invalid date format'),
+    body('state').optional().isString().trim().withMessage('Invalid state'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -444,13 +446,13 @@ app.post(
 
     try {
       const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-      const { phoneNumber, message, name, email, dob } = req.body;
+      const { phoneNumber, message, name, email, dob, state } = req.body;
 
       // Check if the request is coming from Zapier
       const isZapierRequest = req.headers['user-agent'] && req.headers['user-agent'].includes('Zapier');
 
       console.log(
-        `Attempting to start a conversation with Phone: ${phoneNumber}, Name: ${name}, Email: ${email}, DOB: ${dob}, Zapier: ${isZapierRequest}`
+        `Attempting to start a conversation with Phone: ${phoneNumber}, Name: ${name}, Email: ${email}, DOB: ${dob}, State: ${state}, Zapier: ${isZapierRequest}`
       );
 
       // Additional metadata for attributes
@@ -459,6 +461,7 @@ app.post(
         name: name,
         phoneNumber: phoneNumber,
         dob: dob,
+        state: state,
       });
 
       // Check for existing conversation

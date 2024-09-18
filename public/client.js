@@ -97,6 +97,12 @@ document.addEventListener('click', () => {
   function handleUpdateConversation(data) {
     const conversationDiv = document.getElementById(`conv-${data.conversationSid}`);
     if (conversationDiv) {
+      // Update the friendly name
+      const nameElement = conversationDiv.querySelector('strong');
+      if (nameElement) {
+        nameElement.textContent = data.friendlyName;
+      }
+  
       // Update the last message
       const lastMessageDiv = conversationDiv.querySelector('.last-message');
       if (lastMessageDiv) {
@@ -359,6 +365,7 @@ async function selectConversation(sid, displayName) {
     const email = mergedDetails.email || '';
     const phoneNumber = mergedDetails.phoneNumber || '';
     const dob = mergedDetails.dob || '';
+    const state = mergedDetails.state || ''; // Use mergedDetails for state
 
     // Inject the conversation header and call controls
     document.getElementById('messages-title').innerHTML = `
@@ -367,6 +374,7 @@ async function selectConversation(sid, displayName) {
         <span class="contact-phone">${phoneNumber}</span>
         <a class="contact-email" href="mailto:${email}">${email}</a>
         <span class="contact-dob">DOB: ${dob}</span>
+        <span class="contact-state">State: ${state}</span>
       </div>
       <div class="header-controls">
         <div id="call-controls">
