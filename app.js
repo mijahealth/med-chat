@@ -434,6 +434,7 @@ app.post(
       .withMessage('Message content cannot be empty'),
     body('name').optional().isString().trim(),
     body('email').optional().isEmail().withMessage('Invalid email format'),
+    body('dob').optional().isString().withMessage('Invalid date format'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -443,17 +444,18 @@ app.post(
 
     try {
       const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-      const { phoneNumber, message, name, email } = req.body;
+      const { phoneNumber, message, name, email, dob } = req.body;
 
       console.log(
-        `Attempting to start a conversation with Phone: ${phoneNumber}, Name: ${name}, Email: ${email}`
+        `Attempting to start a conversation with Phone: ${phoneNumber}, Name: ${name}, Email: ${email}, DOB: ${dob}`
       );
 
       // Additional metadata for attributes
       const attributes = JSON.stringify({
         email: email,
-        name: name, // Include name in attributes for data management
+        name: name,
         phoneNumber: phoneNumber,
+        dob: dob,
       });
 
       // Check for existing conversation
@@ -470,6 +472,14 @@ app.post(
         await client.conversations.v1
           .conversations(existingConversation.sid)
           .update({ attributes: attributes });
+
+        // Add the new message to the existing conversation
+        await client.conversations.v1
+          .conversations(existingConversation.sid)
+          .messages.create({
+            body: message,
+            author: process.env.TWILIO_PHONE_NUMBER,
+          });
 
         res.json({ sid: existingConversation.sid, existing: true });
       } else {
@@ -510,6 +520,7 @@ app.post(
                 conversationSid: conversation.sid,
                 friendlyName: conversation.friendlyName,
                 lastMessage: firstMessage,
+                attributes: JSON.parse(attributes),
               })
             );
           }

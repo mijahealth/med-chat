@@ -103,52 +103,55 @@ function playNotificationSound() {
   }
 }
 
-  function handleNewConversation(data) {
-    const conversationsDiv = document.getElementById('conversations');
-    const existingConversation = document.getElementById(`conv-${data.conversationSid}`);
-  
-    if (existingConversation) {
-      console.log('Conversation already exists, updating:', data.conversationSid);
-      updateConversationPreview(data.conversationSid, {
-        body: data.lastMessage,
-        dateCreated: new Date().toISOString(),
-      });
-      moveConversationToTop(data.conversationSid);
-      return;
-    }
-  
-    const displayName = data.friendlyName || data.conversationSid;
-    const lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const lastMessageText = data.lastMessage || 'No messages yet';
-  
-    const newConversationHtml = `
-    <div class="conversation ${data.unread ? 'unread' : ''}" id="conv-${data.conversationSid}" onclick="selectConversation('${data.conversationSid}', '${displayName}')">
-      <div class="conversation-header">
-        <div class="unread-indicator-column">
-          <div class="unread-indicator"></div>
-        </div>
-        <div class="conversation-details">
-          <div class="header-left">
-            <strong>${displayName}</strong>
-            <span class="phone-number">${data.phoneNumber || ''}</span>
-          </div>
-          <div class="header-right">
-            <span class="time">${lastMessageTime}</span>
-            <button class="delete-btn" data-sid="${data.conversationSid}" aria-label="Delete Conversation">🗑️</button>
-          </div>
-        </div>
+function handleNewConversation(data) {
+  const conversationsDiv = document.getElementById('conversations');
+  const existingConversation = document.getElementById(`conv-${data.conversationSid}`);
+
+  if (existingConversation) {
+    console.log('Conversation already exists, updating:', data.conversationSid);
+    updateConversationPreview(data.conversationSid, {
+      body: data.lastMessage,
+      dateCreated: new Date().toISOString(),
+    });
+    moveConversationToTop(data.conversationSid);
+    return;
+  }
+
+  const displayName = data.friendlyName || data.conversationSid;
+  const lastMessageTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const lastMessageText = data.lastMessage || 'No messages yet';
+  const attributes = data.attributes || {};
+
+  const newConversationHtml = `
+  <div class="conversation" id="conv-${data.conversationSid}" onclick="selectConversation('${data.conversationSid}', '${displayName}')">
+    <div class="conversation-header">
+      <div class="unread-indicator-column">
+        <div class="unread-indicator"></div>
       </div>
-      <div class="conversation-content">
-        <div class="last-message">${data.lastMessage || 'No messages yet'}</div>
+      <div class="conversation-details">
+        <div class="header-left">
+          <strong>${displayName}</strong>
+        </div>
+        <div class="header-right">
+          <span class="time">${lastMessageTime}</span>
+          <button class="delete-btn" data-sid="${data.conversationSid}" aria-label="Delete Conversation">🗑️</button>
+        </div>
       </div>
     </div>
-  `;
-  
+    <div class="conversation-content">
+      <div class="last-message">${lastMessageText}</div>
+    </div>
+  </div>
+`;
+
   // Inserting the new conversation into the conversation list
   conversationsDiv.insertAdjacentHTML('afterbegin', newConversationHtml);
   attachDeleteListeners(); // Ensure delete button works
 
-  }
+  // Store the full details in a data attribute for use when selecting the conversation
+  const conversationElement = document.getElementById(`conv-${data.conversationSid}`);
+  conversationElement.dataset.fullDetails = JSON.stringify(attributes);
+}
   
 function appendMessage(message) {
   const messagesContainer = document.getElementById('messages');
@@ -298,15 +301,22 @@ async function selectConversation(sid, displayName) {
     document.querySelectorAll('.conversation').forEach((conv) => {
       conv.classList.remove('selected');
     });
-    document.getElementById(`conv-${sid}`).classList.add('selected');
+    const selectedConversation = document.getElementById(`conv-${sid}`);
+    selectedConversation.classList.add('selected');
 
     // Fetch conversation details
     const response = await axios.get(`/conversations/${sid}`);
     const conversation = response.data;
     const attributes = conversation.attributes || {};
-    const name = attributes.name || displayName;
-    const email = attributes.email || '';
-    const phoneNumber = attributes.phoneNumber || '';
+
+    // Merge stored details with fetched details
+    const storedDetails = JSON.parse(selectedConversation.dataset.fullDetails || '{}');
+    const mergedDetails = { ...storedDetails, ...attributes };
+
+    const name = mergedDetails.name || displayName;
+    const email = mergedDetails.email || '';
+    const phoneNumber = mergedDetails.phoneNumber || '';
+    const dob = mergedDetails.dob || '';
 
     // Inject the conversation header and call controls
     document.getElementById('messages-title').innerHTML = `
@@ -314,6 +324,7 @@ async function selectConversation(sid, displayName) {
         <strong class="contact-name">${name}</strong>
         <span class="contact-phone">${phoneNumber}</span>
         <a class="contact-email" href="mailto:${email}">${email}</a>
+        <span class="contact-dob">DOB: ${dob}</span>
       </div>
       <div class="header-controls">
         <div id="call-controls">
@@ -361,12 +372,17 @@ async function selectConversation(sid, displayName) {
       unreadBadge.remove();
     }
 
+    // Update the stored details with the latest data
+    selectedConversation.dataset.fullDetails = JSON.stringify(mergedDetails);
+
   } catch (error) {
     console.error('Error loading conversation:', error);
   } finally {
     document.getElementById('loading-spinner').style.display = 'none';
   }
 }
+
+
 async function loadMessages(sid, displayName) {
   try {
     const response = await axios.get(`/conversations/${sid}/messages`);
