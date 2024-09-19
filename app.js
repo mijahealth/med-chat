@@ -165,7 +165,6 @@ app.post('/voice', (req, res) => {
   res.send(twiml.toString());
 });
 
-// Webhook to handle incoming messages from Twilio
 app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (req, res) => {
   console.log('Webhook received at:', new Date().toISOString());
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
@@ -182,6 +181,7 @@ app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (r
       const messageSid = req.body.MessageSid;
       const messageBody = req.body.Body;
       const author = req.body.Author;
+      const dateCreated = req.body.DateCreated;
 
       console.log(`New message in conversation ${conversationSid}:`);
       console.log(`  Message SID: ${messageSid}`);
@@ -192,15 +192,26 @@ app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (r
         // Fetch conversation details
         const conversation = await fetchConversation(conversationSid);
 
-        // Broadcast the new message to all connected clients
+        // Broadcast the updated conversation to all connected clients via WebSocket
         broadcast({
           type: 'updateConversation',
           conversationSid: conversation.sid,
           friendlyName: conversation.friendlyName,
           lastMessage: messageBody,
-          lastMessageTime: req.body.DateCreated,
+          lastMessageTime: dateCreated,
           attributes: JSON.parse(conversation.attributes || '{}'),
         });
+        console.log('Broadcasted updateConversation event');
+
+        // Broadcast the newMessage event to all connected clients via WebSocket
+        broadcast({
+          type: 'newMessage',
+          conversationSid: conversation.sid,
+          author: author,
+          body: messageBody,
+          dateCreated: dateCreated,
+        });
+        console.log('Broadcasted newMessage event');
       } catch (error) {
         console.error('Error fetching conversation details:', error);
       }
@@ -225,6 +236,7 @@ app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (r
   // Twilio requires a valid response, even if empty
   res.status(200).send('<Response></Response>');
 });
+
 
 // Endpoint to list all conversations
 app.get('/conversations', async (req, res) => {
