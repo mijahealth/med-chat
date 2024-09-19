@@ -352,20 +352,32 @@ async function selectConversation(sid, displayName) {
     const selectedConversation = document.getElementById(`conv-${sid}`);
     selectedConversation.classList.add('selected');
 
+    // **Remove unread indicators immediately**
+    if (selectedConversation) {
+      selectedConversation.classList.remove('unread');
+      const unreadBadge = selectedConversation.querySelector('.unread-badge');
+      if (unreadBadge) {
+        unreadBadge.remove();
+      }
+    }
+
     // Fetch conversation details
     const response = await axios.get(`/conversations/${sid}`);
     const conversation = response.data;
     const attributes = conversation.attributes || {};
 
-    // Merge stored details with fetched details
-    const storedDetails = JSON.parse(selectedConversation.dataset.fullDetails || '{}');
-    const mergedDetails = { ...storedDetails, ...attributes };
+    // **Conditionally call mark-read without awaiting**
+    if (conversation.unreadCount > 0) {
+      axios.post(`/conversations/${sid}/mark-read`).catch((error) => {
+        console.error('Error marking messages as read:', error);
+      });
+    }
 
-    const name = mergedDetails.name || displayName;
-    const email = mergedDetails.email || '';
-    const phoneNumber = mergedDetails.phoneNumber || '';
-    const dob = mergedDetails.dob || '';
-    const state = mergedDetails.state || ''; // Use mergedDetails for state
+    const name = attributes.name || displayName;
+    const email = attributes.email || '';
+    const phoneNumber = attributes.phoneNumber || '';
+    const dob = attributes.dob || '';
+    const state = attributes.state || '';
 
     // Inject the conversation header and call controls
     document.getElementById('messages-title').innerHTML = `
@@ -410,20 +422,6 @@ async function selectConversation(sid, displayName) {
     document.getElementById('message-input').style.display = 'flex';
 
     scrollToBottom('messages');
-
-    // Mark messages as read
-    await axios.post(`/conversations/${sid}/mark-read`);
-    
-    // Update UI to remove unread indicators
-    const conversationDiv = document.getElementById(`conv-${sid}`);
-    conversationDiv.classList.remove('unread');
-    const unreadBadge = conversationDiv.querySelector('.unread-badge');
-    if (unreadBadge) {
-      unreadBadge.remove();
-    }
-
-    // Update the stored details with the latest data
-    selectedConversation.dataset.fullDetails = JSON.stringify(mergedDetails);
 
   } catch (error) {
     console.error('Error loading conversation:', error);
