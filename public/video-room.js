@@ -4,12 +4,17 @@ let videoRoom, localTrack, localAudioTrack;
 let isMuted = false;
 let isCameraOff = false;
 
+// Audio visualization
+let audioContext, analyser, dataArray;
+let animationFrame;
+
 async function setupVideo() {
   console.log('Setup video called');
   const roomName = window.location.pathname.split('/').pop();
   console.log('Room name:', roomName);
   
   try {
+    showLoading(true);
     console.log('Fetching token');
     const response = await axios.get('/token');
     const token = response.data.token;
@@ -19,9 +24,8 @@ async function setupVideo() {
     videoRoom = await Twilio.Video.connect(token, { name: roomName });
     console.log('Connected to video room:', videoRoom.name);
     
-    // Hide join button and show controls
     document.getElementById('join-call-btn').style.display = 'none';
-    document.getElementById('controls').style.display = 'block';
+    document.getElementById('video-controls').style.display = 'flex';
 
     videoRoom.participants.forEach(participantConnected);
     videoRoom.on('participantConnected', participantConnected);
@@ -30,17 +34,27 @@ async function setupVideo() {
     console.log('Creating local audio and video tracks');
     [localAudioTrack, localTrack] = await Promise.all([
       Twilio.Video.createLocalAudioTrack(),
-      Twilio.Video.createLocalVideoTrack()
+      Twilio.Video.createLocalVideoTrack().then(track => {
+        const localMediaContainer = document.getElementById('local-video');
+        localMediaContainer.appendChild(track.attach());
+        console.log('Camera loaded and local video track attached.');
+      }).catch(error => {
+        console.error('Failed to create local video track:', error);
+        alert('Could not access the camera. Please ensure the camera is working and the page has permission to access it.');
+      })
     ]);
-    const localMediaContainer = document.getElementById('local-video');
-    localMediaContainer.appendChild(localTrack.attach());
-    console.log('Local video track attached');
 
     setupControlListeners();
+    
+    const audioStream = new MediaStream([localAudioTrack.mediaStreamTrack]);
+    setupAudioVisualization(audioStream);
+    
+    showLoading(false);
 
   } catch (error) {
     console.error('Error connecting to video room:', error);
     alert('Failed to connect to the video room. Please try again.');
+    showLoading(false);
   }
 }
 
@@ -54,7 +68,7 @@ function toggleMute() {
   if (localAudioTrack) {
     isMuted = !isMuted;
     localAudioTrack.enable(!isMuted);
-    document.getElementById('mute-btn').textContent = isMuted ? 'Unmute' : 'Mute';
+    updateButtonState('mute-btn', isMuted);
   }
 }
 
@@ -62,7 +76,7 @@ function toggleCamera() {
   if (localTrack) {
     isCameraOff = !isCameraOff;
     localTrack.enable(!isCameraOff);
-    document.getElementById('camera-btn').textContent = isCameraOff ? 'Turn Camera On' : 'Turn Camera Off';
+    updateButtonState('camera-btn', isCameraOff);
   }
 }
 
@@ -70,6 +84,17 @@ function hangUp() {
   if (videoRoom) {
     videoRoom.disconnect();
     window.close();
+  }
+}
+
+function updateButtonState(buttonId, isActive) {
+  const button = document.getElementById(buttonId);
+  if (isActive) {
+    button.classList.add('bg-red-500', 'hover:bg-red-600');
+    button.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+  } else {
+    button.classList.remove('bg-red-500', 'hover:bg-red-600');
+    button.classList.add('bg-gray-200', 'hover:bg-gray-300');
   }
 }
 
@@ -110,8 +135,63 @@ function detachTrack(track) {
   console.log(`Detached ${track.kind} track from ${track.sid}`);
 }
 
+function showLoading(isLoading) {
+  const joinButton = document.getElementById('join-call-btn');
+  const loadingSpinner = document.getElementById('loading-spinner');
+  if (isLoading) {
+    joinButton.disabled = true;
+    joinButton.classList.add('opacity-50', 'cursor-not-allowed');
+    loadingSpinner.style.display = 'inline-block';
+    joinButton.querySelector('span').textContent = 'Joining...';
+  } else {
+    joinButton.disabled = false;
+    joinButton.classList.remove('opacity-50', 'cursor-not-allowed');
+    loadingSpinner.style.display = 'none';
+    joinButton.querySelector('span').textContent = 'Join Video Call';
+  }
+}
+
+function setupAudioVisualization(stream) {
+  if (!stream) {
+    console.error('No audio stream available for visualization');
+    return;
+  }
+  
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioContext.createAnalyser();
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(analyser);
+    analyser.fftSize = 256;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    updateAudioVisualization();
+  } catch (error) {
+    console.error('Error setting up audio visualization:', error);
+  }
+}
+
+function updateAudioVisualization() {
+  if (!analyser || !dataArray) return;
+  
+  try {
+    analyser.getByteFrequencyData(dataArray);
+    const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
+    const audioLevel = average / 128; // Normalize to 0-1 range
+    
+    const muteButton = document.getElementById('mute-btn');
+    if (muteButton) {
+      muteButton.style.boxShadow = `0 0 ${audioLevel * 20}px ${audioLevel * 10}px rgba(59, 130, 246, ${audioLevel})`;
+    }
+    
+    animationFrame = requestAnimationFrame(updateAudioVisualization);
+  } catch (error) {
+    console.error('Error updating audio visualization:', error);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', (event) => {
-  console.log('DOM fully loaded');
+  feather.replace(); // Initialize feather icons right when the DOM is fully loaded
+  console.log('DOM fully loaded and icons replaced');
   const joinCallBtn = document.getElementById('join-call-btn');
   if (joinCallBtn) {
     joinCallBtn.addEventListener('click', setupVideo);
