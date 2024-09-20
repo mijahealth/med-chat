@@ -127,35 +127,30 @@ function setupEventListeners() {
 
 async function startVideoCall() {
   try {
-    // Get the conversation SID from the current selected conversation
     const conversationSid = currentConversationSid;
-
-    // Get the phone number dynamically from the contact card (target the <span> element directly)
     const phoneElement = document.querySelector('.contact-item span');
     
-    // Check if the element exists and contains a phone number
     if (!phoneElement) {
       throw new Error('Phone number element not found');
     }
 
     const customerPhoneNumber = phoneElement.textContent.trim();
-
-    // Log the retrieved phone number for debugging
     console.log('Retrieved phone number:', customerPhoneNumber);
 
-    // Validate the phone number format (E.164 format)
     if (!/^\+[1-9]\d{1,14}$/.test(customerPhoneNumber)) {
       throw new Error(`Invalid phone number format: ${customerPhoneNumber}`);
     }
 
-    // Make API call to create the video room
     const response = await axios.post('/create-room', { customerPhoneNumber, conversationSid });
-    const roomLink = response.data.link;
+    const { link, roomName } = response.data;
 
-    // Optionally, handle the room link for debugging or display purposes
-    console.log('Room link:', roomLink);
+    console.log('Room link:', link);
+    
+    // Open the video room in a new window or tab
+    window.open(`/video-room/${roomName}`, '_blank');
   } catch (error) {
     console.error('Error starting video call:', error);
+    alert('Failed to start video call. Please try again.');
   }
 }
 
@@ -570,6 +565,7 @@ function sendMessage() {
 }
 
 function handleNewMessage(data) {
+  console.log('Handling new message:', data);
   // Play notification sound if the message is not from us
   if (data.author !== TWILIO_PHONE_NUMBER) {
     playNotificationSound();
@@ -600,6 +596,7 @@ function handleNewMessage(data) {
 }
 
 function updateConversationPreview(conversationSid, latestMessage) {
+  console.log('Updating conversation preview:', conversationSid, latestMessage);
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
 
   if (conversationDiv) {
