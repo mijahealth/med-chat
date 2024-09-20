@@ -17,6 +17,23 @@
         #video-container.active {
             display: grid !important;
         }
+        #video-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            display: none; /* Hide by default */
+        }
+        #video-controls.active {
+            display: flex !important;
+        }
+        @media (max-width: 640px) {
+            #video-container.active {
+                padding-bottom: 80px; /* Adjust based on your control bar height */
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col">
@@ -32,7 +49,7 @@
         <div id="local-video" class="aspect-video bg-gray-600 rounded-lg overflow-hidden shadow-lg md:col-start-2 md:row-start-1 w-full h-full"></div>
     </div>
 
-    <div id="video-controls" class="hidden justify-center space-x-4 p-4 bg-white shadow-lg">
+    <div id="video-controls" class="justify-center space-x-4 p-4 bg-white shadow-lg">
         <button id="mute-btn" class="p-3 rounded-full bg-gray-200 hover:bg-gray-300" aria-label="Mute">
             <i data-feather="mic"></i>
         </button>

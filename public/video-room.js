@@ -26,7 +26,7 @@ async function setupVideo() {
     
     document.getElementById('join-container').style.display = 'none';
     document.getElementById('video-container').classList.add('active');
-    document.getElementById('video-controls').style.display = 'flex';
+    document.getElementById('video-controls').classList.add('active');
 
     videoRoom.participants.forEach(participantConnected);
     videoRoom.on('participantConnected', participantConnected);
@@ -98,22 +98,58 @@ function toggleMute() {
   }
 }
 
-function toggleCamera() {
-  if (localTrack) {
-    isCameraOff = !isCameraOff;
-    localTrack.enable(!isCameraOff);
-    updateButtonState('camera-btn', isCameraOff);
-    console.log(`Camera is now ${isCameraOff ? 'off' : 'on'}.`);
-  } else {
-    console.error('No local video track available. Cannot toggle camera.');
-    alert('Camera is not available. Please check your device settings and try again.');
-  }
-}
-
 function hangUp() {
   if (videoRoom) {
     videoRoom.disconnect();
-    window.close();
+    // Clean up local tracks
+    if (localTrack) {
+      localTrack.stop();
+      localTrack = null;
+    }
+    if (localAudioTrack) {
+      localAudioTrack.stop();
+      localAudioTrack = null;
+    }
+    // Reset UI
+    document.getElementById('video-container').classList.remove('active');
+    document.getElementById('video-controls').classList.remove('active');
+    document.getElementById('join-container').style.display = 'flex';
+    // Clear video containers
+    document.getElementById('local-video').innerHTML = '';
+    document.getElementById('remote-video').innerHTML = '';
+    console.log('Call ended');
+  }
+}
+
+
+async function toggleCamera() {
+  if (videoRoom && videoRoom.localParticipant) {
+    isCameraOff = !isCameraOff;
+    if (isCameraOff) {
+      videoRoom.localParticipant.videoTracks.forEach(publication => {
+        publication.track.stop();
+        videoRoom.localParticipant.unpublishTrack(publication.track);
+      });
+      document.getElementById('local-video').innerHTML = '';
+    } else {
+      try {
+        const newVideoTrack = await Twilio.Video.createLocalVideoTrack();
+        await videoRoom.localParticipant.publishTrack(newVideoTrack);
+        const localMediaContainer = document.getElementById('local-video');
+        localMediaContainer.innerHTML = '';
+        localMediaContainer.appendChild(newVideoTrack.attach());
+        localTrack = newVideoTrack;
+      } catch (error) {
+        console.error('Error creating new video track:', error);
+        isCameraOff = !isCameraOff; // Revert the camera state
+        alert('Failed to turn on the camera. Please check your device settings and try again.');
+      }
+    }
+    updateButtonState('camera-btn', isCameraOff);
+    console.log(`Camera is now ${isCameraOff ? 'off' : 'on'}.`);
+  } else {
+    console.error('No video room or local participant available. Cannot toggle camera.');
+    alert('Camera control is not available. Please check your connection and try again.');
   }
 }
 
