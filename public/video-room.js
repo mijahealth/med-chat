@@ -24,7 +24,8 @@ async function setupVideo() {
     videoRoom = await Twilio.Video.connect(token, { name: roomName });
     console.log('Connected to video room:', videoRoom.name);
     
-    document.getElementById('join-call-btn').style.display = 'none';
+    document.getElementById('join-container').style.display = 'none';
+    document.getElementById('video-container').classList.add('active');
     document.getElementById('video-controls').style.display = 'flex';
 
     videoRoom.participants.forEach(participantConnected);
@@ -32,24 +33,42 @@ async function setupVideo() {
     videoRoom.on('participantDisconnected', participantDisconnected);
 
     console.log('Creating local audio and video tracks');
-    [localAudioTrack, localTrack] = await Promise.all([
-      Twilio.Video.createLocalAudioTrack(),
-      Twilio.Video.createLocalVideoTrack().then(track => {
-        const localMediaContainer = document.getElementById('local-video');
-        localMediaContainer.appendChild(track.attach());
-        console.log('Camera loaded and local video track attached.');
-      }).catch(error => {
-        console.error('Failed to create local video track:', error);
-        alert('Could not access the camera. Please ensure the camera is working and the page has permission to access it.');
-      })
-    ]);
+    try {
+      [localAudioTrack, localTrack] = await Promise.all([
+        Twilio.Video.createLocalAudioTrack(),
+        Twilio.Video.createLocalVideoTrack()
+      ]);
 
-    setupControlListeners();
-    
-    const audioStream = new MediaStream([localAudioTrack.mediaStreamTrack]);
-    setupAudioVisualization(audioStream);
-    
-    showLoading(false);
+      if (localTrack) {
+        const localMediaContainer = document.getElementById('local-video');
+        const videoElement = localTrack.attach();
+        localMediaContainer.innerHTML = ''; // Clear any existing content
+        localMediaContainer.appendChild(videoElement);
+        console.log('Local video track attached. Video element:', videoElement);
+      } else {
+        console.error('Failed to create local video track');
+      }
+
+      if (localAudioTrack) {
+        console.log('Local audio track created');
+      } else {
+        console.error('Failed to create local audio track');
+      }
+
+      console.log('Local video track:', localTrack);
+      
+      setupControlListeners();
+      
+      if (localAudioTrack) {
+        const audioStream = new MediaStream([localAudioTrack.mediaStreamTrack]);
+        setupAudioVisualization(audioStream);
+      }
+      
+      showLoading(false);
+    } catch (trackError) {
+      console.error('Error creating local tracks:', trackError);
+      alert('Could not access the camera or microphone. Please ensure they are working and the page has permission to access them.');
+    }
 
   } catch (error) {
     console.error('Error connecting to video room:', error);
@@ -59,11 +78,18 @@ async function setupVideo() {
 }
 
 function setupControlListeners() {
+  // Mute Button Listener
   document.getElementById('mute-btn').addEventListener('click', toggleMute);
-  document.getElementById('camera-btn').addEventListener('click', toggleCamera);
+
+  // Camera Button Listener with Debugging
+  document.getElementById('camera-btn').addEventListener('click', function() {
+    console.log('Camera button clicked'); // Debugging line
+    toggleCamera();
+  });
+
+  // Hangup Button Listener
   document.getElementById('hangup-btn').addEventListener('click', hangUp);
 }
-
 function toggleMute() {
   if (localAudioTrack) {
     isMuted = !isMuted;
@@ -77,6 +103,10 @@ function toggleCamera() {
     isCameraOff = !isCameraOff;
     localTrack.enable(!isCameraOff);
     updateButtonState('camera-btn', isCameraOff);
+    console.log(`Camera is now ${isCameraOff ? 'off' : 'on'}.`);
+  } else {
+    console.error('No local video track available. Cannot toggle camera.');
+    alert('Camera is not available. Please check your device settings and try again.');
   }
 }
 

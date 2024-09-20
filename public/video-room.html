@@ -8,6 +8,16 @@
     <script src="https://sdk.twilio.com/js/video/releases/2.15.2/twilio-video.min.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        #local-video video, #remote-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #video-container.active {
+            display: grid !important;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col">
     <div id="join-container" class="flex-grow flex items-center justify-center">
@@ -17,9 +27,9 @@
         </button>
     </div>
 
-    <div id="video-container" class="hidden flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-        <div id="remote-video" class="aspect-video bg-gray-800 rounded-lg overflow-hidden shadow-lg"></div>
-        <div id="local-video" class="aspect-video bg-gray-600 rounded-lg overflow-hidden shadow-lg md:col-start-2 md:row-start-1"></div>
+    <div id="video-container" class="hidden flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 p-4 h-full">
+        <div id="remote-video" class="aspect-video bg-gray-800 rounded-lg overflow-hidden shadow-lg w-full h-full"></div>
+        <div id="local-video" class="aspect-video bg-gray-600 rounded-lg overflow-hidden shadow-lg md:col-start-2 md:row-start-1 w-full h-full"></div>
     </div>
 
     <div id="video-controls" class="hidden justify-center space-x-4 p-4 bg-white shadow-lg">
