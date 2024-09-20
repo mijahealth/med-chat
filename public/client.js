@@ -55,6 +55,7 @@ async function initializeApp() {
     setupEventListeners();
     await loadConversations();
     setupWebSocket();
+    setupSearch();
     showNoConversationSelected();
   } catch (error) {
     log('Error initializing app', { error });
@@ -948,6 +949,59 @@ function startConversation(event) {
       });
   } else {
     alert('Please fill in all required fields.');
+  }
+}
+
+// **Search Functionality**
+
+function setupSearch() {
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.id = 'search-input';
+  searchInput.placeholder = 'Search conversations...';
+  searchInput.classList.add('search-input');
+
+  const sidebar = document.getElementById('sidebar');
+  sidebar.insertBefore(searchInput, sidebar.firstChild);
+
+  searchInput.addEventListener('input', debounce(performSearch, 300));
+}
+
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+async function performSearch() {
+  const query = document.getElementById('search-input').value.trim();
+  if (query === '') {
+    await loadConversations(); // Reset to show all conversations
+    return;
+  }
+
+  try {
+    const response = await axios.get(`/search?query=${encodeURIComponent(query)}`);
+    const results = response.data;
+
+    const conversationsDiv = document.getElementById('conversations');
+    conversationsDiv.innerHTML = ''; // Clear existing conversations
+
+    results.forEach((conversation) => {
+      addConversationToList(conversation);
+    });
+
+    attachDeleteListeners();
+
+    log(`Search completed. Found ${results.length} results for query: ${query}`);
+  } catch (error) {
+    log('Error performing search', { error });
   }
 }
 

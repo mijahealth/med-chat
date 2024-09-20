@@ -25,6 +25,8 @@ const {
   markMessagesAsRead,
 } = require('./modules/conversations');
 
+const { searchConversations, updateCache } = require('./modules/search');
+
 const setupWebSocket = require('./modules/websocket');
 
 // Create an Express application
@@ -580,6 +582,26 @@ app.post('/conversations/:sid/mark-read', async (req, res) => {
       error: `Failed to mark messages as read in conversation ${req.params.sid}`,
       details: err.message,
     });
+  }
+});
+
+// New endpoint for search
+app.get('/search', async (req, res) => {
+  const { query } = req.query;
+  if (!query) {
+    return res.status(400).json({ error: 'Search query is required' });
+  }
+
+  console.log(`Received search request with query: ${query}`);
+
+  try {
+    await updateCache(); // Ensure cache is up-to-date
+    const results = searchConversations(query);
+    console.log(`Found ${results.length} results for query: ${query}`);
+    res.json(results);
+  } catch (error) {
+    console.error('Error performing search:', error);
+    res.status(500).json({ error: 'An error occurred while searching' });
   }
 });
 

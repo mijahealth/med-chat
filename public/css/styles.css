@@ -641,3 +641,34 @@
   color: #666;
   margin-left: 10px;
 }
+
+/* Search Input Styles */
+.search-input {
+  width: calc(100% - 20px);
+  padding: 10px;
+  margin: 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  font-size: 1rem;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--message-right);
+  box-shadow: 0 0 5px rgba(0, 122, 255, 0.5);
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+/* Responsive styles for search input */
+@media (max-width: 768px) {
+  .search-input {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+}
