@@ -8,11 +8,15 @@
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
 <body>
-    <h1>Join Video Call</h1>
-    <div id="remote-video"></div>
-    <div id="local-video"></div>
-    <button id="join-call-btn">Join Call</button>
-
+  <h1>Video Call</h1>
+  <div id="remote-video"></div>
+  <div id="local-video"></div>
+  <button id="join-call-btn">Join Call</button>
+  <div id="controls" style="display: none;">
+      <button id="mute-btn">Mute</button>
+      <button id="camera-btn">Turn Camera Off</button>
+      <button id="hangup-btn">Hang Up</button>
+  </div>
     <script>
     console.log('Video room page loaded');
     </script>
