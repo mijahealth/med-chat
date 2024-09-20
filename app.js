@@ -128,7 +128,7 @@ app.get('/token', (req, res) => {
     const videoGrant = new VideoGrant();
     accessToken.addGrant(videoGrant); // Add VideoGrant to the token
 
-    console.log('Grant added to AccessToken');
+    console.log('Grants added to AccessToken');
 
     const token = accessToken.toJwt();
     console.log('JWT token generated successfully');
