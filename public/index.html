@@ -15,7 +15,6 @@
  <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 
- 
  <!-- Font Awesome for icons -->
  <link
    rel="stylesheet"
@@ -44,7 +43,20 @@
  </header>
  <main id="message-pane">
    <div id="messages-title">
-     <!-- The conversation header and call controls will be injected here by client.js -->
+     <!-- Conversation header (contact card) -->
+     <div id="contact-info" style="display: flex; justify-content: space-between; align-items: center;">
+       <div id="contact-details">
+         <!-- Contact details like name, phone number, etc. will be inserted here by client.js -->
+       </div>
+       <div id="contact-actions">
+         <button id="call-btn" aria-label="Start Call" title="Start Call">
+           <i data-feather="phone-call"></i>
+         </button>
+         <button id="start-video-call-btn" aria-label="Start Video Call" title="Start Video Call">
+           <i data-feather="video"></i>
+         </button>
+       </div>
+     </div>
    </div>
 
    <!-- Loading Spinner -->
@@ -85,8 +97,13 @@
   </div>
 </div>
 
- <!-- Scripts -->
- <script src="/client.js"></script>
- <div id="message-sent-indicator" class="message-sent-indicator">Message Sent</div>
+<!-- Scripts -->
+<script src="/client.js"></script>
+<script>
+  // Ensure Feather icons are replaced after loading
+  feather.replace();
+</script>
+
+<div id="message-sent-indicator" class="message-sent-indicator">Message Sent</div>
 </body>
 </html>

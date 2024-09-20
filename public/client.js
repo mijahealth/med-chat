@@ -116,6 +116,47 @@ function setupEventListeners() {
   } else {
     log('Messages div not found');
   }
+  // **Add the video call button listener here**
+  const startVideoCallBtn = document.getElementById('start-video-call-btn');
+  if (startVideoCallBtn) {
+    startVideoCallBtn.addEventListener('click', startVideoCall); // Your new video call button listener
+  } else {
+    log('Start video call button not found');
+  }
+}
+
+async function startVideoCall() {
+  try {
+    // Get the conversation SID from the current selected conversation
+    const conversationSid = currentConversationSid;
+
+    // Get the phone number dynamically from the contact card (target the <span> element directly)
+    const phoneElement = document.querySelector('.contact-item span');
+    
+    // Check if the element exists and contains a phone number
+    if (!phoneElement) {
+      throw new Error('Phone number element not found');
+    }
+
+    const customerPhoneNumber = phoneElement.textContent.trim();
+
+    // Log the retrieved phone number for debugging
+    console.log('Retrieved phone number:', customerPhoneNumber);
+
+    // Validate the phone number format (E.164 format)
+    if (!/^\+[1-9]\d{1,14}$/.test(customerPhoneNumber)) {
+      throw new Error(`Invalid phone number format: ${customerPhoneNumber}`);
+    }
+
+    // Make API call to create the video room
+    const response = await axios.post('/create-room', { customerPhoneNumber, conversationSid });
+    const roomLink = response.data.link;
+
+    // Optionally, handle the room link for debugging or display purposes
+    console.log('Room link:', roomLink);
+  } catch (error) {
+    console.error('Error starting video call:', error);
+  }
 }
 
 // **WebSocket Handling**
@@ -344,6 +385,9 @@ function setupConversationHeader(sid, name, email, phoneNumber, dob, state) {
           <button id="call-btn" aria-label="Start Call" title="Start Call">
             <i data-feather="phone-call"></i>
           </button>
+          <button id="start-video-call-btn" aria-label="Start Video Call" title="Start Video Call">
+            <i data-feather="video"></i>
+          </button>
           <button id="mute-btn" aria-label="Mute Call" title="Mute Call" style="display: none;">
             <i data-feather="mic-off"></i>
           </button>
@@ -364,6 +408,7 @@ function setupConversationHeader(sid, name, email, phoneNumber, dob, state) {
 
   // Attach event listeners for the call controls
   document.getElementById('call-btn').addEventListener('click', makeCall);
+  document.getElementById('start-video-call-btn').addEventListener('click', startVideoCall); // Add event listener for the video button
   document.getElementById('mute-btn').addEventListener('click', toggleMute);
   document.getElementById('end-call-btn').addEventListener('click', endCall);
 

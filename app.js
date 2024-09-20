@@ -10,6 +10,9 @@ const cors = require('cors');
 const twilio = require('twilio');
 const AccessToken = twilio.jwt.AccessToken;
 const VoiceGrant = AccessToken.VoiceGrant;
+const { VideoGrant } = AccessToken; // Add this to the imports
+const { createVideoRoom, sendRoomLinkToCustomer } = require('./modules/video'); // Import video functions
+
 
 const client = require('./twilioClient');
 const {
@@ -110,17 +113,21 @@ app.get('/token', (req, res) => {
     );
     console.log('AccessToken created for identity:', identity);
 
+    // Create a VoiceGrant for the token
     console.log('Creating VoiceGrant...');
-    const grant = new VoiceGrant({
+    const voiceGrant = new VoiceGrant({
       outgoingApplicationSid: process.env.TWILIO_TWIML_APP_SID,
       incomingAllow: true,
     });
-    console.log(
-      'VoiceGrant created with outgoingApplicationSid:',
-      process.env.TWILIO_TWIML_APP_SID
-    );
+    console.log('VoiceGrant created with outgoingApplicationSid:', process.env.TWILIO_TWIML_APP_SID);
 
-    accessToken.addGrant(grant);
+    accessToken.addGrant(voiceGrant); // Add VoiceGrant to the token
+
+    // Create a VideoGrant for the token
+    console.log('Creating VideoGrant...');
+    const videoGrant = new VideoGrant();
+    accessToken.addGrant(videoGrant); // Add VideoGrant to the token
+
     console.log('Grant added to AccessToken');
 
     const token = accessToken.toJwt();
@@ -165,6 +172,50 @@ app.post('/voice', (req, res) => {
 
   res.type('text/xml');
   res.send(twiml.toString());
+});
+
+//video
+app.post('/create-room', async (req, res) => {
+  try {
+    const { customerPhoneNumber, conversationSid } = req.body;
+
+    // Validate the phone number
+    if (!customerPhoneNumber || !/^\+[1-9]\d{1,14}$/.test(customerPhoneNumber)) {
+      return res.status(400).json({ error: 'Invalid customer phone number' });
+    }
+
+    // Create a new room using Twilio Video API
+    const room = await client.video.v1.rooms.create({ uniqueName: `VideoRoom_${Date.now()}` });
+    const roomLink = `${process.env.NGROK_URL}/video-room/${room.sid}`;
+
+    // Send SMS to the customer with the room link
+    await client.messages.create({
+      body: `Join the video call here: ${roomLink}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: customerPhoneNumber,
+    });
+
+    // Log the video room link in the conversation as a message
+    const messageText = `Join the video call here: ${roomLink}`;
+
+    // Use broadcast instead of socket.emit
+    broadcast({
+      type: 'newMessage',
+      conversationSid,
+      message: messageText,
+      author: process.env.TWILIO_PHONE_NUMBER,
+    });
+
+    // Return the room link to the client
+    res.json({ link: roomLink });
+  } catch (error) {
+    console.error('Error creating room or sending SMS:', error);
+    res.status(500).json({ error: 'Failed to create video room and send SMS' });
+  }
+});
+
+app.get('/video-room/:roomName', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'video-room.html')); // Serve a simple HTML file
 });
 
 app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (req, res) => {

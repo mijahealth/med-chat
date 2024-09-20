@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Join Video Room</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Your existing styles here */
+    #local-video, #remote-video {
+      border: 2px solid black;
+      margin: 10px;
+    }
+    #local-video {
+      width: 150px;
+      height: 100px;
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+    }
+    #remote-video {
+      width: 100%;
+      height: calc(100vh - 20px);
+    }
+  </style>
+</head>
+<body>
+  <h2>Join Video Call</h2>
+  <div id="remote-video"></div>
+  <div id="local-video"></div>
+  
+  <button id="join-call">Join Call</button>
+
+  <script src="https://sdk.twilio.com/js/video/releases/2.7.0/twilio-video.min.js"></script>
+  <script>
+    document.getElementById('join-call').addEventListener('click', async () => {
+      const tokenResponse = await fetch('/token');
+      const token = (await tokenResponse.json()).token;
+
+      const roomName = window.location.pathname.split('/').pop();
+      const room = await Twilio.Video.connect(token, { name: roomName });
+
+      setupLocalVideo(room);
+    });
+
+    function setupLocalVideo(room) {
+      // Attach the local video track
+      Twilio.Video.createLocalVideoTrack().then(track => {
+        const localContainer = document.getElementById('local-video');
+        localContainer.appendChild(track.attach());
+      });
+
+      // Handle remote participant connections
+      room.on('participantConnected', participant => {
+        console.log(`Participant ${participant.identity} connected`);
+        participant.tracks.forEach(publication => {
+          if (publication.isSubscribed) {
+            const track = publication.track;
+            document.getElementById('remote-video').appendChild(track.attach());
+          }
+        });
+
+        participant.on('trackSubscribed', track => {
+          document.getElementById('remote-video').appendChild(track.attach());
+        });
+      });
+    }
+  </script>
+</body>
+</html>
