@@ -8,10 +8,10 @@
   --message-right: #007aff;
   --message-left: #f1f1f1;
   --time-color: #cccccc;
- }
- 
- /* Dark Theme */
- [data-theme='dark'] {
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
   --background-color: #000000;
   --text-color: #e0e0e0;
   --sidebar-background: #1c1c1e;
@@ -20,10 +20,10 @@
   --message-right: #0a84ff;
   --message-left: #3a3a3c;
   --time-color: #a1a1a1;
- }
- 
- /* Global Styles */
- body {
+}
+
+/* Global Styles */
+body {
   display: flex;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Helvetica Neue', 'Segoe UI',
@@ -34,10 +34,10 @@
   overflow: hidden;
   background-color: var(--background-color);
   color: var(--text-color);
- }
- 
- /* Sidebar */
- #sidebar {
+}
+
+/* Layout Components */
+#sidebar {
   width: 400px;
   border-right: 1px solid #ccc;
   padding: 10px;
@@ -46,40 +46,39 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
- }
- 
- /* Message Pane */
- #message-pane {
+}
+
+#message-pane {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100vh;
- }
- 
- /* Messages Title */
- #messages-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #ccc;
+  width: 100%;
 }
- 
- #conversation-title {
+
+/* Messages Title */
+#messages-title {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+#conversation-title {
   font-size: 1rem;
   line-height: 1.4;
- }
- 
- #conversation-title a {
+}
+
+#conversation-title a {
   color: var(--text-color);
   text-decoration: underline;
- }
- 
- #conversation-title a:hover {
+}
+
+#conversation-title a:hover {
   text-decoration: none;
- }
- 
- .conversation-info {
+}
+
+/* Conversation Info */
+.conversation-info {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -87,10 +86,55 @@
   min-width: 0; /* Allows text to truncate if necessary */
 }
 
-.contact-name {
-  font-weight: bold;
-  font-size: 1rem;
+.contact-card-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 15px;
+  box-sizing: border-box;
+  border-bottom: 4px solid #e0e0e0;
 }
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  flex-grow: 1;
+}
+
+.contact-card-avatar {
+  margin-right: 20px;
+}
+
+.avatar-icon {
+  width: 48px;
+  height: 48px;
+  padding: 10px;
+  background-color: #e0e0e0;
+  border-radius: 50%;
+}
+
+.contact-card-content {
+  flex-grow: 1;
+}
+
+.contact-card-main {
+  display: flex;
+  align-items: flex-start;
+}
+
+.contact-name {
+  font-size: 1.2rem;
+  margin-bottom: 0.3rem;
+  margin-right: 20px;
+  min-width: 120px; /* Ensure some minimum width for the name */
+}
+
+.contact-card-details {
+  flex-grow: 1;
+}
+
 
 .contact-phone, .contact-email {
   font-size: 0.9rem;
@@ -99,37 +143,94 @@
   text-overflow: ellipsis;
 }
 
-.header-controls {
-  display: flex;
-  align-items: center;
+.contact-dob, .contact-state {
+  font-size: 0.9rem;
+  color: #666;
   margin-left: 10px;
 }
 
- /* Call Controls */
- #call-controls {
+.contact-info-row {
+  display: flex;
+  justify-content: flex-start; /* Change to flex-start for left alignment */
+  margin-bottom: 0.5rem;
+}
+
+.contact-item {
   display: flex;
   align-items: center;
-  margin-right: 10px;
+  gap: 0.5rem;
+  margin-right: 20px;
+  width: calc(50% - 10px); /* Set a fixed width for each item */
 }
- 
- #call-controls button {
+
+.contact-item:nth-child(2n) {
+  margin-right: 0;
+}
+
+.icon.contact-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  padding-left: 15px;
+}
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-right: 20px;
+}
+
+.contact-details strong {
+  font-size: 1.2rem;
+}
+
+.contact-details span,
+.contact-details a {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  text-decoration: none;
+  margin-top: 2px;
+}
+
+.contact-details a {
+  color: #007bff;
+}
+
+.contact-details a:hover {
+  text-decoration: underline;
+}
+
+/* Call Controls */
+#call-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#call-controls button {
   background-color: #007bff;
   border: none;
   color: #fff;
-  padding: 10px;
+  padding: 8px;
   border-radius: 50%;
   font-size: 1.2rem;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
   margin-right: 5px;
- }
- 
- #call-controls button:hover {
+}
+
+#call-controls button:hover {
   background-color: #0056b3;
   transform: scale(1.1);
- }
- 
- #call-status {
+}
+
+#call-status {
   margin-left: 10px;
   font-size: 0.9em;
   color: #ffffff;
@@ -138,113 +239,79 @@
   border-radius: 12px;
   display: inline-block;
   transition: background-color 0.3s ease;
- }
- 
- /* Specific Buttons */
- #call-btn {
+}
+
+#call-status:empty {
+  display: none;
+}
+
+/* Specific Buttons */
+#call-btn {
   background-color: #28a745;
- }
- 
- #call-btn:hover {
+}
+
+#call-btn:hover {
   background-color: #218838;
- }
- 
- #mute-btn {
+}
+
+#mute-btn {
   background-color: #ffc107;
- }
- 
- #mute-btn:hover {
+}
+
+#mute-btn:hover {
   background-color: #e0a800;
- }
- 
- #end-call-btn {
+}
+
+#end-call-btn {
   background-color: #dc3545;
- }
- 
- #end-call-btn:hover {
+}
+
+#end-call-btn:hover {
   background-color: #c82333;
- }
- 
- /* Call Status Variations */
- #call-status.calling {
+}
+
+/* Call Status Variations */
+#call-status.calling {
   background-color: #ffc107;
- }
- 
- #call-status.in-call {
+}
+
+#call-status.in-call {
   background-color: #28a745;
- }
- 
- #call-status.call-ended {
+}
+
+#call-status.call-ended {
   background-color: #dc3545;
- }
- 
- #call-status.call-error {
+}
+
+#call-status.call-error {
   background-color: #dc3545;
- }
- 
- /* Close Button */
- .close-button {
+}
+
+/* Close Button */
+.close-button {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 1.2rem;
-  padding: 5px;
+  padding: 15px;
+  margin-left: 10px;
+
 }
- 
- /* Conversation Info */
- .conversation-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0; /* Allows text to truncate if necessary */
-}
- 
- .contact-details {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  margin-right: 20px;
- }
- 
- .contact-details strong {
-  font-size: 1.2rem;
- }
- 
- #call-status:empty {
-  display: none;
- }
- 
- .contact-details span,
- .contact-details a {
-  font-size: 0.9rem;
-  color: var(--text-color);
-  text-decoration: none;
-  margin-top: 2px;
- }
- 
- .contact-details a {
-  color: #007bff;
- }
- 
- .contact-details a:hover {
-  text-decoration: underline;
- }
- 
- .close-button:hover {
+
+.close-button:hover {
   transform: scale(1.1);
- }
- 
- /* Messages */
- #messages {
+}
+
+/* Messages */
+#messages {
   flex: 1 1 auto;
   padding: 10px;
   overflow-y: auto;
   scroll-behavior: smooth;
   display: none;
- }
- 
- .message {
+}
+
+.message {
   margin-bottom: 10px;
   max-width: 75%;
   padding: 12px 16px;
@@ -257,53 +324,53 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   animation: fadeIn 0.2s ease;
- }
- 
- .message.right {
+}
+
+.message.right {
   margin-left: auto;
   background-color: var(--message-right);
   color: white;
   text-align: left;
   border-bottom-right-radius: 0;
- }
- 
- .message.left {
+}
+
+.message.left {
   margin-right: auto;
   background-color: var(--message-left);
   color: black;
   text-align: left;
   border-bottom-left-radius: 0;
- }
- 
- .message time {
+}
+
+.message time {
   font-size: 0.8em;
   color: var(--time-color);
   margin-left: 10px;
   flex-shrink: 0;
   align-self: flex-end;
- }
- 
- /* Message Input */
- #message-input {
+}
+
+/* Message Input */
+#message-input {
   display: flex;
   align-items: center;
   padding: 15px;
   border-top: 1px solid #ccc;
   background-color: #ffffff;
- }
- 
- #message-input input[type='text'] {
+}
+
+#message-input input[type='text'] {
   flex-grow: 1;
   padding: 12px;
   margin-right: 10px;
   border-radius: 20px;
- }
- 
- #message-input input[type='text']::placeholder {
+}
+
+#message-input input[type='text']::placeholder {
   color: #555;
- }
- 
- #message-input button {
+}
+
+#message-input button {
   padding: 12px 24px;
   background-color: var(--message-right);
   color: white;
@@ -312,43 +379,42 @@
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.2s ease;
- }
- 
- #message-input button:hover {
+}
+
+#message-input button:hover {
   background-color: #005bb5;
- }
- 
- #message-input button:focus,
- .conversation button:focus {
+}
+
+#message-input button:focus,
+.conversation button:focus {
   outline: 2px solid #005bb5;
   outline-offset: 2px;
- }
- 
- /* Conversations */
- .conversation {
-  font-size: 0.9rem; /* Reduced overall font size */
+}
+
+/* Conversations */
+.conversation {
+  font-size: 0.9rem;
   display: flex;
   flex-direction: column;
   position: relative;
   padding: 10px 15px;
   border-bottom: 1px solid #ccc;
   transition: background-color 0.2s ease;
- }
-
- .conversation strong {
-  font-size: 1rem; /* Slightly larger font for the name */
 }
- 
+
+.conversation strong {
+  font-size: 1rem;
+}
+
 .conversation-header {
   display: flex;
   align-items: center;
 }
- 
+
 .header-left {
   display: flex;
   flex-direction: column;
 }
-
 
 .header-left strong {
   font-size: 1rem;
@@ -359,11 +425,11 @@
   align-items: center;
 }
 
- .phone-number {
+.phone-number {
   font-size: 0.8rem;
   color: #666;
 }
- 
+
 .unread-indicator {
   width: 10px;
   height: 10px;
@@ -389,13 +455,13 @@
   justify-content: space-between;
   align-items: center;
 }
- 
+
 .time {
   font-size: 0.8rem;
   color: #888;
   margin-right: 10px;
 }
- 
+
 .delete-btn {
   background: none;
   border: none;
@@ -403,36 +469,32 @@
   font-size: 1rem;
   color: #ff3b30;
 }
- 
+
 .conversation-content {
-  padding-left: 30px; /* Aligns with the text in the header */
+  padding-left: 30px;
   margin-top: 5px;
 }
- 
- .conversation-info strong {
-  font-size: 1rem;
- }
- 
- .last-message {
+
+.last-message {
   font-size: 0.8em;
   color: #888;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex-grow: 1;
- }
- 
- .conversation:hover {
+}
+
+.conversation:hover {
   background-color: var(--conversation-hover);
   transform: scale(1.02);
- }
- 
- .conversation.selected {
+}
+
+.conversation.selected {
   background-color: var(--conversation-selected);
- }
- 
- /* Unread Badge */
- .unread-badge {
+}
+
+/* Unread Badge */
+.unread-badge {
   background-color: #007aff;
   color: white;
   border-radius: 50%;
@@ -443,6 +505,7 @@
   align-items: center;
   font-size: 0.8em;
 }
+
 .conversation.unread {
   font-weight: bold;
   background-color: rgba(0, 122, 255, 0.1);
@@ -450,196 +513,6 @@
 
 .conversation:not(.unread) .unread-indicator {
   display: none;
-}
- 
- /* Animations */
- @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
- }
- 
- /* Responsive Styles */
- @media (max-width: 768px) {
-  #sidebar {
-    width: 100%;
-    height: 50vh;
-  }
-  #message-pane {
-    height: 50vh;
-  }
-  #message-input input[type='text'] {
-    font-size: 0.9rem;
-  }
-  .message {
-    font-size: 0.9rem;
-  }
- }
- 
- @media (max-width: 480px) {
-  #sidebar {
-    width: 100%;
-    height: 40vh;
-  }
-  #message-pane {
-    height: 60vh;
-  }
-  #message-input input[type='text'] {
-    font-size: 0.8rem;
-  }
-  .message {
-    font-size: 0.8rem;
-  }
- }
- 
- /* Modal Styles */
- .modal {
-  display: none;
-  position: fixed;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  justify-content: center;
-  align-items: center;
- }
- 
- .modal-content {
-  background-color: #ffffff;
-  margin: auto;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-  width: 100%;
-  max-width: 500px;
-  animation: fadeInModal 0.3s ease;
- }
- 
- .modal h2 {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
-  color: #333;
-  text-align: center;
- }
- 
- .modal input[type='text'],
- .modal input[type='email'] {
-  width: calc(100% - 30px);
-  padding: 12px 15px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-  color: #333;
-  background-color: #f9f9f9;
- }
- 
- .modal input[type='text']:focus,
- .modal input[type='email']:focus {
-  border-color: #007aff;
-  outline: none;
- }
- 
- .modal textarea[name='message'] {
-  width: calc(100% - 30px);
-  padding: 12px 15px;
-  height: 100px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-  color: #333;
-  background-color: #f9f9f9;
-  resize: none;
- }
- 
- .modal button[type='submit'] {
-  width: 100%;
-  padding: 12px;
-  background-color: #007aff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
- }
- 
- .modal button[type='submit']:hover {
-  background-color: #005bb5;
- }
- 
- .close-modal {
-  float: right;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #aaa;
-  transition: color 0.3s ease;
- }
- 
- .close-modal:hover {
-  color: #333;
- }
- 
- @keyframes fadeInModal {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
- }
- 
- /* Spinner */
- .spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-top: 4px solid #007aff;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  display: none;
-  margin: auto;
- }
- 
- @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
- }
-
- .contact-dob {
-  font-size: 0.9rem;
-  color: #666;
-  margin-left: 10px;
-}
-
-.modal input[type='date'] {
-  width: calc(100% - 30px);
-  padding: 12px 15px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-  color: #333;
-  background-color: #f9f9f9;
-}
-
-.contact-state {
-  font-size: 0.9rem;
-  color: #666;
-  margin-left: 10px;
 }
 
 /* Search Input Styles */
@@ -665,10 +538,232 @@
   color: #999;
 }
 
-/* Responsive styles for search input */
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  margin: auto;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 500px;
+  animation: fadeInModal 0.3s ease;
+}
+
+.modal h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.modal input[type='text'],
+.modal input[type='email'],
+.modal input[type='date'] {
+  width: calc(100% - 30px);
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  color: #333;
+  background-color: #f9f9f9;
+}
+
+.modal input[type='text']:focus,
+.modal input[type='email']:focus,
+.modal input[type='date']:focus {
+  border-color: #007aff;
+  outline: none;
+}
+
+.modal textarea[name='message'] {
+  width: calc(100% - 30px);
+  padding: 12px 15px;
+  height: 100px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  color: #333;
+  background-color: #f9f9f9;
+  resize: none;
+}
+
+.modal button[type='submit'] {
+  width: 100%;
+  padding: 12px;
+  background-color: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.modal button[type='submit']:hover {
+  background-color: #005bb5;
+}
+
+.close-modal {
+  float: right;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #aaa;
+  transition: color 0.3s ease;
+}
+
+.close-modal:hover {
+  color: #333;
+}
+
+/* Spinner */
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid #007aff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  display: none;
+  margin: auto;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Styles */
 @media (max-width: 768px) {
-  .search-input {
-    font-size: 0.9rem;
-    padding: 8px;
+  .contact-card-main {
+    flex-direction: column;
+  }
+
+  .contact-name {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+
+  .contact-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .contact-item {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 0.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  #sidebar {
+    width: 100%;
+    height: 40vh;
+  }
+  #message-pane {
+    padding: 0;  /* Remove any padding that might be limiting width */
+    height: 60vh;
+  }
+  #message-input input[type='text'] {
+    font-size: 0.8rem;
+  }
+  .message {
+    font-size: 0.8rem;
+  }
+}
+
+.message-sent-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--secondary-color, #2ecc71);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 1000;
+}
+
+.message-sent-indicator.error {
+  background-color: var(--error-color, #e74c3c);
+}
+
+.message-sent-indicator.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes messageSent {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.message-sent-indicator.show {
+  animation: messageSent 0.3s ease;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+@media (max-width: 600px) {
+  .contact-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .contact-item {
+    margin-bottom: 0.2rem;
   }
 }

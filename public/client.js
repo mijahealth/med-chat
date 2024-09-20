@@ -60,6 +60,7 @@ async function initializeApp() {
   } catch (error) {
     log('Error initializing app', { error });
   }
+  feather.replace(); // Replace all Feather icons after the app is initialized
 }
 
 // **Event Listeners**
@@ -81,7 +82,9 @@ function setupEventListeners() {
   // New Conversation Button
   const newConversationBtn = document.getElementById('new-conversation-btn');
   if (newConversationBtn) {
+    newConversationBtn.innerHTML = '<i data-feather="plus" aria-hidden="true"></i>';
     newConversationBtn.addEventListener('click', openNewConversationModal);
+    feather.replace(); // Replace the new conversation button icon
   } else {
     log('New conversation button not found');
   }
@@ -198,7 +201,7 @@ function addConversationToList(conversation) {
     ? `<span class="unread-badge">${conversation.unreadCount}</span>`
     : '<span class="unread-indicator"></span>';
 
-  const conversationHtml = `
+    const conversationHtml = `
     <div class="conversation ${conversation.unreadCount > 0 ? 'unread' : ''}" id="conv-${conversation.sid}" onclick="selectConversation('${conversation.sid}', '${displayName}')">
       <div class="conversation-header">
         <div class="unread-indicator-column">
@@ -211,7 +214,9 @@ function addConversationToList(conversation) {
           </div>
           <div class="header-right">
             <span class="time">${lastMessageTime}</span>
-            <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">🗑️</button>
+            <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">
+              <i data-feather="trash-2" aria-hidden="true"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -222,6 +227,7 @@ function addConversationToList(conversation) {
   `;
 
   conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
+  feather.replace(); // Replace the newly added icon
 }
 
 function attachDeleteListeners() {
@@ -300,27 +306,56 @@ async function selectConversation(sid, displayName) {
 
 function setupConversationHeader(sid, name, email, phoneNumber, dob, state) {
   document.getElementById('messages-title').innerHTML = `
-    <div class="conversation-info">
-      <strong class="contact-name">${name}</strong>
-      <span class="contact-phone">${phoneNumber}</span>
-      <a class="contact-email" href="mailto:${email}">${email}</a>
-      <span class="contact-dob">DOB: ${dob}</span>
-      <span class="contact-state">State: ${state}</span>
-    </div>
-    <div class="header-controls">
-      <div id="call-controls">
-        <button id="call-btn" aria-label="Start Call" title="Start Call">
-          <i class="fas fa-phone"></i>
-        </button>
-        <button id="mute-btn" aria-label="Mute Call" title="Mute Call" style="display: none;">
-          <i class="fas fa-microphone-slash"></i>
-        </button>
-        <button id="end-call-btn" aria-label="End Call" title="End Call" style="display: none;">
-          <i class="fas fa-phone-slash"></i>
-        </button>
-        <span id="call-status"></span>
+    <div class="contact-card-wrapper">
+      <div class="contact-card">
+        <div class="contact-card-avatar">
+          <i data-feather="user" class="icon avatar-icon"></i>
+        </div>
+        <div class="contact-card-content">
+          <div class="contact-card-main">
+            <h2 class="contact-name">${name}</h2>
+            <div class="contact-card-details">
+              <div class="contact-info-row">
+                <div class="contact-item">
+                  <i data-feather="phone" class="icon contact-icon"></i>
+                  <span>${phoneNumber}</span>
+                </div>
+                <div class="contact-item">
+                  <i data-feather="mail" class="icon contact-icon"></i>
+                  <a href="mailto:${email}" target="_blank" rel="noopener noreferrer">${email}</a>
+                </div>
+              </div>
+              <div class="contact-info-row">
+                <div class="contact-item">
+                  <i data-feather="calendar" class="icon contact-icon"></i>
+                  <span>DOB: ${dob}</span>
+                </div>
+                <div class="contact-item">
+                  <i data-feather="map-pin" class="icon contact-icon"></i>
+                  <span>State: ${state}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">✕</button>
+      <div class="header-controls">
+        <div id="call-controls">
+          <button id="call-btn" aria-label="Start Call" title="Start Call">
+            <i data-feather="phone-call"></i>
+          </button>
+          <button id="mute-btn" aria-label="Mute Call" title="Mute Call" style="display: none;">
+            <i data-feather="mic-off"></i>
+          </button>
+          <button id="end-call-btn" aria-label="End Call" title="End Call" style="display: none;">
+            <i data-feather="phone-off"></i>
+          </button>
+          <span id="call-status"></span>
+        </div>
+        <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">
+          <i data-feather="x"></i>
+        </button>
+      </div>
     </div>
   `;
 
@@ -331,6 +366,9 @@ function setupConversationHeader(sid, name, email, phoneNumber, dob, state) {
   document.getElementById('call-btn').addEventListener('click', makeCall);
   document.getElementById('mute-btn').addEventListener('click', toggleMute);
   document.getElementById('end-call-btn').addEventListener('click', endCall);
+
+  // Replace Feather Icons placeholders with actual icons
+  feather.replace();
 }
 
 function closeConversation(wasDeleted = false) {
@@ -464,9 +502,25 @@ function sendMessage() {
     .then(() => {
       inputField.value = ''; // Clear the input field after sending the message
       log('Message sent', { message });
+      
+      // Show message sent indicator
+      const indicator = document.getElementById('message-sent-indicator');
+      indicator.textContent = 'Message Sent';
+      indicator.classList.add('show');
+      setTimeout(() => {
+        indicator.classList.remove('show');
+      }, 3000); // Hide after 3 seconds
     })
     .catch((error) => {
       log('Error sending message', { error });
+      
+      // Show error message to the user
+      const indicator = document.getElementById('message-sent-indicator');
+      indicator.textContent = 'Failed to send message';
+      indicator.classList.add('show', 'error');
+      setTimeout(() => {
+        indicator.classList.remove('show', 'error');
+      }, 3000); // Hide after 3 seconds
     });
 }
 
@@ -878,8 +932,9 @@ function playNotificationSound() {
 function toggleTheme() {
   currentTheme = currentTheme === 'light' ? 'dark' : 'light';
   document.body.setAttribute('data-theme', currentTheme);
-  const currentIcon = currentTheme === 'dark' ? '🌞' : '🌜';
-  document.getElementById('theme-toggle-btn').textContent = currentIcon;
+  const themeToggleBtn = document.getElementById('theme-toggle-btn');
+  themeToggleBtn.innerHTML = `<i data-feather="${currentTheme === 'dark' ? 'sun' : 'moon'}" aria-hidden="true"></i>`;
+  feather.replace(); // Replace the theme toggle icon
 }
 
 // **New Conversation Modal**
