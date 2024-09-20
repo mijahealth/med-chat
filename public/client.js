@@ -484,9 +484,13 @@ function handleNewMessage(data) {
   if (currentConversationSid === data.conversationSid) {
     appendMessage(data);
   } else {
-    markConversationAsUnread(data.conversationSid);
+    // Only increment unread count for messages not from us
+    if (data.author !== TWILIO_PHONE_NUMBER) {
+      incrementUnreadCount(data.conversationSid);
+    }
   }
 
+  // Update preview for all messages
   updateConversationPreview(data.conversationSid, {
     body: data.body,
     author: data.author,
@@ -619,9 +623,22 @@ function handleUpdateConversation(data) {
     // Move the conversation to the top of the list
     moveConversationToTop(data.conversationSid);
 
-    // If this is not the currently selected conversation, mark it as unread
-    if (currentConversationSid !== data.conversationSid) {
-      markConversationAsUnread(data.conversationSid);
+    // Don't mark as unread or increment count here
+  }
+}
+
+function incrementUnreadCount(conversationSid) {
+  const conversationDiv = document.getElementById(`conv-${conversationSid}`);
+  if (conversationDiv) {
+    conversationDiv.classList.add('unread');
+    let unreadBadge = conversationDiv.querySelector('.unread-badge');
+    if (unreadBadge) {
+      const currentCount = parseInt(unreadBadge.textContent) || 0;
+      unreadBadge.textContent = currentCount + 1;
+    } else {
+      conversationDiv.querySelector('.unread-indicator-column').innerHTML = `
+        <span class="unread-badge">1</span>
+      `;
     }
   }
 }

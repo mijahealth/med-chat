@@ -230,7 +230,8 @@ app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (r
     // Log the SMS message
     console.log(`SMS from ${from}: ${messageBody}`);
 
-    // Optionally, you can add code here to create a new conversation or forward the message
+    // Note: We're not processing this event for unread count or broadcasting,
+    // as it will be handled by the onMessageAdded event
   } else {
     console.log('Received unknown webhook format');
   }
