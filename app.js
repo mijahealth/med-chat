@@ -5,16 +5,17 @@ const http = require('http');
 const bodyParser = require('body-parser');
 const { body, param, validationResult } = require('express-validator');
 const path = require('path');
-const crypto = require('crypto');
 const cors = require('cors');
 const twilio = require('twilio');
 const AccessToken = twilio.jwt.AccessToken;
 const VoiceGrant = AccessToken.VoiceGrant;
-const { VideoGrant } = AccessToken; // Add this to the imports
+const VideoGrant = AccessToken.VideoGrant; // Corrected import
+
 const { createVideoRoom, sendRoomLinkToCustomer } = require('./modules/video'); // Import video functions
+const setupWebSocket = require('./modules/websocket'); // Correct import
 
+const smsServiceFactory = require('./modules/smsService'); // Import the SMS service
 
-const client = require('./twilioClient');
 const {
   getConversationByPhoneNumber,
   createConversation,
@@ -29,13 +30,16 @@ const {
 } = require('./modules/conversations');
 
 const { searchConversations, updateCache } = require('./modules/search');
-
-const setupWebSocket = require('./modules/websocket');
+const client = require('./twilioClient'); // Import Twilio client
 
 // Create an Express application
 const app = express();
 const server = http.createServer(app);
-const { broadcast } = setupWebSocket(server);
+const { broadcast } = setupWebSocket(server); // Initialize WebSocket and get broadcast function
+
+// Initialize SMS service with broadcast function
+const smsService = smsServiceFactory(broadcast);
+const { sendSMS } = smsService;
 
 // Middleware to set CORS headers
 app.use(cors());
@@ -178,7 +182,7 @@ app.post('/voice', (req, res) => {
   res.send(twiml.toString());
 });
 
-//video
+// Video Room Creation Endpoint
 app.post('/create-room', async (req, res) => {
   try {
     const { customerPhoneNumber, conversationSid } = req.body;
@@ -192,23 +196,13 @@ app.post('/create-room', async (req, res) => {
     const room = await client.video.v1.rooms.create({ uniqueName: `VideoRoom_${Date.now()}` });
     const roomLink = `${process.env.NGROK_URL}/video-room/${room.sid}`;
 
-    // Send SMS to the customer with the room link
-    await client.messages.create({
-      body: `Join the video call here: ${roomLink}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: customerPhoneNumber,
-    });
+    // Send SMS to the customer with the room link using the centralized sendSMS function
+    await sendSMS(customerPhoneNumber, `Join the video call here: ${roomLink}`, conversationSid, process.env.TWILIO_PHONE_NUMBER);
 
     // Log the video room link in the conversation as a message
     const messageText = `Join the video call here: ${roomLink}`;
 
-    // Use broadcast instead of socket.emit
-    broadcast({
-      type: 'newMessage',
-      conversationSid,
-      message: messageText,
-      author: process.env.TWILIO_PHONE_NUMBER,
-    });
+    // Broadcast is handled within sendSMS
 
     // Return the room link to the client
     res.json({ link: roomLink });
@@ -218,10 +212,12 @@ app.post('/create-room', async (req, res) => {
   }
 });
 
+// Serve Video Room HTML
 app.get('/video-room/:roomName', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'video-room.html')); // Serve a simple HTML file
 });
 
+// Twilio Webhook Endpoint
 app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (req, res) => {
   console.log('Webhook received at:', new Date().toISOString());
   console.log('Headers:', JSON.stringify(req.headers, null, 2));
@@ -294,7 +290,6 @@ app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (r
   // Twilio requires a valid response, even if empty
   res.status(200).send('<Response></Response>');
 });
-
 
 // Endpoint to list all conversations
 app.get('/conversations', async (req, res) => {
@@ -512,29 +507,16 @@ app.post(
 
       if (existingConversation) {
         console.log(`Existing conversation found with SID: ${existingConversation.sid}`);
-      
+       
         // Update existing conversation attributes
         await updateConversationAttributes(existingConversation.sid, attributes);
         console.log(`Updated attributes for conversation: ${existingConversation.sid}`);
-      
+       
         // Only add a new message if the request is from Zapier
         if (isZapierRequest) {
-          const newMessage = await addMessage(
-            existingConversation.sid,
-            message,
-            process.env.TWILIO_PHONE_NUMBER
-          );
+          // Use sendSMS instead of addMessage to centralize SMS sending
+          await sendSMS(phoneNumber, message, existingConversation.sid, process.env.TWILIO_PHONE_NUMBER);
           console.log(`New message added to existing conversation: ${message}`);
-      
-          // Broadcast the updated conversation to all connected clients via WebSocket
-          broadcast({
-            type: 'updateConversation',
-            conversationSid: existingConversation.sid,
-            friendlyName: name || `Conversation with ${phoneNumber}`,
-            lastMessage: message,
-            lastMessageTime: newMessage.dateCreated,
-            attributes: attributes,
-          });
         } else {
           // If not from Zapier, just update the conversation attributes
           broadcast({
@@ -544,7 +526,7 @@ app.post(
             attributes: attributes,
           });
         }
-      
+       
         res.json({ sid: existingConversation.sid, existing: true });
       } else {
         // Create a new conversation
@@ -558,19 +540,11 @@ app.post(
         // Add participant to the conversation
         await addParticipant(conversation.sid, phoneNumber);
 
-        // Send the initial message with a disclaimer
+        // Send the initial message with a disclaimer using sendSMS
         const firstMessage = `${message} (Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)`;
-        const newMessage = await addMessage(conversation.sid, firstMessage, process.env.TWILIO_PHONE_NUMBER);
+        await sendSMS(phoneNumber, firstMessage, conversation.sid, process.env.TWILIO_PHONE_NUMBER);
 
-        // Broadcast the new conversation to all connected clients via WebSocket
-        broadcast({
-          type: 'newConversation',
-          conversationSid: conversation.sid,
-          friendlyName: conversation.friendlyName,
-          lastMessage: firstMessage,
-          lastMessageTime: newMessage.dateCreated,
-          attributes: attributes,
-        });
+        // Broadcast is handled within sendSMS
 
         res.json({ sid: conversation.sid, existing: false });
       }

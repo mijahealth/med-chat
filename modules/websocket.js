@@ -1,4 +1,4 @@
-// websocket.js
+// modules/websocket.js
 const WebSocket = require('ws');
 
 function setupWebSocket(server) {
@@ -22,7 +22,7 @@ function setupWebSocket(server) {
     });
   }
 
-  return { wss, broadcast };
+  return { broadcast };
 }
 
 module.exports = setupWebSocket;
