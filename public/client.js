@@ -812,6 +812,18 @@ async function makeCall() {
     });
     const params = response.data;
 
+    // Send SMS notification
+    const smsMessage = `Your provider is going to call you from ${params.From} in 5 seconds.`;
+    await axios.post(`/conversations/${currentConversationSid}/messages`, {
+      message: smsMessage
+    });
+    
+    log('SMS notification sent. Waiting 5 seconds before initiating call...');
+    updateCallStatus('Notifying patient...');
+
+    // Wait for 5 seconds
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
     log('Initiating call...');
     call = device.connect({ To: params.To, From: params.From });
     updateCallStatus('Calling...');
