@@ -744,7 +744,9 @@ function incrementUnreadCount(conversationSid) {
 async function setupDevice() {
   try {
     log('Fetching token from server...');
+    const identity = 'user_' + Date.now();  // Generate a unique identity
     const response = await axios.get(`${NGROK_URL}/token`, {
+      params: { identity: identity },
       headers: {
         'ngrok-skip-browser-warning': 'true',
       },

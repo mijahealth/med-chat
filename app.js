@@ -91,6 +91,8 @@ app.get('/call-params/:sid', async (req, res) => {
 // Generate Twilio Access Token
 app.get('/token', (req, res) => {
   console.log('Token request received');
+  console.log('Query parameters:', req.query);  // Log all query parameters
+
   try {
     const requiredEnvVars = [
       'TWILIO_ACCOUNT_SID',
@@ -109,7 +111,11 @@ app.get('/token', (req, res) => {
     const identity = req.query.identity;
 
     if (!identity || identity.trim().length === 0) {
-      throw new Error('Identity is required');
+      console.error('Missing or empty identity in request');
+      return res.status(400).json({
+        error: 'Bad Request',
+        details: 'Identity is required and must not be empty'
+      });
     }
 
     console.log('Creating AccessToken for identity:', identity);
