@@ -8,96 +8,99 @@ let audioContext, analyser, dataArray;
 let animationFrame;
 
 async function setupVideo() {
-    console.log('Setup video called');
-    const roomName = window.location.pathname.split('/').pop().split('?')[0]; // Remove query parameters
-    console.log('Room name:', roomName);
+  const userName = document.getElementById('user-name').value.trim();
+  if (!userName) {
+      alert('Please enter your name before joining.');
+      return;
+  }
 
-    try {
-        showLoading(true);
-        console.log('Fetching token');
-        const response = await axios.get('/token');
-        const token = response.data.token;
-        console.log('Token received:', token.substr(0, 10) + '...' + token.substr(-10));
+  console.log('Setup video called');
+  const roomName = window.location.pathname.split('/').pop().split('?')[0];
+  console.log('Room name:', roomName);
 
-        console.log('Creating local audio and video tracks');
-        try {
-            // Create local tracks
-            [localAudioTrack, localTrack] = await Promise.all([
-                Twilio.Video.createLocalAudioTrack(),
-                Twilio.Video.createLocalVideoTrack()
-            ]);
+  try {
+      showLoading(true);
+      console.log('Fetching token');
+      const response = await axios.get(`/token?identity=${encodeURIComponent(userName)}`);
+      const { token, identity } = response.data;
+      console.log('Token received for identity:', identity);
+      console.log('Creating local audio and video tracks');
+      try {
+          // Create local tracks
+          [localAudioTrack, localTrack] = await Promise.all([
+              Twilio.Video.createLocalAudioTrack(),
+              Twilio.Video.createLocalVideoTrack()
+          ]);
 
-            // Publish local tracks
-            const tracksToPublish = [];
-            if (localAudioTrack) {
-                tracksToPublish.push(localAudioTrack);
-                console.log('Local audio track created and added to publish list');
-            } else {
-                console.error('Failed to create local audio track');
-            }
+          // Publish local tracks
+          const tracksToPublish = [];
+          if (localAudioTrack) {
+              tracksToPublish.push(localAudioTrack);
+              console.log('Local audio track created and added to publish list');
+          } else {
+              console.error('Failed to create local audio track');
+          }
 
-            if (localTrack) {
-                tracksToPublish.push(localTrack);
-                console.log('Local video track created and added to publish list');
-            } else {
-                console.error('Failed to create local video track');
-            }
+          if (localTrack) {
+              tracksToPublish.push(localTrack);
+              console.log('Local video track created and added to publish list');
+          } else {
+              console.error('Failed to create local video track');
+          }
 
-            // Connect to the video room with published tracks
-            console.log('Connecting to video room with local tracks');
-            videoRoom = await Twilio.Video.connect(token, { name: roomName, tracks: tracksToPublish });
-            console.log('Connected to video room:', videoRoom.name);
+          // Connect to the video room with published tracks
+          console.log('Connecting to video room with local tracks');
+          videoRoom = await Twilio.Video.connect(token, { 
+              name: roomName, 
+              tracks: tracksToPublish,
+              dominantSpeaker: true
+          });
+          console.log('Connected to video room:', videoRoom.name);
 
-            // Update UI
-            document.getElementById('join-container').style.display = 'none';
-            document.getElementById('video-container').classList.add('active');
-            document.getElementById('video-controls').classList.add('active');
+          // Update UI
+          document.getElementById('join-container').style.display = 'none';
+          document.getElementById('video-container').classList.add('active');
+          document.getElementById('video-controls').classList.add('active');
 
-            // Handle existing participants
-            videoRoom.participants.forEach(participantConnected);
-            videoRoom.on('participantConnected', participantConnected);
-            videoRoom.on('participantDisconnected', participantDisconnected);
+          // Handle existing participants
+          videoRoom.participants.forEach(participantConnected);
+          videoRoom.on('participantConnected', participantConnected);
+          videoRoom.on('participantDisconnected', participantDisconnected);
 
-            // Attach local video to DOM
-            if (localTrack) {
-                const localMediaContainer = document.getElementById('local-video');
-                const videoElement = localTrack.attach();
-                localMediaContainer.innerHTML = ''; // Clear any existing content
-                localMediaContainer.appendChild(videoElement);
-                console.log('Local video track attached. Video element:', videoElement);
-            }
+          // Attach local video to DOM and display local participant name
+          setupLocalParticipant(userName);
 
-            // Add event listeners for local audio track
-            if (localAudioTrack) {
-                console.log('Local audio track created');
-                localAudioTrack.on('enabled', () => {
-                    console.log('Local audio track enabled');
-                });
-                localAudioTrack.on('disabled', () => {
-                    console.log('Local audio track disabled');
-                });
-            }
+          // Add event listeners for local audio track
+          if (localAudioTrack) {
+              console.log('Local audio track created');
+              localAudioTrack.on('enabled', () => {
+                  console.log('Local audio track enabled');
+              });
+              localAudioTrack.on('disabled', () => {
+                  console.log('Local audio track disabled');
+              });
+          }
 
-            setupControlListeners();
+          setupControlListeners();
 
-            // Setup audio visualization
-            if (localAudioTrack) {
-                const audioStream = new MediaStream([localAudioTrack.mediaStreamTrack]);
-                setupAudioVisualization(audioStream);
-            }
+          // Setup audio visualization
+          if (localAudioTrack) {
+              const audioStream = new MediaStream([localAudioTrack.mediaStreamTrack]);
+              setupAudioVisualization(audioStream);
+          }
 
-            showLoading(false);
-        } catch (trackError) {
-            console.error('Error creating or publishing local tracks:', trackError);
-            alert('Could not access the camera or microphone. Please ensure they are working and the page has permission to access them.');
-            showLoading(false);
-        }
+          showLoading(false);
+      } catch (trackError) {
+          console.error('Error creating or publishing local tracks:', trackError);
+          alert('Could not access the camera or microphone. Please ensure they are working and the page has permission to access them.');
+          showLoading(false);
+      }
 
-    } catch (error) {
-        console.error('Error connecting to video room:', error);
-        alert('Failed to connect to the video room. Please try again.');
-        showLoading(false);
-    }
+  } catch (error) {
+      console.error('Error connecting to video room:', error);
+      alert('Failed to connect to the video room. Please try again.');
+      showLoading(false);
+  }
 }
 
 function setupControlListeners() {
@@ -185,32 +188,44 @@ function updateButtonState(buttonId, isActive) {
 }
 
 function participantConnected(participant) {
-    console.log('Participant connected:', participant.identity);
-    const remoteMediaContainer = document.getElementById('remote-video');
+  console.log('Participant connected:', participant.identity);
+  const remoteMediaContainer = document.getElementById('remote-video');
 
-    participant.tracks.forEach(publication => {
-        if (publication.isSubscribed) {
-            attachTrack(publication.track, remoteMediaContainer);
-        }
-    });
+  const participantContainer = document.createElement('div');
+  participantContainer.id = participant.sid;
+  participantContainer.classList.add('relative', 'w-full', 'h-full');
 
-    participant.on('trackSubscribed', track => {
-        attachTrack(track, remoteMediaContainer);
-    });
+  const nameOverlay = document.createElement('div');
+  nameOverlay.textContent = participant.identity;
+  nameOverlay.classList.add('absolute', 'bottom-2', 'left-2', 'bg-black', 'bg-opacity-50', 'text-white', 'px-2', 'py-1', 'rounded', 'z-10');
+  participantContainer.appendChild(nameOverlay);
 
-    participant.on('trackUnsubscribed', track => {
-        detachTrack(track);
-    });
+  remoteMediaContainer.appendChild(participantContainer);
 
-    participant.on('disconnected', () => {
-        console.log('Participant disconnected:', participant.identity);
-    });
+  participant.tracks.forEach(publication => {
+      if (publication.isSubscribed) {
+          attachTrack(publication.track, participantContainer);
+      }
+  });
+
+  participant.on('trackSubscribed', track => {
+      attachTrack(track, participantContainer);
+  });
+
+  participant.on('trackUnsubscribed', track => {
+      detachTrack(track);
+  });
+
+  participant.on('disconnected', () => {
+      console.log('Participant disconnected:', participant.identity);
+      participantContainer.remove();
+  });
 }
 
 function attachTrack(track, container) {
-    const element = track.attach();
-    container.appendChild(element);
-    console.log(`Attached ${track.kind} track from ${track.sid}`);
+  const element = track.attach();
+  container.appendChild(element);
+  console.log(`Attached ${track.kind} track from ${track.sid}`);
 }
 
 function participantDisconnected(participant) {
@@ -222,11 +237,29 @@ function participantDisconnected(participant) {
     });
 }
 
+function setupLocalParticipant(userName) {
+  const localMediaContainer = document.getElementById('local-video');
+  localMediaContainer.classList.add('relative', 'w-full', 'h-full');
+
+  if (localTrack) {
+      const videoElement = localTrack.attach();
+      videoElement.classList.add('w-full', 'h-full', 'object-cover');
+      localMediaContainer.innerHTML = ''; // Clear any existing content
+      localMediaContainer.appendChild(videoElement);
+      console.log('Local video track attached. Video element:', videoElement);
+  }
+
+  const nameOverlay = document.createElement('div');
+  nameOverlay.textContent = userName;
+  nameOverlay.classList.add('absolute', 'bottom-2', 'left-2', 'bg-black', 'bg-opacity-50', 'text-white', 'px-2', 'py-1', 'rounded', 'z-10');
+  localMediaContainer.appendChild(nameOverlay);
+}
+
 function detachTrack(track) {
-    track.detach().forEach(element => {
-        element.remove();
-    });
-    console.log(`Detached ${track.kind} track from ${track.sid}`);
+  track.detach().forEach(element => {
+      element.remove();
+  });
+  console.log(`Detached ${track.kind} track from ${track.sid}`);
 }
 
 function showLoading(isLoading) {
@@ -288,44 +321,23 @@ function updateAudioVisualization() {
 }
 
 document.addEventListener('DOMContentLoaded', (event) => {
-    feather.replace(); // Initialize feather icons right when the DOM is fully loaded
-    console.log('DOM fully loaded and icons replaced');
+  feather.replace();
+  console.log('DOM fully loaded and icons replaced');
 
-    const joinCallBtn = document.getElementById('join-call-btn');
-    if (joinCallBtn) {
-        joinCallBtn.addEventListener('click', setupVideo);
-        console.log('Join call button listener added');
-    } else {
-        console.error('Join call button not found');
-    }
+  const joinCallBtn = document.getElementById('join-call-btn');
+  const userNameInput = document.getElementById('user-name');
 
-    // Optional: Create Room Modal Logic
-    /*
-    const createRoomModal = document.getElementById('create-room-modal');
-    const openCreateRoomBtn = document.getElementById('open-create-room');
-    const createRoomForm = document.getElementById('create-room-form');
-
-    if (openCreateRoomBtn && createRoomModal && createRoomForm) {
-        openCreateRoomBtn.addEventListener('click', () => {
-            createRoomModal.classList.remove('hidden');
-        });
-
-        createRoomForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const password = document.getElementById('room-password').value;
-
-            try {
-                const response = await axios.post('/create-room', { password });
-                const { roomName } = response.data;
-                // Redirect to the new room
-                window.location.href = `/room/${roomName}`;
-            } catch (error) {
-                console.error('Error creating room:', error);
-                alert('Failed to create room. Please try again.');
-            }
-        });
-    } else {
-        console.error('Create room elements not found');
-    }
-    */
+  if (joinCallBtn && userNameInput) {
+      joinCallBtn.addEventListener('click', () => {
+          if (userNameInput.value.trim()) {
+              setupVideo();
+              setupLocalParticipant(userNameInput.value.trim());
+          } else {
+              alert('Please enter your name before joining.');
+          }
+      });
+      console.log('Join call button listener added');
+  } else {
+      console.error('Join call button or user name input not found');
+  }
 });

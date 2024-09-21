@@ -101,10 +101,14 @@ app.get('/token', (req, res) => {
       throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
     }
 
-    // Generate a unique identity for this token
-    const identity = 'browser-user-' + crypto.randomBytes(6).toString('hex');
+    // Use the provided identity from the query parameter
+    const identity = req.query.identity;
 
-    console.log('Creating AccessToken...');
+    if (!identity || identity.trim().length === 0) {
+      throw new Error('Identity is required');
+    }
+
+    console.log('Creating AccessToken for identity:', identity);
     const accessToken = new AccessToken(
       process.env.TWILIO_ACCOUNT_SID,
       process.env.TWILIO_API_KEY,

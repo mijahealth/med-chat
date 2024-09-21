@@ -39,11 +39,13 @@
 <body class="bg-gray-100 h-screen flex flex-col">
     <!-- Join Call Container -->
     <div id="join-container" class="flex-grow flex items-center justify-center">
-        <button id="join-call-btn" class="px-8 py-4 text-xl font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-300 ease-in-out transform hover:scale-105">
-            <span>Join Video Call</span>
-            <span id="loading-spinner" class="hidden ml-3 animate-spin">&#9696;</span>
-        </button>
-    </div>
+        <div class="space-y-4">
+          <input type="text" id="user-name" placeholder="Enter your name" class="px-4 py-2 border rounded" required>
+          <button id="join-call-btn" class="px-4 py-2 bg-blue-500 text-white rounded">
+            Join Video Call <span id="loading-spinner" class="hidden ml-3 animate-spin">◠</span>
+          </button>
+        </div>
+      </div>
 
     <!-- Video Container -->
     <div id="video-container" class="hidden flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 p-4 h-full">
