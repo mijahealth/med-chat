@@ -183,29 +183,35 @@ app.post('/create-room', async (req, res) => {
   try {
     const { customerPhoneNumber, conversationSid } = req.body;
 
+    // Validate the phone number
     if (!customerPhoneNumber || !/^\+[1-9]\d{1,14}$/.test(customerPhoneNumber)) {
       return res.status(400).json({ error: 'Invalid customer phone number' });
     }
 
-    const room = await createVideoRoom();
-    const roomLink = await sendRoomLinkToCustomer(room.name, customerPhoneNumber, process.env.NGROK_URL);
+    // Create a new room using Twilio Video API
+    const room = await client.video.v1.rooms.create({ uniqueName: `VideoRoom_${Date.now()}` });
+    const roomLink = `${process.env.NGROK_URL}/video-room/${room.sid}`;
+
+    // Send SMS to the customer with the room link
+    await client.messages.create({
+      body: `Join the video call here: ${roomLink}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: customerPhoneNumber,
+    });
 
     // Log the video room link in the conversation as a message
     const messageText = `Join the video call here: ${roomLink}`;
-    const newMessage = await addMessage(conversationSid, messageText, process.env.TWILIO_PHONE_NUMBER);
-    await addMessage(conversationSid, messageText, process.env.TWILIO_PHONE_NUMBER);
 
-    // Broadcast the new message
+    // Use broadcast instead of socket.emit
     broadcast({
       type: 'newMessage',
       conversationSid,
-      messageSid: newMessage.sid, // Add this line
-      body: messageText,
+      message: messageText,
       author: process.env.TWILIO_PHONE_NUMBER,
-      dateCreated: new Date().toISOString(), // Add this line
     });
 
-    res.json({ link: roomLink, roomName: room.name });
+    // Return the room link to the client
+    res.json({ link: roomLink });
   } catch (error) {
     console.error('Error creating room or sending SMS:', error);
     res.status(500).json({ error: 'Failed to create video room and send SMS' });
