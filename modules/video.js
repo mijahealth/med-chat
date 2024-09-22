@@ -14,25 +14,6 @@ async function createVideoRoom() {
   }
 }
 
-// Function to send room link to customer via SMS
-async function sendRoomLinkToCustomer(roomName, customerPhoneNumber, ngrokUrl, conversationSid, sendSMS) {
-  try {
-    const roomLink = `${ngrokUrl}/video-room/${roomName}`;
-    await sendSMS(
-      customerPhoneNumber,
-      `Join the video call here: ${roomLink}`,
-      conversationSid,
-      process.env.TWILIO_PHONE_NUMBER
-    );
-    logger.info('Video room link sent via SMS', { customerPhoneNumber, roomLink, conversationSid });
-    return roomLink;
-  } catch (error) {
-    logger.error('Error sending video room link via SMS', { error });
-    throw error;
-  }
-}
-
 module.exports = {
   createVideoRoom,
-  sendRoomLinkToCustomer,
 };

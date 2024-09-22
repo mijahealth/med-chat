@@ -2,7 +2,7 @@
 const { createLogger, format, transports } = require('winston');
 
 const logger = createLogger({
-  level: 'info', // Adjust log level as needed (e.g., 'debug', 'warn', 'error')
+  level: 'info', // Adjust log level as needed (e.g., 'debug', 'error')
   format: format.combine(
     format.timestamp(),
     format.printf(({ timestamp, level, message, ...meta }) => {
@@ -13,7 +13,7 @@ const logger = createLogger({
   ),
   transports: [
     new transports.Console(),
-    // Additional transports can be added here (e.g., File, HTTP)
+    // You can add file transports or other transports as needed
   ],
 });
 

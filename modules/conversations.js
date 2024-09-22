@@ -118,6 +118,8 @@ async function markMessagesAsRead(conversationSid) {
           .update({ attributes: JSON.stringify({ read: true }) })
       )
     );
+
+    logger.info('Marked messages as read', { conversationSid, count: messagesToUpdate.length });
   } catch (error) {
     logger.error('Error marking messages as read', { conversationSid, error });
     throw error;
