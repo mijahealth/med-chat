@@ -1,56 +1,60 @@
 // modules/search.js
-
 const client = require('../twilioClient');
+const logger = require('./logger');
 
 // Cache to store conversation data
 let conversationCache = [];
 let lastCacheUpdate = 0;
+const CACHE_TTL = 60000; // 60 seconds
 
-// Function to update the cache
+// Update Cache Function
 async function updateCache() {
-  console.log('Updating conversation cache');
   const now = Date.now();
-  if (now - lastCacheUpdate > 60000) { // Update cache every minute
+  if (now - lastCacheUpdate > CACHE_TTL) {
     try {
+      logger.info('Updating conversation cache');
       const conversations = await client.conversations.v1.conversations.list();
-      conversationCache = await Promise.all(conversations.map(async (conv) => {
-        const participants = await client.conversations.v1.conversations(conv.sid).participants.list();
-        const attributes = JSON.parse(conv.attributes || '{}');
-        return {
-          sid: conv.sid,
-          friendlyName: conv.friendlyName,
-          phoneNumber: participants[0]?.messagingBinding?.address || '',
-          email: attributes.email || '',
-          name: attributes.name || '',
-          lastMessage: conv.lastMessage?.body || '',
-          lastMessageTime: conv.lastMessage?.dateCreated || null,
-        };
-      }));
+      conversationCache = await Promise.all(
+        conversations.map(async (conv) => {
+          const participants = await client.conversations.v1.conversations(conv.sid).participants.list();
+          const attributes = JSON.parse(conv.attributes || '{}');
+          return {
+            sid: conv.sid,
+            friendlyName: conv.friendlyName,
+            phoneNumber: participants[0]?.messagingBinding?.address || '',
+            email: attributes.email || '',
+            name: attributes.name || '',
+            lastMessage: conv.lastMessage?.body || '',
+            lastMessageTime: conv.lastMessage?.dateCreated || null,
+          };
+        })
+      );
       lastCacheUpdate = now;
-      console.log(`Cache updated with ${conversationCache.length} conversations`);
+      logger.info(`Cache updated with ${conversationCache.length} conversations`);
     } catch (error) {
-      console.error('Error updating conversation cache:', error);
+      logger.error('Error updating conversation cache', { error });
     }
   }
 }
 
-// Function to perform the search
+// Search Function
 function searchConversations(query) {
-  console.log(`Searching conversations with query: ${query}`);
+  logger.info('Performing search', { query });
   const normalizedQuery = query.toLowerCase();
-  return conversationCache.filter(conv => 
-    conv.phoneNumber.includes(normalizedQuery) ||
-    conv.email.toLowerCase().includes(normalizedQuery) ||
-    conv.name.toLowerCase().includes(normalizedQuery) ||
-    conv.friendlyName.toLowerCase().includes(normalizedQuery)
+  return conversationCache.filter(
+    (conv) =>
+      conv.phoneNumber.includes(normalizedQuery) ||
+      conv.email.toLowerCase().includes(normalizedQuery) ||
+      conv.name.toLowerCase().includes(normalizedQuery) ||
+      conv.friendlyName.toLowerCase().includes(normalizedQuery)
   );
 }
 
-// Initialize cache
+// Initialize Cache
 updateCache();
 
-// Set up interval to update cache every minute
-setInterval(updateCache, 60000);
+// Periodic Cache Update
+setInterval(updateCache, CACHE_TTL);
 
 module.exports = {
   searchConversations,

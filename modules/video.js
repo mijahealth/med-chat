@@ -1,37 +1,38 @@
 // modules/video.js
-const { sendSMS } = require('./smsService'); // Import the SMS service
-const client = require('../twilioClient'); // Assuming this is where Twilio client is configured
+const client = require('../twilioClient');
+const logger = require('./logger');
 
 // Function to create a video room
 async function createVideoRoom() {
-   try {
-     const room = await client.video.v1.rooms.create({ uniqueName: `VideoRoom_${Date.now()}` });
-     return {
-       sid: room.sid,
-       name: room.uniqueName
-     };
-   } catch (error) {
-     console.error('Error creating Twilio video room:', error);
-     throw error;
-   }
+  try {
+    const room = await client.video.v1.rooms.create({ uniqueName: `VideoRoom_${Date.now()}` });
+    logger.info('Video room created', { roomSid: room.sid });
+    return { sid: room.sid, name: room.uniqueName };
+  } catch (error) {
+    logger.error('Error creating video room', { error });
+    throw error;
+  }
 }
 
-// Refactored function to send room link to customer using sendSMS
-async function sendRoomLinkToCustomer(roomName, customerPhoneNumber, ngrokUrl, conversationSid) {
-   try {
-     const roomLink = `${ngrokUrl}/video-room/${roomName}`;
-     
-     // Use the centralized sendSMS function
-     await sendSMS(customerPhoneNumber, `Join the video call here: ${roomLink}`, conversationSid, process.env.TWILIO_PHONE_NUMBER);
-     
-     return roomLink;
-   } catch (error) {
-     console.error('Error sending SMS:', error);
-     throw error;
-   }
+// Function to send room link to customer via SMS
+async function sendRoomLinkToCustomer(roomName, customerPhoneNumber, ngrokUrl, conversationSid, sendSMS) {
+  try {
+    const roomLink = `${ngrokUrl}/video-room/${roomName}`;
+    await sendSMS(
+      customerPhoneNumber,
+      `Join the video call here: ${roomLink}`,
+      conversationSid,
+      process.env.TWILIO_PHONE_NUMBER
+    );
+    logger.info('Video room link sent via SMS', { customerPhoneNumber, roomLink, conversationSid });
+    return roomLink;
+  } catch (error) {
+    logger.error('Error sending video room link via SMS', { error });
+    throw error;
+  }
 }
 
 module.exports = {
- createVideoRoom,
- sendRoomLinkToCustomer,
+  createVideoRoom,
+  sendRoomLinkToCustomer,
 };
