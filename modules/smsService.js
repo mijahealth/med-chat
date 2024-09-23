@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 // modules/smsService.js
 const client = require('../twilioClient');
 const logger = require('./logger');
@@ -54,49 +52,38 @@ function smsService(broadcast) {
     }
   
     try {
-      // Send SMS via Twilio
-      logger.info('Sending SMS via Twilio', { to, body });
-      const message = await client.messages.create({
-        body,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to,
-      });
-      logger.info('SMS sent via Twilio', { messageSid: message.sid, to, body });
-  
-      // Add to cache to prevent duplicates
-      addToCache(messageKey);
-      logger.info('Added message to cache', { messageKey });
-  
-      // Add message to conversation if SID provided
       if (conversationSid) {
-        logger.info('Adding message to conversation', { conversationSid, body });
+        // Send SMS via conversation messaging binding
+        logger.info('Sending SMS via Conversation', { conversationSid, body });
         const conversationMessage = await client.conversations.v1.conversations(conversationSid).messages.create({
           body,
           author: author || process.env.TWILIO_PHONE_NUMBER,
         });
         logger.info('Message added to conversation', { conversationSid, conversationMessageSid: conversationMessage.sid });
-      }
-  
-      // Prepare message details for broadcasting
-      const messageDetails = {
-        type: 'newMessage',
-        conversationSid,
-        messageSid: message.sid,
-        author: author || process.env.TWILIO_PHONE_NUMBER,
-        body,
-        dateCreated: new Date().toISOString(),
-      };
-  
-      // Broadcast the new message
-      if (typeof broadcast === 'function') {
-        logger.info('Broadcasting new message', { messageDetails });
-        broadcast(messageDetails);
-      } else {
-        logger.warn('Broadcast function is not available', { messageDetails });
-      }
-  
-      // Update conversation preview if applicable
-      if (conversationSid) {
+
+        // Add to cache to prevent duplicates
+        addToCache(messageKey);
+        logger.info('Added message to cache', { messageKey });
+
+        // Prepare message details for broadcasting
+        const messageDetails = {
+          type: 'newMessage',
+          conversationSid,
+          messageSid: conversationMessage.sid,
+          author: author || process.env.TWILIO_PHONE_NUMBER,
+          body,
+          dateCreated: new Date().toISOString(),
+        };
+
+        // Broadcast the new message
+        if (typeof broadcast === 'function') {
+          logger.info('Broadcasting new message', { messageDetails });
+          broadcast(messageDetails);
+        } else {
+          logger.warn('Broadcast function is not available', { messageDetails });
+        }
+
+        // Update conversation preview if applicable
         try {
           logger.info('Fetching conversation for update', { conversationSid });
           const conversation = await client.conversations.v1.conversations(conversationSid).fetch();
@@ -115,16 +102,55 @@ function smsService(broadcast) {
         } catch (convError) {
           logger.error('Error fetching conversation for update', { conversationSid, error: convError });
         }
+
+        logger.info('SMS sent successfully via Conversation', { 
+          to, 
+          body, 
+          conversationSid, 
+          messageSid: conversationMessage.sid
+        });
+
+        return { success: true, messageSid: conversationMessage.sid };
+      } else {
+        // Send SMS directly via messages.create
+        logger.info('Sending SMS via Twilio Messages API', { to, body });
+        const message = await client.messages.create({
+          body,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to,
+        });
+        logger.info('SMS sent via Twilio Messages API', { messageSid: message.sid, to, body });
+  
+        // Add to cache to prevent duplicates
+        addToCache(messageKey);
+        logger.info('Added message to cache', { messageKey });
+  
+        // Prepare message details for broadcasting
+        const messageDetails = {
+          type: 'newMessage',
+          to,
+          messageSid: message.sid,
+          author: process.env.TWILIO_PHONE_NUMBER,
+          body,
+          dateCreated: new Date().toISOString(),
+        };
+  
+        // Broadcast the new message
+        if (typeof broadcast === 'function') {
+          logger.info('Broadcasting new message', { messageDetails });
+          broadcast(messageDetails);
+        } else {
+          logger.warn('Broadcast function is not available', { messageDetails });
+        }
+  
+        logger.info('SMS sent successfully via Messages API', { 
+          to, 
+          body, 
+          messageSid: message.sid
+        });
+  
+        return { success: true, messageSid: message.sid };
       }
-  
-      logger.info('SMS sent successfully', { 
-        to, 
-        body, 
-        conversationSid, 
-        messageSid: message.sid
-      });
-  
-      return { success: true, messageSid: message.sid };
     } catch (error) {
       logger.error('Error sending SMS', { 
         to, 
