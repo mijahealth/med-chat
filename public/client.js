@@ -1,4 +1,4 @@
-// client.js
+// public/client.js
 
 // **Initialization and Configuration**
 
@@ -277,6 +277,7 @@ function attachDeleteListeners() {
 }
 
 async function selectConversation(sid, displayName) {
+  console.log(`Selecting conversation with SID: ${sid}`);
   if (!conversationsLoaded) {
     alert('Please wait until conversations are fully loaded.');
     return;
@@ -482,7 +483,8 @@ async function deleteConversation(sid) {
 
 async function loadMessages(sid, displayName) {
   try {
-    const response = await axios.get(`/conversations/${sid}/messages`);
+    // Fetch messages with increased limit and ascending order
+    const response = await axios.get(`/conversations/${sid}/messages?limit=1000&order=asc`);
     const messages = response.data;
 
     const messagesContainer = document.getElementById('messages');

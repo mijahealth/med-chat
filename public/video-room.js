@@ -1,3 +1,5 @@
+//public/video-room.js
+
 console.log('Video room script loaded');
 
 let videoRoom, localTrack, localAudioTrack;

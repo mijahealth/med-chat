@@ -1,108 +1,279 @@
-// routes/startConversation.js
+// routes/conversations.js
+
 const express = require('express');
 const router = express.Router();
-const { body, validationResult } = require('express-validator');
+const { param, body, query, validationResult } = require('express-validator');
 const logger = require('../modules/logger');
 const conversations = require('../modules/conversations');
-const smsServiceFactory = require('../modules/smsService');
 
-// Import WebSocket setup to get broadcast function
-const setupWebSocket = require('../modules/websocket');
-const http = require('http'); // Needed to create a dummy server if not available
+/**
+ * @route   GET /conversations
+ * @desc    List all conversations with their latest messages and unread counts
+ * @access  Public (Adjust as needed for your application)
+ */
+router.get('/', async (req, res, next) => {
+  try {
+    logger.info('Fetching all conversations');
+    const conversationList = await conversations.listConversations();
 
-// Assuming that the main app.js has already set up WebSocket and broadcast
-// Here, we need to access the same broadcast function
-// One approach is to pass the broadcast function to the routes via middleware or a shared module
+    const formattedConversations = conversationList.map(conv => {
+      const attributes = conv.attributes || {};
+      return {
+        sid: conv.sid,
+        friendlyName: conv.friendlyName,
+        phoneNumber: attributes.phoneNumber || '',
+        email: attributes.email || '',
+        name: attributes.name || '',
+        lastMessage: conv.lastMessage || 'No messages yet',
+        lastMessageTime: conv.lastMessageTime || null,
+        unreadCount: conv.unreadCount || 0, // Implement logic to calculate unread messages if applicable
+      };
+    });
 
-// For simplicity, assuming that setupWebSocket is called once in app.js and broadcast is exported
-// Alternative approach: Use an event emitter or a shared module to access broadcast
+    res.json(formattedConversations);
+  } catch (error) {
+    logger.error('Error fetching all conversations', { error });
+    next(error);
+  }
+});
 
-// Here, we'll modify setupWebSocket to export a singleton instance
-
-// Note: Ensure that setupWebSocket is only initialized once in app.js and accessible here
-
-// This requires a shared module to store the broadcast function
-const broadcastModule = require('../modules/broadcast');
-
-// Initialize SMS Service with broadcast
-const smsService = smsServiceFactory(broadcastModule.broadcast);
-const { sendSMS } = smsService;
-
-// Validation Rules
-const {
-  validatePhoneNumber,
-  validateMessage,
-  validateName,
-  validateEmail,
-  validateDOB,
-  validateState,
-} = require('../utils/validation');
-
-// POST /start-conversation
-router.post(
-  '/',
+/**
+ * @route   GET /conversations/:sid
+ * @desc    Fetch details of a specific conversation by SID
+ * @access  Public (Adjust as needed for your application)
+ */
+router.get(
+  '/:sid',
   [
-    body('phoneNumber').matches(/^\+\d{10,15}$/).withMessage('Invalid phone number format'),
-    body('message').isString().trim().isLength({ min: 1 }).withMessage('Message content cannot be empty'),
-    body('name').optional().isString().trim(),
-    body('email').optional().isEmail().withMessage('Invalid email format'),
-    body('dob').optional().isISO8601().withMessage('Invalid date format'),
-    body('state').optional().isString().trim().withMessage('Invalid state'),
+    param('sid')
+      .isString()
+      .withMessage('Conversation SID must be a string')
+      .notEmpty()
+      .withMessage('Conversation SID cannot be empty'),
   ],
   async (req, res, next) => {
+    // Validate Inputs
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn('Validation errors on starting conversation', { errors: errors.array() });
+      logger.warn('Validation errors on fetching conversation details', { errors: errors.array() });
       return res.status(400).json({ errors: errors.array() });
     }
 
+    const { sid } = req.params;
+
     try {
-      const { phoneNumber, message, name, email, dob, state } = req.body;
+      logger.info(`Fetching conversation with SID: ${sid}`);
+      const conversation = await conversations.fetchConversation(sid);
+      const attributes = JSON.parse(conversation.attributes || '{}');
 
-      const isZapierRequest =
-        req.headers['user-agent'] && req.headers['user-agent'].includes('Zapier');
+      // Fetch the latest message and unread count for the conversation
+      const messages = await conversations.listMessages(sid, { limit: 1, order: 'desc' });
+      const lastMessage = messages[0] ? messages[0].body : 'No messages yet';
+      const lastMessageTime = messages[0] ? messages[0].dateCreated : null;
 
-      logger.info('Starting conversation', { phoneNumber, name, email, dob, state, isZapierRequest });
+      // Calculate unread count
+      const allMessages = await conversations.listMessages(sid, { limit: 1000, order: 'asc' });
+      const unreadCount = allMessages.filter(
+        (msg) => msg.author !== process.env.TWILIO_PHONE_NUMBER && !isMessageRead(msg)
+      ).length;
 
-      const attributes = { email, name, phoneNumber, dob, state };
-
-      let existingConversation = await conversations.getConversationByPhoneNumber(phoneNumber);
-
-      if (existingConversation) {
-        logger.info('Existing conversation found', { sid: existingConversation.sid });
-        await conversations.updateConversationAttributes(existingConversation.sid, attributes);
-
-        if (isZapierRequest) {
-          await sendSMS(phoneNumber, message, existingConversation.sid, process.env.TWILIO_PHONE_NUMBER);
-          logger.info('SMS sent to existing conversation via Zapier', { message });
-        } else {
-          // Broadcast update if not Zapier
-          broadcastModule.broadcast({
-            type: 'updateConversation',
-            conversationSid: existingConversation.sid,
-            friendlyName: name || `Conversation with ${phoneNumber}`,
-            attributes,
-          });
-        }
-
-        res.json({ sid: existingConversation.sid, existing: true });
-      } else {
-        const friendlyName = name || `Conversation with ${phoneNumber}`;
-        const conversation = await conversations.createConversation(friendlyName, attributes);
-
-        logger.info('New conversation created', { sid: conversation.sid, friendlyName });
-
-        await conversations.addParticipant(conversation.sid, phoneNumber);
-
-        const disclaimer = '(Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)';
-        const firstMessage = `${message} ${disclaimer}`;
-        await sendSMS(phoneNumber, firstMessage, conversation.sid, process.env.TWILIO_PHONE_NUMBER);
-
-        res.json({ sid: conversation.sid, existing: false });
-      }
+      res.json({
+        sid: conversation.sid,
+        friendlyName: conversation.friendlyName,
+        attributes,
+        lastMessage: lastMessage,
+        lastMessageTime: lastMessageTime,
+        unreadCount: unreadCount,
+      });
     } catch (error) {
-      logger.error('Error starting new conversation', { error });
-      next(error);
+      logger.error('Error fetching conversation details', { sid, error });
+      if (error.code === 20404) { // Twilio error code for Not Found
+        res.status(404).json({ error: `Conversation ${sid} not found.` });
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
+/**
+ * @route   GET /conversations/:sid/messages
+ * @desc    List messages in a specific conversation
+ * @access  Public (Adjust as needed for your application)
+ */
+router.get(
+  '/:sid/messages',
+  [
+    param('sid')
+      .isString()
+      .withMessage('Conversation SID must be a string')
+      .notEmpty()
+      .withMessage('Conversation SID cannot be empty'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 1000 }) // Set max limit to 1000
+      .withMessage('Limit must be an integer between 1 and 1000'),
+    query('order')
+      .optional()
+      .isIn(['asc', 'desc'])
+      .withMessage('Order must be either "asc" or "desc"'),
+  ],
+  async (req, res, next) => {
+    // Validate Inputs
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      logger.warn('Validation errors on listing messages', { errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { sid } = req.params;
+    const { limit = 1000, order = 'asc' } = req.query;
+
+    try {
+      logger.info(`Listing messages for conversation SID: ${sid}`, { limit, order });
+      const messages = await conversations.listMessages(sid, { limit, order });
+
+      const formattedMessages = messages.map(msg => ({
+        sid: msg.sid,
+        body: msg.body,
+        author: msg.author,
+        dateCreated: msg.dateCreated,
+      }));
+
+      res.json(formattedMessages);
+    } catch (error) {
+      logger.error('Error listing messages', { sid, error });
+      if (error.code === 20404) { // Twilio error code for Not Found
+        res.status(404).json({ error: `Conversation ${sid} not found.` });
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
+/**
+ * @route   POST /conversations/:sid/messages
+ * @desc    Add a message to a specific conversation
+ * @access  Public (Adjust as needed for your application)
+ */
+router.post(
+  '/:sid/messages',
+  [
+    param('sid')
+      .isString()
+      .withMessage('Conversation SID must be a string')
+      .notEmpty()
+      .withMessage('Conversation SID cannot be empty'),
+    body('message')
+      .isString()
+      .withMessage('Message must be a string')
+      .trim()
+      .isLength({ min: 1 })
+      .withMessage('Message cannot be empty'),
+    body('author')
+      .optional()
+      .isString()
+      .withMessage('Author must be a string')
+      .trim(),
+  ],
+  async (req, res, next) => {
+    // Validate Inputs
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      logger.warn('Validation errors on adding message', { errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { sid } = req.params;
+    const { message, author } = req.body;
+
+    try {
+      logger.info(`Adding message to conversation ${sid}`, { message, author });
+      const newMessage = await conversations.addMessage(sid, message, author || process.env.TWILIO_PHONE_NUMBER);
+
+      // Optionally, broadcast the new message via WebSockets
+      // Assuming you have a broadcast module set up
+      const broadcast = require('../modules/broadcast').getBroadcast();
+      if (broadcast) {
+        broadcast({
+          type: 'newMessage',
+          conversationSid: sid,
+          author: author || process.env.TWILIO_PHONE_NUMBER,
+          body: message,
+          dateCreated: newMessage.dateCreated,
+        });
+      }
+
+      res.status(201).json(newMessage);
+    } catch (error) {
+      logger.error('Error adding message to conversation', { sid, message, author, error });
+      if (error.code === 20404) { // Twilio error code for Not Found
+        res.status(404).json({ error: `Conversation ${sid} not found.` });
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
+/**
+ * @route   DELETE /conversations/:sid
+ * @desc    Delete a specific conversation by SID
+ * @access  Public (Adjust as needed for your application)
+ */
+router.delete(
+  '/:sid',
+  [
+    param('sid')
+      .isString()
+      .withMessage('Conversation SID must be a string')
+      .notEmpty()
+      .withMessage('Conversation SID cannot be empty'),
+    body('confirmToken')
+      .optional()
+      .isString()
+      .withMessage('Confirm token must be a string')
+      .equals('CONFIRM_DELETE')
+      .withMessage('Invalid confirm token'),
+  ],
+  async (req, res, next) => {
+    // Validate Inputs
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      logger.warn('Validation errors on deleting conversation', { errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { sid } = req.params;
+    const { confirmToken } = req.body;
+
+    // Optional: Require a confirmation token for deletion
+    if (confirmToken !== 'CONFIRM_DELETE') {
+      return res.status(400).json({ error: 'Invalid or missing confirmation token.' });
+    }
+
+    try {
+      logger.info(`Deleting conversation with SID: ${sid}`);
+      await conversations.deleteConversation(sid);
+
+      // Optionally, broadcast the deletion via WebSockets
+      const broadcast = require('../modules/broadcast').getBroadcast();
+      if (broadcast) {
+        broadcast({
+          type: 'deleteConversation',
+          conversationSid: sid,
+        });
+      }
+
+      res.json({ message: `Conversation ${sid} deleted successfully.` });
+    } catch (error) {
+      logger.error('Error deleting conversation', { sid, error });
+      if (error.code === 20404) { // Twilio error code for Not Found
+        res.status(404).json({ error: `Conversation ${sid} not found.` });
+      } else {
+        next(error);
+      }
     }
   }
 );

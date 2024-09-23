@@ -1,10 +1,8 @@
-// app.js
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const path = require('path');
 const cors = require('cors');
-const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
 
@@ -19,6 +17,7 @@ const searchModule = require('./modules/search');
 const conversationsRouter = require('./routes/conversations');
 const searchRouter = require('./routes/search');
 const startConversationRouter = require('./routes/startConversation');
+const callParamsRouter = require('./routes/callParams'); // Add this line
 
 // Import Broadcast Singleton
 const broadcastModule = require('./modules/broadcast');
@@ -26,29 +25,6 @@ const broadcastModule = require('./modules/broadcast');
 // Initialize Express App
 const app = express();
 const server = http.createServer(app);
-
-// Security Enhancements
-app.use(helmet());
-
-// Configure Content Security Policy (CSP)
-app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: [
-        "'self'",
-        'https://cdn.jsdelivr.net',
-        'https://sdk.twilio.com',
-        'https://unpkg.com',
-      ],
-      styleSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-      fontSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-      imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'"],
-      // Add other directives as needed
-    },
-  })
-);
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -84,6 +60,7 @@ const { sendSMS } = smsService;
 app.use('/conversations', conversationsRouter);
 app.use('/search', searchRouter);
 app.use('/start-conversation', startConversationRouter);
+app.use('/call-params', callParamsRouter);
 
 // Configuration Endpoint
 app.get('/config', (req, res) => {
