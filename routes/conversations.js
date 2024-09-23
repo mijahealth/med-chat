@@ -2,9 +2,10 @@
 
 const express = require('express');
 const router = express.Router();
-const { param, body, query, validationResult } = require('express-validator');
+const { param, query, body, validationResult } = require('express-validator');
 const logger = require('../modules/logger');
 const conversations = require('../modules/conversations');
+const { isMessageRead } = conversations; // Ensure this is correctly imported
 
 /**
  * @route   GET /conversations
@@ -40,7 +41,7 @@ router.get('/', async (req, res, next) => {
 /**
  * @route   GET /conversations/:sid
  * @desc    Fetch details of a specific conversation by SID
- * @access  Public (Adjust as needed for your application)
+ * @access  Public
  */
 router.get(
   '/:sid',
@@ -64,37 +65,50 @@ router.get(
     try {
       logger.info(`Fetching conversation with SID: ${sid}`);
       const conversation = await conversations.fetchConversation(sid);
-      const attributes = JSON.parse(conversation.attributes || '{}');
+      if (!conversation) {
+        logger.warn(`Conversation not found: ${sid}`);
+        return res.status(404).json({ error: `Conversation ${sid} not found.` });
+      }
 
-      // Fetch the latest message and unread count for the conversation
+      // Fetch the latest message
       const messages = await conversations.listMessages(sid, { limit: 1, order: 'desc' });
-      const lastMessage = messages[0] ? messages[0].body : 'No messages yet';
-      const lastMessageTime = messages[0] ? messages[0].dateCreated : null;
+      const lastMessage = messages[0];
 
-      // Calculate unread count
+      // Fetch all messages to calculate unread count
       const allMessages = await conversations.listMessages(sid, { limit: 1000, order: 'asc' });
       const unreadCount = allMessages.filter(
         (msg) => msg.author !== process.env.TWILIO_PHONE_NUMBER && !isMessageRead(msg)
       ).length;
 
+      logger.info(`Fetched ${allMessages.length} messages from conversation ${sid}`);
+
+      let attributes = {};
+      try {
+        attributes = JSON.parse(conversation.attributes || '{}');
+      } catch (parseError) {
+        logger.error('Error parsing conversation attributes', { sid, error: parseError });
+        // Decide how to handle this case. For now, proceed with empty attributes.
+      }
+
       res.json({
         sid: conversation.sid,
         friendlyName: conversation.friendlyName,
         attributes,
-        lastMessage: lastMessage,
-        lastMessageTime: lastMessageTime,
+        lastMessage: lastMessage ? lastMessage.body : 'No messages yet',
+        lastMessageTime: lastMessage ? lastMessage.dateCreated : null,
         unreadCount: unreadCount,
       });
     } catch (error) {
       logger.error('Error fetching conversation details', { sid, error });
-      if (error.code === 20404) { // Twilio error code for Not Found
+      if (error.code === 20404) { // Twilio Not Found Error Code
         res.status(404).json({ error: `Conversation ${sid} not found.` });
       } else {
-        next(error);
+        next(error); // Pass to error handler
       }
     }
   }
 );
+
 
 /**
  * @route   GET /conversations/:sid/messages

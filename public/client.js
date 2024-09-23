@@ -315,7 +315,7 @@ async function selectConversation(sid, displayName) {
     // Conditionally call mark-read without awaiting
     if (conversation.unreadCount > 0) {
       axios.post(`/conversations/${sid}/mark-read`).catch((error) => {
-        log('Error marking messages as read', { error });
+        log('Error marking messages as read', { error: error });
       });
     }
 
@@ -335,7 +335,13 @@ async function selectConversation(sid, displayName) {
     scrollToBottom('messages');
 
   } catch (error) {
-    log('Error loading conversation', { error });
+    if (error.response) {
+      log('Error loading conversation', { error: error.response.data });
+      alert(`Error: ${error.response.data.error || 'Unknown error occurred.'}`);
+    } else {
+      log('Error loading conversation', { error: error.message });
+      alert(`Error: ${error.message}`);
+    }
   } finally {
     document.getElementById('loading-spinner').style.display = 'none';
   }

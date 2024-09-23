@@ -270,5 +270,7 @@ module.exports = {
   listMessages,
   markMessagesAsRead,
   addParticipant,
-  getConversationByPhoneNumber, // Exporting the new function
+  getConversationByPhoneNumber,
+  isMessageRead,
+
 };

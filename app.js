@@ -1,3 +1,7 @@
+//app.js
+
+/* eslint-env node */
+
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -214,7 +218,11 @@ app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (r
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
-  logger.error('Unhandled Error', { error: err });
+  logger.error('Unhandled Error', { 
+    message: err.message,
+    stack: err.stack,
+    ...err 
+  });
   res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });
 
