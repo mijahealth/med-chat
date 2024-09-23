@@ -143,11 +143,12 @@ router.get(
     }
 
     const { sid } = req.params;
-    const { limit = 1000, order = 'asc' } = req.query;
+    const { limit = '1000', order = 'asc' } = req.query;
+    const limitNumber = parseInt(limit, 10);
 
     try {
-      logger.info(`Listing messages for conversation SID: ${sid}`, { limit, order });
-      const messages = await conversations.listMessages(sid, { limit, order });
+      logger.info(`Listing messages for conversation SID: ${sid}`, { limit: limitNumber, order });
+      const messages = await conversations.listMessages(sid, { limit: limitNumber, order });
 
       const formattedMessages = messages.map(msg => ({
         sid: msg.sid,
@@ -290,6 +291,36 @@ router.delete(
       } else {
         next(error);
       }
+    }
+  }
+);
+
+/**
+ * @route   POST /conversations/:sid/mark-read
+ * @desc    Mark all messages in a conversation as read
+ * @access  Public (Adjust as needed for your application)
+ */
+router.post(
+  '/:sid/mark-read',
+  [
+    param('sid')
+      .isString()
+      .withMessage('Conversation SID must be a string')
+      .notEmpty()
+      .withMessage('Conversation SID cannot be empty'),
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { sid } = req.params;
+      await conversations.markMessagesAsRead(sid);
+      res.status(200).json({ message: 'Messages marked as read' });
+    } catch (error) {
+      next(error);
     }
   }
 );
