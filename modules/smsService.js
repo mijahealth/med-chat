@@ -45,31 +45,38 @@ function smsService(broadcast) {
    */
   async function sendSMS(to, body, conversationSid = null, author = null) {
     const messageKey = generateMessageKey(to, body);
-
+  
+    logger.info('Attempting to send SMS', { to, body, conversationSid, messageKey });
+  
     if (sentMessagesCache.has(messageKey)) {
-      logger.warn('Duplicate SMS detected', { to, body });
+      logger.warn('Duplicate SMS detected', { to, body, messageKey });
       return null;
     }
-
+  
     try {
       // Send SMS via Twilio
+      logger.info('Sending SMS via Twilio', { to, body });
       const message = await client.messages.create({
         body,
         from: process.env.TWILIO_PHONE_NUMBER,
         to,
       });
-
+      logger.info('SMS sent via Twilio', { messageSid: message.sid, to, body });
+  
       // Add to cache to prevent duplicates
       addToCache(messageKey);
-
+      logger.info('Added message to cache', { messageKey });
+  
       // Add message to conversation if SID provided
       if (conversationSid) {
-        await client.conversations.v1.conversations(conversationSid).messages.create({
+        logger.info('Adding message to conversation', { conversationSid, body });
+        const conversationMessage = await client.conversations.v1.conversations(conversationSid).messages.create({
           body,
           author: author || process.env.TWILIO_PHONE_NUMBER,
         });
+        logger.info('Message added to conversation', { conversationSid, conversationMessageSid: conversationMessage.sid });
       }
-
+  
       // Prepare message details for broadcasting
       const messageDetails = {
         type: 'newMessage',
@@ -79,32 +86,58 @@ function smsService(broadcast) {
         body,
         dateCreated: new Date().toISOString(),
       };
-
+  
       // Broadcast the new message
-      broadcast(messageDetails);
-
+      if (typeof broadcast === 'function') {
+        logger.info('Broadcasting new message', { messageDetails });
+        broadcast(messageDetails);
+      } else {
+        logger.warn('Broadcast function is not available', { messageDetails });
+      }
+  
       // Update conversation preview if applicable
       if (conversationSid) {
-        const conversation = await client.conversations.v1.conversations(conversationSid).fetch();
-        broadcast({
-          type: 'updateConversation',
-          conversationSid: conversation.sid,
-          friendlyName: conversation.friendlyName,
-          lastMessage: body,
-          lastMessageTime: messageDetails.dateCreated,
-          attributes: JSON.parse(conversation.attributes || '{}'),
-        });
+        try {
+          logger.info('Fetching conversation for update', { conversationSid });
+          const conversation = await client.conversations.v1.conversations(conversationSid).fetch();
+          if (typeof broadcast === 'function') {
+            const updateDetails = {
+              type: 'updateConversation',
+              conversationSid: conversation.sid,
+              friendlyName: conversation.friendlyName,
+              lastMessage: body,
+              lastMessageTime: messageDetails.dateCreated,
+              attributes: JSON.parse(conversation.attributes || '{}'),
+            };
+            logger.info('Broadcasting conversation update', { updateDetails });
+            broadcast(updateDetails);
+          }
+        } catch (convError) {
+          logger.error('Error fetching conversation for update', { conversationSid, error: convError });
+        }
       }
-
-      logger.info('SMS sent successfully', { to, body, conversationSid });
-
-      return message;
+  
+      logger.info('SMS sent successfully', { 
+        to, 
+        body, 
+        conversationSid, 
+        messageSid: message.sid
+      });
+  
+      return { success: true, messageSid: message.sid };
     } catch (error) {
-      logger.error('Error sending SMS', { to, body, conversationSid, error });
+      logger.error('Error sending SMS', { 
+        to, 
+        body, 
+        conversationSid, 
+        error: error.message,
+        twilioCode: error.code,
+        twilioMoreInfo: error.moreInfo
+      });
       throw error;
     }
   }
-
+  
   return {
     sendSMS,
   };

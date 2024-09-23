@@ -55,7 +55,7 @@ const { broadcast } = setupWebSocket(server);
 broadcastModule.setBroadcast(broadcast); // Set the broadcast function in the singleton
 
 // Initialize SMS Service
-const smsService = smsServiceFactory(broadcast);
+const smsService = smsServiceFactory(broadcastModule.getBroadcast());
 const { sendSMS } = smsService;
 
 // Routes

@@ -159,19 +159,69 @@ function setupWebSocket() {
   };
 
   socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
+    let data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (error) {
+      console.error('Error parsing WebSocket message:', error);
+      return;
+    }
+  
     log('Received WebSocket message', data);
-
+  
     switch (data.type) {
       case 'newMessage':
+        log('New message received', { 
+          conversationSid: data.conversationSid,
+          messageSid: data.messageSid,
+          author: data.author,
+          body: data.body
+        });
         handleNewMessage(data);
         break;
+  
       case 'newConversation':
+        log('New conversation received', { 
+          conversationSid: data.conversationSid,
+          friendlyName: data.friendlyName,
+          attributes: data.attributes
+        });
         handleNewConversation(data);
         break;
+  
       case 'updateConversation':
+        log('Conversation update received', { 
+          conversationSid: data.conversationSid,
+          friendlyName: data.friendlyName,
+          lastMessage: data.lastMessage,
+          lastMessageTime: data.lastMessageTime
+        });
         handleUpdateConversation(data);
         break;
+  
+      case 'deleteConversation':
+        log('Conversation deletion notification received', { 
+          conversationSid: data.conversationSid 
+        });
+        // Handle conversation deletion
+        const conversationElement = document.getElementById(`conv-${data.conversationSid}`);
+        if (conversationElement) {
+          conversationElement.remove();
+          log('Conversation removed from UI', { conversationSid: data.conversationSid });
+        } else {
+          log('Conversation element not found for deletion', { conversationSid: data.conversationSid });
+        }
+        
+        // If the deleted conversation is currently selected, clear the message pane
+        if (currentConversationSid === data.conversationSid) {
+          currentConversationSid = null;
+          document.getElementById('messages').innerHTML = '';
+          document.getElementById('messages-title').innerHTML = '';
+          document.getElementById('message-input').style.display = 'none';
+          log('Cleared message pane for deleted conversation', { conversationSid: data.conversationSid });
+        }
+        break;
+  
       default:
         log('Unknown WebSocket message type', data);
     }
@@ -537,13 +587,20 @@ function sendMessage() {
     return; // Don't send an empty message
   }
 
+  log('Attempting to send message', { conversationSid: currentConversationSid, message });
+
   axios
     .post(`/conversations/${currentConversationSid}/messages`, {
       message: message,
     })
-    .then(() => {
+    .then((response) => {
       inputField.value = ''; // Clear the input field after sending the message
-      log('Message sent', { message });
+      
+      log('Message sent successfully', { 
+        conversationSid: currentConversationSid, 
+        messageSid: response.data.sid, // Assuming the server returns the message SID
+        message 
+      });
       
       // Show message sent indicator
       const indicator = document.getElementById('message-sent-indicator');
@@ -554,7 +611,11 @@ function sendMessage() {
       }, 3000); // Hide after 3 seconds
     })
     .catch((error) => {
-      log('Error sending message', { error });
+      log('Error sending message', { 
+        conversationSid: currentConversationSid, 
+        message,
+        error: error.response ? error.response.data : error.message 
+      });
       
       // Show error message to the user
       const indicator = document.getElementById('message-sent-indicator');
@@ -567,7 +628,12 @@ function sendMessage() {
 }
 
 function handleNewMessage(data) {
-  console.log('Handling new message:', data);
+  console.log('Handling new message', { 
+    conversationSid: data.conversationSid,
+    messageSid: data.messageSid,
+    author: data.author,
+    body: data.body
+  });
   // Play notification sound if the message is not from us
   if (data.author !== TWILIO_PHONE_NUMBER) {
     playNotificationSound();
@@ -646,6 +712,10 @@ function incrementUnreadCount(conversationSid) {
 }
 
 function handleNewConversation(data) {
+  console.log('Handling new conversation', { 
+    conversationSid: data.conversationSid,
+    friendlyName: data.friendlyName
+  });
   const existingConversation = document.getElementById(`conv-${data.conversationSid}`);
 
   if (existingConversation) {
@@ -695,6 +765,12 @@ function handleNewConversation(data) {
 }
 
 function handleUpdateConversation(data) {
+  console.log('Handling conversation update', { 
+    conversationSid: data.conversationSid,
+    friendlyName: data.friendlyName,
+    lastMessage: data.lastMessage,
+    lastMessageTime: data.lastMessageTime
+  });
   const conversationDiv = document.getElementById(`conv-${data.conversationSid}`);
   if (conversationDiv) {
     // Update the friendly name

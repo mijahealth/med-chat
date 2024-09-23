@@ -22,7 +22,28 @@ const {
   validateState,
 } = require('../utils/validation');
 
-// POST /start-conversation
+// Helper function to log latest message
+async function logLatestMessage(conversationSid, context) {
+  try {
+    const messages = await conversations.listMessages(conversationSid, { limit: 1, order: 'desc' });
+    if (messages.length > 0) {
+      const latestMessage = messages[0];
+      logger.info(`Latest message ${context}`, {
+        conversationSid,
+        messageSid: latestMessage.sid,
+        author: latestMessage.author,
+        body: latestMessage.body,
+        dateCreated: latestMessage.dateCreated
+      });
+    } else {
+      logger.info(`No messages found ${context}`, { conversationSid });
+    }
+  } catch (error) {
+    logger.error(`Error fetching latest message ${context}`, { conversationSid, error: error.message });
+  }
+}
+
+
 router.post(
   '/',
   [
@@ -43,49 +64,44 @@ router.post(
     try {
       const { phoneNumber, message, name, email, dob, state } = req.body;
 
-      const isZapierRequest =
-        req.headers['user-agent'] && req.headers['user-agent'].includes('Zapier');
-
-      logger.info('Starting conversation', { phoneNumber, name, email, dob, state, isZapierRequest });
+      logger.info('Starting new conversation', { phoneNumber, name, email, dob, state });
 
       const attributes = { email, name, phoneNumber, dob, state };
+      const friendlyName = name || `Conversation with ${phoneNumber}`;
 
-      let existingConversation = await conversations.getConversationByPhoneNumber(phoneNumber);
+      const conversation = await conversations.createConversation(friendlyName, attributes);
+      logger.info('New conversation created', { sid: conversation.sid, friendlyName });
 
-      if (existingConversation) {
-        logger.info('Existing conversation found', { sid: existingConversation.sid });
-        await conversations.updateConversationAttributes(existingConversation.sid, attributes);
+      // Log latest message after conversation creation
+      await logLatestMessage(conversation.sid, 'After conversation creation');
 
-        if (isZapierRequest) {
-          await sendSMS(phoneNumber, message, existingConversation.sid, process.env.TWILIO_PHONE_NUMBER);
-          logger.info('SMS sent to existing conversation via Zapier', { message });
-        } else {
-          // Broadcast update if not Zapier
-          broadcastModule.broadcast({
-            type: 'updateConversation',
-            conversationSid: existingConversation.sid,
-            friendlyName: name || `Conversation with ${phoneNumber}`,
-            attributes,
-          });
-        }
+      await conversations.addParticipant(conversation.sid, phoneNumber);
+      logger.info('Participant added to new conversation', { sid: conversation.sid, phoneNumber });
 
-        res.json({ sid: existingConversation.sid, existing: true });
-      } else {
-        const friendlyName = name || `Conversation with ${phoneNumber}`;
-        const conversation = await conversations.createConversation(friendlyName, attributes);
+      // Log latest message after adding participant
+      await logLatestMessage(conversation.sid, 'After adding participant');
 
-        logger.info('New conversation created', { sid: conversation.sid, friendlyName });
+      const disclaimer = '(Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)';
+      const firstMessage = `${message} ${disclaimer}`;
+      
+      logger.info('Sending first SMS for new conversation', { sid: conversation.sid, phoneNumber, message: firstMessage });
+      const smsResult = await sendSMS(phoneNumber, firstMessage, conversation.sid, process.env.TWILIO_PHONE_NUMBER);
+      logger.info('First SMS sent for new conversation', { 
+        sid: conversation.sid, 
+        phoneNumber,
+        messageSid: smsResult.messageSid
+      });
 
-        await conversations.addParticipant(conversation.sid, phoneNumber);
+      // Log latest message after sending SMS
+      await logLatestMessage(conversation.sid, 'After sending SMS');
 
-        const disclaimer = '(Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)';
-        const firstMessage = `${message} ${disclaimer}`;
-        await sendSMS(phoneNumber, firstMessage, conversation.sid, process.env.TWILIO_PHONE_NUMBER);
+      res.json({ sid: conversation.sid, existing: false });
 
-        res.json({ sid: conversation.sid, existing: false });
-      }
+      // Log latest message after sending response
+      await logLatestMessage(conversation.sid, 'After sending response');
+
     } catch (error) {
-      logger.error('Error starting new conversation', { error });
+      logger.error('Error in start conversation route', { error: error.message, stack: error.stack });
       next(error);
     }
   }
