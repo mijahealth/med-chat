@@ -1,111 +1,100 @@
- <!-- public/index.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
- <!-- Meta and Title -->
- <meta charset="UTF-8" />
- <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <title>Twilio Conversations</title>
- <!-- Stylesheets -->
- <link rel="stylesheet" href="/css/styles.css" />
- <link rel="icon" type="image/x-icon" href="/favicon.ico">
- <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
- <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
- <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
- <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
- <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
- <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-
- <!-- Font Awesome for icons -->
- <link
-   rel="stylesheet"
-   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
- />
- <!-- Twilio SDK and Axios -->
- <script src="https://sdk.twilio.com/js/client/v1.14/twilio.min.js"></script>
- <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <!-- Meta and Title -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Twilio Conversations</title>
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/css/styles.css" />
+  <!-- Icons and Fonts -->
+  <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/android-chrome-512x512.png">
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  <!-- Main JavaScript Module -->
+  <script src="/dist/main.bundle.js"></script>
 </head>
 <body>
- <header>
-   <div id="sidebar" role="navigation" aria-label="Conversation List">
-     <div style="display: flex; justify-content: space-between; align-items: center;">
-       <h2>Messages</h2>
-       <div>
-        <button id="theme-toggle-btn" aria-label="Toggle Theme">
-          <i data-feather="moon" aria-hidden="true"></i>
-        </button>
-        <button id="new-conversation-btn" aria-label="New Conversation">
-          <i data-feather="plus" aria-hidden="true"></i>
-        </button>
+  <!-- Header -->
+  <header>
+    <div id="sidebar" role="navigation" aria-label="Conversation List">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Messages</h2>
+        <div>
+          <button id="theme-toggle-btn" aria-label="Toggle Theme">
+            <i data-feather="moon" aria-hidden="true"></i>
+          </button>
+          <button id="new-conversation-btn" aria-label="New Conversation">
+            <i data-feather="plus" aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
-     </div>
-     <div id="conversations" aria-live="polite"></div>
-   </div>
- </header>
- <main id="message-pane">
-   <div id="messages-title">
-     <!-- Conversation header (contact card) -->
-     <div id="contact-info" style="display: flex; justify-content: space-between; align-items: center;">
-       <div id="contact-details">
-         <!-- Contact details like name, phone number, etc. will be inserted here by client.js -->
-       </div>
-       <div id="contact-actions">
-         <button id="call-btn" aria-label="Start Call" title="Start Call">
-           <i data-feather="phone-call"></i>
-         </button>
-         <button id="start-video-call-btn" aria-label="Start Video Call" title="Start Video Call">
-           <i data-feather="video"></i>
-         </button>
-       </div>
-     </div>
-   </div>
+      <div id="conversations" aria-live="polite"></div>
+    </div>
+  </header>
+  <!-- Main Content -->
+  <main id="message-pane">
+    <div id="messages-title">
+      <!-- Conversation header (contact card) -->
+      <div id="contact-info" style="display: flex; justify-content: space-between; align-items: center;">
+        <div id="contact-details">
+          <!-- Contact details like name, phone number, etc. will be inserted here by ui.js -->
+        </div>
+        <div id="contact-actions">
+          <button id="call-btn" aria-label="Start Call" title="Start Call">
+            <i data-feather="phone-call"></i>
+          </button>
+          <button id="start-video-call-btn" aria-label="Start Video Call" title="Start Video Call">
+            <i data-feather="video"></i>
+          </button>
+        </div>
+      </div>
+    </div>
 
-   <!-- Loading Spinner -->
-   <div id="loading-spinner" class="spinner"></div>
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="spinner"></div>
 
-   <!-- No Conversation Selected Message -->
-   <div
-     id="no-conversation"
-     style="display: flex; justify-content: center; align-items: center; height: 100%; font-size: 1.5rem;"
-   >
-     No conversation selected
-   </div>
+    <!-- No Conversation Selected Message -->
+    <div
+      id="no-conversation"
+      style="display: flex; justify-content: center; align-items: center; height: 100%; font-size: 1.5rem;"
+    >
+      No conversation selected
+    </div>
 
-   <!-- Messages Container -->
-   <div id="messages" onscroll="checkScrollPosition()" aria-live="polite"></div>
+    <!-- Messages Container -->
+    <div id="messages" onscroll="checkScrollPosition()" aria-live="polite"></div>
 
-   <!-- Message Input -->
-   <div id="message-input" role="form">
-     <input type="text" id="new-message" placeholder="Message..." aria-label="New Message" />
-     <button onclick="sendMessage()" aria-label="Send Message">Send</button>
-   </div>
- </main>
+    <!-- Message Input -->
+    <div id="message-input" role="form">
+      <input type="text" id="new-message" placeholder="Message..." aria-label="New Message" />
+      <button id="send-message-btn" aria-label="Send Message">Send</button>
+    </div>
+  </main>
 
-<!-- New Conversation Modal -->
-<div id="new-conversation-modal" class="modal">
-  <div class="modal-content">
-    <span class="close-modal" onclick="closeModal()">&times;</span>
-    <h2>Start a New Conversation</h2>
-    <form id="new-conversation-form">
-      <input type="text" name="phoneNumber" placeholder="+1XXXXXXXXXX" required aria-label="Phone Number" />
-      <input type="text" name="name" placeholder="Name" aria-label="Name" required />
-      <input type="email" name="email" placeholder="Email" aria-label="Email" />
-      <input type="date" name="dob" placeholder="Date of Birth" aria-label="Date of Birth" />
-      <input type="text" name="state" placeholder="State" aria-label="State" />
-      <textarea name="message" placeholder="Enter a message" required aria-label="Message"></textarea>
-      <button type="submit">Start Conversation</button>
-    </form>
+  <!-- New Conversation Modal -->
+  <div id="new-conversation-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal()">&times;</span>
+      <h2>Start a New Conversation</h2>
+      <form id="new-conversation-form">
+        <input type="text" name="phoneNumber" placeholder="+1XXXXXXXXXX" required aria-label="Phone Number" />
+        <input type="text" name="name" placeholder="Name" aria-label="Name" required />
+        <input type="email" name="email" placeholder="Email" aria-label="Email" />
+        <input type="date" name="dob" placeholder="Date of Birth" aria-label="Date of Birth" />
+        <input type="text" name="state" placeholder="State" aria-label="State" />
+        <textarea name="message" placeholder="Enter a message" required aria-label="Message"></textarea>
+        <button type="submit">Start Conversation</button>
+      </form>
+    </div>
   </div>
-</div>
 
-<!-- Scripts -->
-<script src="/client.js"></script>
-<script>
-  // Ensure Feather icons are replaced after loading
-  feather.replace();
-</script>
-
-<div id="message-sent-indicator" class="message-sent-indicator">Message Sent</div>
+  <!-- Message Sent Indicator -->
+  <div id="message-sent-indicator" class="message-sent-indicator">Message Sent</div>
 </body>
 </html>
