@@ -5,6 +5,7 @@ import { playNotificationSound, isValidDate, debounce, log, toggleTheme } from '
 import { selectConversation, loadConversations } from './conversations.js';
 import { setupCallControls } from './call.js';
 import feather from 'feather-icons';
+import { isValidDate } from './utils.js';
 
 export function setupEventListeners() {
   // User interaction tracking for sound notifications
@@ -204,20 +205,6 @@ async function performSearch() {
   } catch (error) {
     console.error('Error performing search:', error);
   }
-}
-
-function isValidDate(dateString) {
-  const regex = /^\d{4}-\d{2}-\d{2}$/;
-  if (!regex.test(dateString)) return false;
-
-  const date = new Date(dateString);
-  const timestamp = date.getTime();
-
-  if (typeof timestamp !== 'number' || Number.isNaN(timestamp)) {
-    return false;
-  }
-
-  return date.toISOString().startsWith(dateString);
 }
 
 function checkScrollPosition() {

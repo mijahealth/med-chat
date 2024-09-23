@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { formatTime, log } from './utils.js';
 import { currentConversation, state } from './state.js';
 import { selectConversation } from './events.js';
-import { renderConversations, updateConversationPreview, moveConversationToTop } from './render.js';
+import { renderConversations, updateLatestMessagePreview, moveConversationToTop } from './ui.js';
 
 export async function loadConversations() {
   document.getElementById('loading-spinner').style.display = 'block';
@@ -122,3 +122,16 @@ export function removeConversationFromUI(conversationSid) {
     log('Cleared message pane for deleted conversation', { conversationSid });
   }
 }
+
+export {
+    fetchConversation,
+    listConversations,
+    createConversation,
+    deleteConversation,
+    addMessage,
+    listMessages,
+    markMessagesAsRead,
+    addParticipant,
+    getConversationByPhoneNumber,
+    isMessageRead,
+  };

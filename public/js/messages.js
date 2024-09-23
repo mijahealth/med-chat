@@ -1,9 +1,9 @@
 // public/js/messages.js
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
-import { appendMessage, renderMessages } from './render.js';
+import { appendMessage, renderMessages } from './ui.js';
 import { log, playNotificationSound } from './utils.js';
-import { updateConversationPreview, moveConversationToTop, incrementUnreadCount } from './conversations.js';
+import { updateLatestMessagePreview, moveConversationToTop } from './ui.js'
 
 export async function loadMessages(sid) {
   try {
@@ -45,7 +45,7 @@ export function handleNewMessage(data) {
   }
 
   // Update preview for all messages
-  updateConversationPreview(data.conversationSid, {
+  updateLatestMessagePreview(data.conversationSid, {
     body: data.body,
     author: data.author,
     dateCreated: data.dateCreated,
