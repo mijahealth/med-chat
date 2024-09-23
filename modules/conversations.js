@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 // modules/conversations.js
 
 const client = require('../twilioClient'); // Ensure the path is correct

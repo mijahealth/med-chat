@@ -1,4 +1,4 @@
-// public/client.js
+/* global axios, feather, Twilio */
 
 // **Initialization and Configuration**
 
@@ -22,12 +22,6 @@ let callStatusElement = null;
 
 // WebSocket connection
 let socket = null;
-
-// **Future Enhancements**
-const appConfig = {
-  user: null, // Placeholder for future multi-user support
-  tenant: null, // Placeholder for future multi-tenancy support
-};
 
 // **Utility Functions**
 
@@ -119,7 +113,7 @@ function setupEventListeners() {
   // **Add the video call button listener here**
   const startVideoCallBtn = document.getElementById('start-video-call-btn');
   if (startVideoCallBtn) {
-    startVideoCallBtn.addEventListener('click', startVideoCall); // Your new video call button listener
+    startVideoCallBtn.addEventListener('click', startVideoCall);
   } else {
     log('Start video call button not found');
   }
@@ -276,7 +270,7 @@ function attachDeleteListeners() {
   });
 }
 
-async function selectConversation(sid, displayName) {
+async function selectConversation(sid) {
   console.log(`Selecting conversation with SID: ${sid}`);
   if (!conversationsLoaded) {
     alert('Please wait until conversations are fully loaded.');
@@ -319,7 +313,7 @@ async function selectConversation(sid, displayName) {
       });
     }
 
-    const name = attributes.name || displayName;
+    const name = attributes.name || conversation.friendlyName;
     const email = attributes.email || '';
     const phoneNumber = attributes.phoneNumber || '';
     const dob = attributes.dob || '';
@@ -487,7 +481,7 @@ async function deleteConversation(sid) {
 
 // **Message Handling**
 
-async function loadMessages(sid, displayName) {
+async function loadMessages(sid) {
   try {
     // Fetch messages with increased limit and ascending order
     const response = await axios.get(`/conversations/${sid}/messages?limit=1000&order=asc`);
@@ -635,7 +629,7 @@ function moveConversationToTop(conversationSid) {
   }
 }
 
-function markConversationAsUnread(conversationSid) {
+function incrementUnreadCount(conversationSid) {
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
   if (conversationDiv) {
     conversationDiv.classList.add('unread');
@@ -728,22 +722,6 @@ function handleUpdateConversation(data) {
     moveConversationToTop(data.conversationSid);
 
     // Don't mark as unread or increment count here
-  }
-}
-
-function incrementUnreadCount(conversationSid) {
-  const conversationDiv = document.getElementById(`conv-${conversationSid}`);
-  if (conversationDiv) {
-    conversationDiv.classList.add('unread');
-    let unreadBadge = conversationDiv.querySelector('.unread-badge');
-    if (unreadBadge) {
-      const currentCount = parseInt(unreadBadge.textContent) || 0;
-      unreadBadge.textContent = currentCount + 1;
-    } else {
-      conversationDiv.querySelector('.unread-indicator-column').innerHTML = `
-        <span class="unread-badge">1</span>
-      `;
-    }
   }
 }
 

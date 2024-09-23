@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 // twilioClient.js
 require('dotenv').config();
 const twilio = require('twilio');

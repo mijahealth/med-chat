@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 // modules/smsService.js
 const client = require('../twilioClient');
 const logger = require('./logger');

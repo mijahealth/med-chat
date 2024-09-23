@@ -1,5 +1,3 @@
-//app.js
-
 /* eslint-env node */
 
 require('dotenv').config();
@@ -15,13 +13,13 @@ const setupWebSocket = require('./modules/websocket');
 const smsServiceFactory = require('./modules/smsService');
 const videoModule = require('./modules/video');
 const conversations = require('./modules/conversations');
-const searchModule = require('./modules/search');
+// const searchModule = require('./modules/search');
 
 // Import Routes
 const conversationsRouter = require('./routes/conversations');
 const searchRouter = require('./routes/search');
 const startConversationRouter = require('./routes/startConversation');
-const callParamsRouter = require('./routes/callParams'); // Add this line
+const callParamsRouter = require('./routes/callParams');
 
 // Import Broadcast Singleton
 const broadcastModule = require('./modules/broadcast');
@@ -176,7 +174,9 @@ app.get('/video-room/:roomName', (req, res) => {
 // Twilio Webhook Endpoint
 app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (req, res, next) => {
   try {
-    const { EventType, ConversationSid, MessageSid, Body, Author, DateCreated, SmsMessageSid, From } = req.body;
+    const { EventType, ConversationSid, Body, Author, DateCreated, SmsMessageSid, From } = req.body;
+    // eslint-disable-next-line no-unused-vars
+    const MessageSid = req.body.MessageSid;
 
     if (EventType && ConversationSid) {
       logger.info('Webhook event received', { EventType, ConversationSid });
@@ -224,6 +224,7 @@ app.use((err, req, res, next) => {
     ...err 
   });
   res.status(500).json({ error: 'Internal Server Error', details: err.message });
+  next(err);
 });
 
 // Start the Server

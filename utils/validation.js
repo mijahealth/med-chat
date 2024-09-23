@@ -1,5 +1,4 @@
-// utils/validation.js
-const { body, param } = require('express-validator');
+const { body } = require('express-validator');
 
 // Define reusable validation chains
 
@@ -13,7 +12,11 @@ const validateMessage = body('message')
   .isLength({ min: 1 })
   .withMessage('Message content cannot be empty');
 
-const validateName = body('name').optional().isString().trim().withMessage('Invalid name');
+const validateName = body('name')
+  .optional()
+  .isString()
+  .trim()
+  .withMessage('Invalid name');
 
 const validateEmail = body('email')
   .optional()

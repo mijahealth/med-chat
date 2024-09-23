@@ -1,4 +1,4 @@
-//public/video-room.js
+/* global axios, feather, Twilio */
 
 console.log('Video room script loaded');
 
@@ -7,7 +7,6 @@ let isMuted = false;
 
 // Audio visualization
 let audioContext, analyser, dataArray;
-let animationFrame;
 
 async function setupVideo() {
   const userName = document.getElementById('user-name').value.trim();
@@ -316,13 +315,13 @@ function updateAudioVisualization() {
             muteButton.style.boxShadow = `0 0 ${audioLevel * 20}px ${audioLevel * 10}px rgba(59, 130, 246, ${audioLevel})`;
         }
         
-        animationFrame = requestAnimationFrame(updateAudioVisualization);
+        requestAnimationFrame(updateAudioVisualization);
     } catch (error) {
         console.error('Error updating audio visualization:', error);
     }
 }
 
-document.addEventListener('DOMContentLoaded', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
   feather.replace();
   console.log('DOM fully loaded and icons replaced');
 
@@ -333,7 +332,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
       joinCallBtn.addEventListener('click', () => {
           if (userNameInput.value.trim()) {
               setupVideo();
-              setupLocalParticipant(userNameInput.value.trim());
           } else {
               alert('Please enter your name before joining.');
           }
