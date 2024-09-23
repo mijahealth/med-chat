@@ -2,8 +2,7 @@
 import { api } from './api.js';
 import { formatTime, log } from './utils.js';
 import { currentConversation, state } from './state.js';
-import { selectConversation } from './events.js';
-import { renderConversations, updateLatestMessagePreview, moveConversationToTop } from './ui.js';
+import { renderConversations, moveConversationToTop } from './ui.js';
 
 export async function loadConversations() {
   document.getElementById('loading-spinner').style.display = 'block';
@@ -123,15 +122,99 @@ export function removeConversationFromUI(conversationSid) {
   }
 }
 
-export {
-    fetchConversation,
-    listConversations,
-    createConversation,
-    deleteConversation,
-    addMessage,
-    listMessages,
-    markMessagesAsRead,
-    addParticipant,
-    getConversationByPhoneNumber,
-    isMessageRead,
-  };
+// Additional functions mentioned in the export statement
+export async function fetchConversation(sid) {
+  try {
+    return await api.getConversationDetails(sid);
+  } catch (error) {
+    log('Error fetching conversation', { sid, error });
+    throw error;
+  }
+}
+
+export async function listConversations() {
+  try {
+    return await api.getConversations();
+  } catch (error) {
+    log('Error listing conversations', { error });
+    throw error;
+  }
+}
+
+export async function createConversation(data) {
+  try {
+    return await api.startConversation(data);
+  } catch (error) {
+    log('Error creating conversation', { error });
+    throw error;
+  }
+}
+
+export async function deleteConversation(sid) {
+  try {
+    await api.deleteConversation(sid);
+    removeConversationFromUI(sid);
+  } catch (error) {
+    log('Error deleting conversation', { sid, error });
+    throw error;
+  }
+}
+
+export async function addMessage(conversationSid, message) {
+  try {
+    return await api.sendMessage(conversationSid, message);
+  } catch (error) {
+    log('Error adding message', { conversationSid, error });
+    throw error;
+  }
+}
+
+export async function listMessages(conversationSid, options = {}) {
+  try {
+    return await api.getMessages(conversationSid, options);
+  } catch (error) {
+    log('Error listing messages', { conversationSid, error });
+    throw error;
+  }
+}
+
+export async function markMessagesAsRead(conversationSid) {
+  try {
+    await api.markMessagesAsRead(conversationSid);
+  } catch (error) {
+    log('Error marking messages as read', { conversationSid, error });
+    throw error;
+  }
+}
+
+export async function addParticipant(conversationSid, participantData) {
+  // This function would need to be implemented in the API
+  log('addParticipant function not implemented');
+}
+
+export async function getConversationByPhoneNumber(phoneNumber) {
+  // This function would need to be implemented in the API
+  log('getConversationByPhoneNumber function not implemented');
+}
+
+export function isMessageRead(message) {
+  // Implement logic to determine if a message is read
+  // This might depend on how you're tracking read status in your application
+  return message.read || false;
+}
+
+function updateConversationPreview(conversationSid, latestMessage) {
+  const conversationDiv = document.getElementById(`conv-${conversationSid}`);
+  if (conversationDiv) {
+    const lastMessageDiv = conversationDiv.querySelector('.last-message');
+    const timeDiv = conversationDiv.querySelector('.time');
+    if (lastMessageDiv) {
+      lastMessageDiv.textContent = latestMessage.body;
+    }
+    if (timeDiv) {
+      timeDiv.textContent = formatTime(latestMessage.dateCreated);
+    }
+  }
+}
+
+// No need for the separate export statement at the bottom, as all functions are already exported

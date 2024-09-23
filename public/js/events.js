@@ -2,10 +2,10 @@
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
 import { playNotificationSound, isValidDate, debounce, log, toggleTheme } from './utils.js';
-import { selectConversation, loadConversations } from './conversations.js';
+import { loadConversations } from './conversations.js';
 import { setupCallControls } from './call.js';
+import { renderConversations } from './ui.js';
 import feather from 'feather-icons';
-import { isValidDate } from './utils.js';
 
 export function setupEventListeners() {
   // User interaction tracking for sound notifications
@@ -215,3 +215,88 @@ function checkScrollPosition() {
     state.autoScrollEnabled = false;
   }
 }
+
+// Define selectConversation function here instead of importing it
+export async function selectConversation(sid) {
+    console.log(`Selecting conversation with SID: ${sid}`);
+    if (!state.conversationsLoaded) {
+      alert('Please wait until conversations are fully loaded.');
+      return;
+    }
+  
+    currentConversation.sid = sid;
+    document.getElementById('loading-spinner').style.display = 'block';
+    document.getElementById('messages').style.display = 'none';
+    document.getElementById('message-input').style.display = 'none';
+    document.getElementById('messages-title').style.display = 'flex';
+    document.getElementById('no-conversation').style.display = 'none';
+  
+    try {
+      // Deselect other conversations
+      document.querySelectorAll('.conversation').forEach((conv) => {
+        conv.classList.remove('selected');
+      });
+      const selectedConversation = document.getElementById(`conv-${sid}`);
+      selectedConversation.classList.add('selected');
+  
+      // Remove unread indicators immediately
+      if (selectedConversation) {
+        selectedConversation.classList.remove('unread');
+        const unreadBadge = selectedConversation.querySelector('.unread-badge');
+        if (unreadBadge) {
+          unreadBadge.remove();
+        }
+      }
+  
+      // Fetch conversation details
+      const conversation = await api.getConversationDetails(sid);
+      const attributes = conversation.attributes || {};
+  
+      // Conditionally call mark-read without awaiting
+      if (conversation.unreadCount > 0) {
+        api.markMessagesAsRead(sid).catch((error) => {
+          log('Error marking messages as read', { error });
+        });
+      }
+  
+      const name = attributes.name || conversation.friendlyName;
+      const email = attributes.email || '';
+      const phoneNumber = attributes.phoneNumber || '';
+      const dob = attributes.dob || '';
+      const state = attributes.state || '';
+  
+      // Update the conversation header and call controls
+      updateConversationHeader(sid, name, email, phoneNumber, dob, state);
+  
+      // Fetch and render messages
+      const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
+      renderMessages(messages);
+      
+      document.getElementById('messages').style.display = 'block';
+      showMessageInput();
+  
+      // Scroll to bottom of messages
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  
+    } catch (error) {
+      if (error.response) {
+        log('Error loading conversation', { error: error.response.data });
+        alert(`Error: ${error.response.data.error || 'Unknown error occurred.'}`);
+      } else {
+        log('Error loading conversation', { error: error.message });
+        alert(`Error: ${error.message}`);
+      }
+    } finally {
+      document.getElementById('loading-spinner').style.display = 'none';
+    }
+  }
+
+// Export other necessary functions
+export {
+  handleSendMessage,
+  openNewConversationModal,
+  startConversation,
+  performSearch,
+  checkScrollPosition
+};
