@@ -20,8 +20,10 @@ export async function loadConversations() {
     }
 
     state.conversationsLoaded = true;
+    return conversations; // Make sure to return the conversations
   } catch (error) {
     log('Error loading conversations', { error });
+    return []; // Return an empty array in case of error
   } finally {
     document.getElementById('loading-spinner').style.display = 'none';
   }

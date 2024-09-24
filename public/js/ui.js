@@ -1,11 +1,12 @@
 // public/js/ui.js
-import { setupEventListeners, selectConversation } from './events.js';
 import { loadConversations, incrementUnreadCount, handleNewConversation, handleUpdateConversation, removeConversationFromUI } from './conversations.js';
 import { setupWebSocket } from './websocket.js';
 import { state, currentConversation } from './state.js';
 import { api } from './api.js';
 import { log, formatTime } from './utils.js';
 import feather from 'feather-icons';
+import { selectConversation } from './events.js';
+
 
 export async function initializeApp() {
   try {
@@ -13,9 +14,8 @@ export async function initializeApp() {
     state.TWILIO_PHONE_NUMBER = config.TWILIO_PHONE_NUMBER;
     state.NGROK_URL = config.NGROK_URL;
 
-    setupEventListeners();
     const conversations = await loadConversations();
-    renderConversations(conversations);
+    renderConversations(conversations || []); // Ensure an array is passed
     setupWebSocket();
     showNoConversationSelected();
   } catch (error) {
@@ -35,17 +35,21 @@ export function renderConversations(conversations) {
   const conversationsDiv = document.getElementById('conversations');
   conversationsDiv.innerHTML = ''; // Clear existing conversations
 
-  conversations.forEach((conversation) => {
-    const conversationHtml = createConversationHtml(conversation);
-    conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
-  });
+  if (Array.isArray(conversations)) {
+    conversations.forEach((conversation) => {
+      const conversationHtml = createConversationHtml(conversation);
+      conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
+    });
 
-  if (currentConversation.sid) {
-    document.getElementById(`conv-${currentConversation.sid}`)?.classList.add('selected');
+    if (currentConversation.sid) {
+      document.getElementById(`conv-${currentConversation.sid}`)?.classList.add('selected');
+    }
+
+    attachConversationListeners();
+    feather.replace(); // Replace any new Feather icons
+  } else {
+    log('No conversations to render or invalid data received');
   }
-
-  attachConversationListeners();
-  feather.replace(); // Replace any new Feather icons
 }
 
 function createConversationHtml(conversation) {
@@ -84,7 +88,12 @@ function createConversationHtml(conversation) {
 
 function attachConversationListeners() {
   document.querySelectorAll('.conversation').forEach(conv => {
-    conv.addEventListener('click', () => selectConversation(conv.dataset.sid));
+    conv.addEventListener('click', (e) => {
+      e.preventDefault();
+      const sid = conv.dataset.sid;
+      console.log(`Conversation clicked in ui.js, SID: ${sid}`);
+      selectConversation(sid);
+    });
   });
 
   document.querySelectorAll('.delete-btn').forEach(btn => {
@@ -117,27 +126,78 @@ export function moveConversationToTop(conversationSid) {
   }
 }
 
-function deleteConversation(sid) {
-  // Implementation for deleting a conversation
-  // This should call the API to delete the conversation and then update the UI
+async function deleteConversation(sid) {
+  try {
+    await api.deleteConversation(sid);
+    removeConversationFromUI(sid);
+    if (currentConversation.sid === sid) {
+      showNoConversationSelected();
+    }
+    log(`Conversation ${sid} deleted successfully`);
+  } catch (error) {
+    log('Error deleting conversation', { sid, error });
+    alert('Failed to delete conversation. Please try again.');
+  }
 }
 
 export function renderMessages(messages) {
-  // Implementation for rendering messages in the selected conversation
+  const messagesContainer = document.getElementById('messages');
+  messagesContainer.innerHTML = ''; // Clear existing messages
+
+  messages.forEach((message) => {
+    appendMessage(message);
+  });
+
+  // Scroll to the bottom of the messages container
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 export function appendMessage(message) {
-  // Implementation for appending a new message to the current conversation
+  const messagesContainer = document.getElementById('messages');
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message');
+  messageElement.classList.add(message.author === state.TWILIO_PHONE_NUMBER ? 'sent' : 'received');
+
+  const contentElement = document.createElement('div');
+  contentElement.classList.add('message-content');
+  contentElement.textContent = message.body;
+
+  const timeElement = document.createElement('div');
+  timeElement.classList.add('message-time');
+  timeElement.textContent = formatTime(message.dateCreated);
+
+  messageElement.appendChild(contentElement);
+  messageElement.appendChild(timeElement);
+
+  messagesContainer.appendChild(messageElement);
+
+  // Scroll to the bottom of the messages container
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 export function showMessageInput() {
   document.getElementById('message-input').style.display = 'flex';
 }
 
-// Export other necessary functions that might be used in other modules
+export function updateConversationHeader(sid, name, email, phoneNumber, dob, state) {
+  const headerElement = document.getElementById('contact-info');
+  if (headerElement) {
+    headerElement.innerHTML = `
+      <div>
+        <h2>${name || 'Unknown'}</h2>
+        <p>${phoneNumber || ''}</p>
+        <p>${email || ''}</p>
+        <p>DOB: ${dob || 'N/A'}</p>
+        <p>State: ${state || 'N/A'}</p>
+      </div>
+    `;
+  }
+}
+
+// Export all necessary functions
 export {
   incrementUnreadCount,
   handleNewConversation,
   handleUpdateConversation,
-  removeConversationFromUI
+  removeConversationFromUI,
 };

@@ -4,7 +4,12 @@ import { currentConversation, state } from './state.js';
 import { playNotificationSound, isValidDate, debounce, log, toggleTheme } from './utils.js';
 import { loadConversations } from './conversations.js';
 import { setupCallControls } from './call.js';
-import { renderConversations } from './ui.js';
+import { 
+  renderConversations, 
+  updateConversationHeader, 
+  showMessageInput, 
+  renderMessages 
+} from './ui.js';
 import feather from 'feather-icons';
 
 export function setupEventListeners() {
@@ -64,9 +69,19 @@ export function setupEventListeners() {
   } else {
     log('Messages div not found');
   }
+
+  // Listen for conversation selection
+  document.addEventListener('click', (event) => {
+    const conversationElement = event.target.closest('.conversation');
+    if (conversationElement) {
+      const sid = conversationElement.dataset.sid;
+      console.log(`Conversation clicked, calling selectConversation with SID: ${sid}`);
+      selectConversation(sid);
+    }
+  });
 }
 
-function handleSendMessage() {
+export function handleSendMessage() {
   const inputField = document.getElementById('new-message');
   const message = inputField.value.trim();
 
@@ -106,7 +121,7 @@ function handleSendMessage() {
     });
 }
 
-function openNewConversationModal() {
+export function openNewConversationModal() {
   clearNewConversationForm();
   document.getElementById('new-conversation-modal').style.display = 'flex';
 }
@@ -122,7 +137,7 @@ function clearNewConversationForm() {
   }
 }
 
-function startConversation(event) {
+export function startConversation(event) {
   event.preventDefault();
   const form = event.target;
   const phoneNumber = form.phoneNumber.value.trim();
@@ -192,7 +207,7 @@ function setupSearch() {
   }
 }
 
-async function performSearch() {
+export async function performSearch() {
   const query = document.getElementById('search-input').value.trim();
   if (query === '') {
     await loadConversations(); // Reset to show all conversations
@@ -207,7 +222,7 @@ async function performSearch() {
   }
 }
 
-function checkScrollPosition() {
+export function checkScrollPosition() {
   const messagesDiv = document.getElementById('messages');
   if (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 10) {
     state.autoScrollEnabled = true;
@@ -216,87 +231,83 @@ function checkScrollPosition() {
   }
 }
 
-// Define selectConversation function here instead of importing it
 export async function selectConversation(sid) {
-    console.log(`Selecting conversation with SID: ${sid}`);
-    if (!state.conversationsLoaded) {
-      alert('Please wait until conversations are fully loaded.');
-      return;
-    }
-  
-    currentConversation.sid = sid;
-    document.getElementById('loading-spinner').style.display = 'block';
-    document.getElementById('messages').style.display = 'none';
-    document.getElementById('message-input').style.display = 'none';
-    document.getElementById('messages-title').style.display = 'flex';
-    document.getElementById('no-conversation').style.display = 'none';
-  
-    try {
-      // Deselect other conversations
-      document.querySelectorAll('.conversation').forEach((conv) => {
-        conv.classList.remove('selected');
-      });
-      const selectedConversation = document.getElementById(`conv-${sid}`);
-      selectedConversation.classList.add('selected');
-  
-      // Remove unread indicators immediately
-      if (selectedConversation) {
-        selectedConversation.classList.remove('unread');
-        const unreadBadge = selectedConversation.querySelector('.unread-badge');
-        if (unreadBadge) {
-          unreadBadge.remove();
-        }
-      }
-  
-      // Fetch conversation details
-      const conversation = await api.getConversationDetails(sid);
-      const attributes = conversation.attributes || {};
-  
-      // Conditionally call mark-read without awaiting
-      if (conversation.unreadCount > 0) {
-        api.markMessagesAsRead(sid).catch((error) => {
-          log('Error marking messages as read', { error });
-        });
-      }
-  
-      const name = attributes.name || conversation.friendlyName;
-      const email = attributes.email || '';
-      const phoneNumber = attributes.phoneNumber || '';
-      const dob = attributes.dob || '';
-      const state = attributes.state || '';
-  
-      // Update the conversation header and call controls
-      updateConversationHeader(sid, name, email, phoneNumber, dob, state);
-  
-      // Fetch and render messages
-      const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
-      renderMessages(messages);
-      
-      document.getElementById('messages').style.display = 'block';
-      showMessageInput();
-  
-      // Scroll to bottom of messages
-      const messagesDiv = document.getElementById('messages');
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  
-    } catch (error) {
-      if (error.response) {
-        log('Error loading conversation', { error: error.response.data });
-        alert(`Error: ${error.response.data.error || 'Unknown error occurred.'}`);
-      } else {
-        log('Error loading conversation', { error: error.message });
-        alert(`Error: ${error.message}`);
-      }
-    } finally {
-      document.getElementById('loading-spinner').style.display = 'none';
-    }
+  console.log(`selectConversation called with SID: ${sid}`);
+  if (!state.conversationsLoaded) {
+    console.log('Conversations not loaded yet');
+    alert('Please wait until conversations are fully loaded.');
+    return;
   }
 
-// Export other necessary functions
-export {
-  handleSendMessage,
-  openNewConversationModal,
-  startConversation,
-  performSearch,
-  checkScrollPosition
-};
+  currentConversation.sid = sid;
+  console.log(`Current conversation SID set to: ${currentConversation.sid}`);
+
+  document.getElementById('loading-spinner').style.display = 'block';
+  document.getElementById('messages').style.display = 'none';
+  document.getElementById('message-input').style.display = 'none';
+  document.getElementById('messages-title').style.display = 'flex';
+  document.getElementById('no-conversation').style.display = 'none';
+
+  try {
+    console.log('Attempting to fetch conversation details');
+    const conversation = await api.getConversationDetails(sid);
+    console.log('Conversation details fetched:', conversation);
+
+    // Deselect other conversations
+    document.querySelectorAll('.conversation').forEach((conv) => {
+      conv.classList.remove('selected');
+    });
+    const selectedConversation = document.getElementById(`conv-${sid}`);
+    if (selectedConversation) {
+      selectedConversation.classList.add('selected');
+
+      // Remove unread indicators immediately
+      selectedConversation.classList.remove('unread');
+      const unreadBadge = selectedConversation.querySelector('.unread-badge');
+      if (unreadBadge) {
+        unreadBadge.remove();
+      }
+    }
+
+    const attributes = conversation.attributes || {};
+
+    // Conditionally call mark-read without awaiting
+    if (conversation.unreadCount > 0) {
+      api.markMessagesAsRead(sid).catch((error) => {
+        log('Error marking messages as read', { error });
+      });
+    }
+
+    const name = attributes.name || conversation.friendlyName;
+    const email = attributes.email || '';
+    const phoneNumber = attributes.phoneNumber || '';
+    const dob = attributes.dob || '';
+    const state = attributes.state || '';
+
+    // Update the conversation header and call controls
+    updateConversationHeader(sid, name, email, phoneNumber, dob, state);
+
+    // Fetch and render messages
+    const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
+    renderMessages(messages);
+    
+    document.getElementById('messages').style.display = 'block';
+    showMessageInput();
+
+    // Scroll to bottom of messages
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  } catch (error) {
+    console.error('Error in selectConversation:', error);
+    if (error.response) {
+      log('Error loading conversation', { error: error.response.data });
+      alert(`Error: ${error.response.data.error || 'Unknown error occurred.'}`);
+    } else {
+      log('Error loading conversation', { error: error.message });
+      alert(`Error: ${error.message}`);
+    }
+  } finally {
+    document.getElementById('loading-spinner').style.display = 'none';
+  }
+}
