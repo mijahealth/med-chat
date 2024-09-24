@@ -1,4 +1,5 @@
 {
+  "_fileName": "package.json",
   "name": "mija-health",
   "version": "1.0.0",
   "main": "app.js",

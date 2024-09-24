@@ -1,3 +1,5 @@
+// public/js/video-room.js
+
 /* global axios, feather, Twilio */
 import axios from 'axios';
 import feather from 'feather-icons';
