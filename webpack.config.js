@@ -1,6 +1,7 @@
 // webpack.config.js
 
 const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   entry: {
@@ -26,5 +27,15 @@ module.exports = {
       },
     ],
   },
-  mode: 'development', // Change to 'production' for production builds
+  resolve: {
+    fallback: {
+      "process": require.resolve("process/browser"),
+      "util": require.resolve("util/")
+    }
+  },
+  plugins: [
+    new webpack.DefinePlugin({
+      'process.env': JSON.stringify(process.env)
+    }),
+  ],
 };
