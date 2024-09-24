@@ -154,25 +154,21 @@ export function renderMessages(messages) {
 
 export function appendMessage(message) {
   const messagesContainer = document.getElementById('messages');
-  const messageElement = document.createElement('div');
-  messageElement.classList.add('message');
-  messageElement.classList.add(message.author === state.TWILIO_PHONE_NUMBER ? 'sent' : 'received');
+  const author = message.author.trim();
+  const messageClass = author === state.TWILIO_PHONE_NUMBER ? 'right' : 'left';
 
-  const contentElement = document.createElement('div');
-  contentElement.classList.add('message-content');
-  contentElement.textContent = message.body;
+  const messageHtml = `
+    <div class="message ${messageClass}">
+      <span>${message.body}</span>
+      <time>${formatTime(message.dateCreated)}</time>
+    </div>
+  `;
+  messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
 
-  const timeElement = document.createElement('div');
-  timeElement.classList.add('message-time');
-  timeElement.textContent = formatTime(message.dateCreated);
-
-  messageElement.appendChild(contentElement);
-  messageElement.appendChild(timeElement);
-
-  messagesContainer.appendChild(messageElement);
-
-  // Scroll to the bottom of the messages container
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  // Auto-scroll to bottom if enabled
+  if (state.autoScrollEnabled) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
 }
 
 export function showMessageInput() {
@@ -180,18 +176,64 @@ export function showMessageInput() {
 }
 
 export function updateConversationHeader(sid, name, email, phoneNumber, dob, state) {
-  const headerElement = document.getElementById('contact-info');
-  if (headerElement) {
-    headerElement.innerHTML = `
-      <div>
-        <h2>${name || 'Unknown'}</h2>
-        <p>${phoneNumber || ''}</p>
-        <p>${email || ''}</p>
-        <p>DOB: ${dob || 'N/A'}</p>
-        <p>State: ${state || 'N/A'}</p>
+  const headerElement = document.getElementById('messages-title');
+  headerElement.innerHTML = `
+    <div class="contact-card-wrapper">
+      <div class="contact-card">
+        <div class="contact-card-avatar">
+          <i data-feather="user" class="icon avatar-icon"></i>
+        </div>
+        <div class="contact-card-content">
+          <div class="contact-card-main">
+            <h2 class="contact-name">${name}</h2>
+            <div class="contact-card-details">
+              <div class="contact-info-row">
+                <div class="contact-item">
+                  <i data-feather="phone" class="icon contact-icon"></i>
+                  <span>${phoneNumber}</span>
+                </div>
+                <div class="contact-item">
+                  <i data-feather="mail" class="icon contact-icon"></i>
+                  <a href="mailto:${email}" target="_blank" rel="noopener noreferrer">${email}</a>
+                </div>
+              </div>
+              <div class="contact-info-row">
+                <div class="contact-item">
+                  <i data-feather="calendar" class="icon contact-icon"></i>
+                  <span>DOB: ${dob}</span>
+                </div>
+                <div class="contact-item">
+                  <i data-feather="map-pin" class="icon contact-icon"></i>
+                  <span>State: ${state}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    `;
-  }
+      <div class="header-controls">
+        <div id="call-controls">
+          <button id="call-btn" aria-label="Start Call" title="Start Call">
+            <i data-feather="phone-call"></i>
+          </button>
+          <button id="start-video-call-btn" aria-label="Start Video Call" title="Start Video Call">
+            <i data-feather="video"></i>
+          </button>
+          <button id="mute-btn" aria-label="Mute Call" title="Mute Call" style="display: none;">
+            <i data-feather="mic-off"></i>
+          </button>
+          <button id="end-call-btn" aria-label="End Call" title="End Call" style="display: none;">
+            <i data-feather="phone-off"></i>
+          </button>
+          <span id="call-status"></span>
+        </div>
+        <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+    </div>
+  `;
+  feather.replace(); // Replace Feather Icons placeholders with actual icons
 }
 
 // Export all necessary functions
