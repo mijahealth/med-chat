@@ -2,7 +2,7 @@
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
 import { playNotificationSound, isValidDate, debounce, log, toggleTheme } from './utils.js';
-import { loadConversations } from './conversations.js';
+import { loadConversations, updateLatestMessagePreview } from './conversations.js';
 import { setupCallControls } from './call.js';
 import { 
   renderConversations, 
@@ -309,5 +309,28 @@ export async function selectConversation(sid) {
     }
   } finally {
     document.getElementById('loading-spinner').style.display = 'none';
+  }
+}
+
+export function closeConversation() {
+  const lastConversationSid = currentConversation.sid;
+  currentConversation.sid = null;
+  document.getElementById('messages-title').innerHTML = '';
+  document.getElementById('messages-title').style.display = 'none';
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('message-input').style.display = 'none';
+  document.getElementById('no-conversation').style.display = 'flex';
+
+  // Deselect conversations
+  document.querySelectorAll('.conversation').forEach((conv) => {
+    conv.classList.remove('selected');
+  });
+
+  // Reload conversations to update previews
+  loadConversations();
+
+  // Fetch the latest message if the conversation wasn't deleted
+  if (lastConversationSid) {
+    updateLatestMessagePreview(lastConversationSid);
   }
 }

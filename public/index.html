@@ -1,4 +1,4 @@
-  <!-- index.html -->
+<!-- index.html -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -27,6 +27,8 @@
   <!-- Header -->
   <header>
     <div id="sidebar" role="navigation" aria-label="Conversation List">
+      <!-- Search Input -->
+      <input type="text" id="search-input" placeholder="Search conversations..." class="search-input" />
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2>Messages</h2>
         <div>
@@ -43,21 +45,8 @@
   </header>
   <!-- Main Content -->
   <main id="message-pane">
-    <div id="messages-title">
-      <!-- Conversation header (contact card) -->
-      <div id="contact-info" style="display: flex; justify-content: space-between; align-items: center;">
-        <div id="contact-details">
-          <!-- Contact details like name, phone number, etc. will be inserted here by ui.js -->
-        </div>
-        <div id="contact-actions">
-          <button id="call-btn" aria-label="Start Call" title="Start Call">
-            <i data-feather="phone-call"></i>
-          </button>
-          <button id="start-video-call-btn" aria-label="Start Video Call" title="Start Video Call">
-            <i data-feather="video"></i>
-          </button>
-        </div>
-      </div>
+    <div id="messages-title" style="display: none;">
+      <!-- Conversation header will be dynamically inserted here -->
     </div>
 
     <!-- Loading Spinner -->
@@ -72,10 +61,10 @@
     </div>
 
     <!-- Messages Container -->
-    <div id="messages" onscroll="checkScrollPosition()" aria-live="polite"></div>
+    <div id="messages" aria-live="polite"></div>
 
     <!-- Message Input -->
-    <div id="message-input" role="form">
+    <div id="message-input" role="form" style="display: none;">
       <input type="text" id="new-message" placeholder="Message..." aria-label="New Message" />
       <button id="send-message-btn" aria-label="Send Message">Send</button>
     </div>

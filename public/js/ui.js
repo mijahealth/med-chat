@@ -5,7 +5,7 @@ import { state, currentConversation } from './state.js';
 import { api } from './api.js';
 import { log, formatTime } from './utils.js';
 import feather from 'feather-icons';
-import { selectConversation } from './events.js';
+import { closeConversation, selectConversation } from './events.js';
 
 
 export async function initializeApp() {
@@ -91,7 +91,6 @@ function attachConversationListeners() {
     conv.addEventListener('click', (e) => {
       e.preventDefault();
       const sid = conv.dataset.sid;
-      console.log(`Conversation clicked in ui.js, SID: ${sid}`);
       selectConversation(sid);
     });
   });
@@ -177,6 +176,7 @@ export function showMessageInput() {
 
 export function updateConversationHeader(sid, name, email, phoneNumber, dob, state) {
   const headerElement = document.getElementById('messages-title');
+  headerElement.style.display = 'flex';
   headerElement.innerHTML = `
     <div class="contact-card-wrapper">
       <div class="contact-card">
@@ -185,26 +185,26 @@ export function updateConversationHeader(sid, name, email, phoneNumber, dob, sta
         </div>
         <div class="contact-card-content">
           <div class="contact-card-main">
-            <h2 class="contact-name">${name}</h2>
+            <h2 class="contact-name">${name || 'Unknown'}</h2>
             <div class="contact-card-details">
               <div class="contact-info-row">
                 <div class="contact-item">
                   <i data-feather="phone" class="icon contact-icon"></i>
-                  <span>${phoneNumber}</span>
+                  <span>${phoneNumber || 'N/A'}</span>
                 </div>
                 <div class="contact-item">
                   <i data-feather="mail" class="icon contact-icon"></i>
-                  <a href="mailto:${email}" target="_blank" rel="noopener noreferrer">${email}</a>
+                  <a href="mailto:${email}" target="_blank" rel="noopener noreferrer">${email || 'N/A'}</a>
                 </div>
               </div>
               <div class="contact-info-row">
                 <div class="contact-item">
                   <i data-feather="calendar" class="icon contact-icon"></i>
-                  <span>DOB: ${dob}</span>
+                  <span>DOB: ${dob || 'N/A'}</span>
                 </div>
                 <div class="contact-item">
                   <i data-feather="map-pin" class="icon contact-icon"></i>
-                  <span>State: ${state}</span>
+                  <span>State: ${state || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -227,13 +227,18 @@ export function updateConversationHeader(sid, name, email, phoneNumber, dob, sta
           </button>
           <span id="call-status"></span>
         </div>
-        <button class="close-button" onclick="closeConversation()" aria-label="Close Conversation">
+        <button class="close-button" id="close-conversation-btn" aria-label="Close Conversation">
           <i data-feather="x"></i>
         </button>
       </div>
     </div>
   `;
-  feather.replace(); // Replace Feather Icons placeholders with actual icons
+
+  // Attach event listener to close button
+  document.getElementById('close-conversation-btn').addEventListener('click', closeConversation);
+
+  // Replace Feather Icons
+  feather.replace();
 }
 
 // Export all necessary functions
