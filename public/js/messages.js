@@ -1,10 +1,9 @@
 // public/js/messages.js
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
-import { appendMessage, renderMessages } from './ui.js';
+import { appendMessage, renderMessages,moveConversationToTop } from './ui.js';
+import { updateLatestMessagePreview } from './conversations.js';
 import { log, playNotificationSound } from './utils.js';
-import { updateLatestMessagePreview, moveConversationToTop } from './ui.js'
-
 export async function loadMessages(sid) {
   try {
     const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });

@@ -103,20 +103,6 @@ function attachConversationListeners() {
   });
 }
 
-export function updateLatestMessagePreview(conversationSid, message) {
-  const conversationDiv = document.getElementById(`conv-${conversationSid}`);
-  if (conversationDiv) {
-    const lastMessageDiv = conversationDiv.querySelector('.last-message');
-    const timeDiv = conversationDiv.querySelector('.time');
-    if (lastMessageDiv) {
-      lastMessageDiv.textContent = message.body;
-    }
-    if (timeDiv) {
-      timeDiv.textContent = formatTime(message.dateCreated);
-    }
-  }
-}
-
 export function moveConversationToTop(conversationSid) {
   const conversationsDiv = document.getElementById('conversations');
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
