@@ -15,9 +15,18 @@ import {
 import feather from 'feather-icons';
 
 export function setupEventListeners() {
-  // User interaction tracking for sound notifications
-  document.addEventListener('click', () => {
+  // Combined document-level click listener
+  document.addEventListener('click', (event) => {
+    // User interaction tracking for sound notifications
     state.userInteracted = true;
+
+    // Conversation selection handling
+    const conversationElement = event.target.closest('.conversation');
+    if (conversationElement && !event.target.closest('.delete-btn')) {
+      event.stopPropagation(); // Prevent event from bubbling up
+      const sid = conversationElement.dataset.sid;
+      selectConversation(sid);
+    }
   });
 
   // Send Message on Enter and Button Click
@@ -71,16 +80,6 @@ export function setupEventListeners() {
   } else {
     log('Messages div not found');
   }
-
-  // Listen for conversation selection and deletion
-  document.addEventListener('click', (event) => {
-    const conversationElement = event.target.closest('.conversation');
-    if (conversationElement && !event.target.closest('.delete-btn')) {
-      event.stopPropagation(); // Prevent event from bubbling up
-      const sid = conversationElement.dataset.sid;
-      selectConversation(sid);
-    }
-  });
 }
 
 export function handleSendMessage() {
@@ -242,6 +241,7 @@ export function checkScrollPosition() {
 
 export async function selectConversation(sid) {
   console.log(`selectConversation called with SID: ${sid}`);
+  console.trace(); // This will print the stack trace, showing where the function is being called from
   if (!state.conversationsLoaded) {
     console.log('Conversations not loaded yet');
     alert('Please wait until conversations are fully loaded.');
@@ -356,5 +356,19 @@ function handleDeleteConversation(sid) {
         console.error('Error deleting conversation:', error);
         alert('Failed to delete conversation. Please try again.');
       });
+  }
+}
+
+export function setupConversationListeners() {
+  const conversationsContainer = document.getElementById('conversations');
+  conversationsContainer.addEventListener('click', handleConversationClick);
+}
+
+function handleConversationClick(event) {
+  const conversationElement = event.target.closest('.conversation');
+  if (conversationElement && !event.target.closest('.delete-btn')) {
+    event.preventDefault();
+    const sid = conversationElement.dataset.sid;
+    selectConversation(sid);
   }
 }
