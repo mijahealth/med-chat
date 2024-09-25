@@ -2,7 +2,7 @@
 
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
-import { playNotificationSound, isValidDate, debounce, log, toggleTheme } from './utils.js';
+import { playNotificationSound, isValidDate, debounce, log, toggleTheme,setUserInteracted} from './utils.js';
 import { loadConversations, updateLatestMessagePreview, deleteConversation } from './conversations.js';
 import { setupCallControls } from './call.js';
 import { 
@@ -232,8 +232,8 @@ export async function selectConversation(sid) {
     console.log('Conversations not loaded yet');
     alert('Please wait until conversations are fully loaded.');
     return;
-  }
-
+  } 
+  setUserInteracted(); 
   currentConversation.sid = sid;
   console.log(`Current conversation SID set to: ${currentConversation.sid}`);
 

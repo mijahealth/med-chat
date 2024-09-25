@@ -31,7 +31,9 @@ export function log(message, data = {}) {
   export function playNotificationSound() {
     if (state.userInteracted) {
       const audio = new Audio('/sounds/notification.mp3');
-      audio.play().catch((error) => {
+      audio.play().then(() => {
+        console.log('Notification sound played successfully');
+      }).catch((error) => {
         log('Error playing sound', { error });
       });
     } else {
@@ -71,4 +73,8 @@ export function log(message, data = {}) {
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
     themeToggleBtn.innerHTML = `<i data-feather="${state.currentTheme === 'dark' ? 'sun' : 'moon'}" aria-hidden="true"></i>`;
     feather.replace(); // Replace the theme toggle icon
+  }
+
+  export function setUserInteracted() {
+    state.userInteracted = true;
   }

@@ -5,8 +5,7 @@ import { handleNewMessage } from './messages.js';
 import {
   handleNewConversation,
   handleUpdateConversation,
-  removeConversationFromUI,
-  incrementUnreadCount,
+  removeConversationFromUI
 } from './conversations.js';
 
 let socket;
@@ -58,9 +57,6 @@ function handleWebSocketMessage(data) {
         body: data.body
       });
       handleNewMessage(data);
-      if (data.author !== state.TWILIO_PHONE_NUMBER && data.conversationSid !== currentConversation.sid) {
-        incrementUnreadCount(data.conversationSid);
-      }
       break;
 
     case 'newConversation':
