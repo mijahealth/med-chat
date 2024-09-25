@@ -44,8 +44,6 @@ export function renderConversations(conversations) {
     if (currentConversation.sid) {
       document.getElementById(`conv-${currentConversation.sid}`)?.classList.add('selected');
     }
-
-    attachConversationListeners();
     feather.replace(); // Replace any new Feather icons
   } else {
     log('No conversations to render or invalid data received');
@@ -84,16 +82,6 @@ function createConversationHtml(conversation) {
       </div>
     </div>
   `;
-}
-
-function attachConversationListeners() {
-  document.querySelectorAll('.conversation').forEach(conv => {
-    conv.addEventListener('click', (e) => {
-      e.preventDefault();
-      const sid = conv.dataset.sid;
-      selectConversation(sid);
-    });
-  });
 
   document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {

@@ -15,20 +15,6 @@ import {
 import feather from 'feather-icons';
 
 export function setupEventListeners() {
-  // Combined document-level click listener
-  document.addEventListener('click', (event) => {
-    // User interaction tracking for sound notifications
-    state.userInteracted = true;
-
-    // Conversation selection handling
-    const conversationElement = event.target.closest('.conversation');
-    if (conversationElement && !event.target.closest('.delete-btn')) {
-      event.stopPropagation(); // Prevent event from bubbling up
-      const sid = conversationElement.dataset.sid;
-      selectConversation(sid);
-    }
-  });
-
   // Send Message on Enter and Button Click
   const newMessageInput = document.getElementById('new-message');
   const sendMessageBtn = document.getElementById('send-message-btn');
