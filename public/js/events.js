@@ -30,14 +30,6 @@ export function setupEventListeners() {
     setupConversationListeners();
   }
 
-  // Theme Toggle Button
-  const themeToggleBtn = document.getElementById('theme-toggle-btn');
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', toggleTheme);
-  } else {
-    log('Theme toggle button not found');
-  }
-
   // New Conversation Button
   const newConversationBtn = document.getElementById('new-conversation-btn');
   if (newConversationBtn) {

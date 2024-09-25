@@ -66,14 +66,6 @@ export function log(message, data = {}) {
   
     return date.toISOString().startsWith(dateString);
   }
-  
-  export function toggleTheme() {
-    state.currentTheme = state.currentTheme === 'light' ? 'dark' : 'light';
-    document.body.setAttribute('data-theme', state.currentTheme);
-    const themeToggleBtn = document.getElementById('theme-toggle-btn');
-    themeToggleBtn.innerHTML = `<i data-feather="${state.currentTheme === 'dark' ? 'sun' : 'moon'}" aria-hidden="true"></i>`;
-    feather.replace(); // Replace the theme toggle icon
-  }
 
   export function setUserInteracted() {
     state.userInteracted = true;
