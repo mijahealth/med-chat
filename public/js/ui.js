@@ -5,7 +5,7 @@ import { state, currentConversation } from './state.js';
 import { api } from './api.js';
 import { log, formatTime } from './utils.js';
 import feather from 'feather-icons';
-import { closeConversation, selectConversation } from './events.js';
+import { closeConversation, selectConversation, setupConversationListeners} from './events.js';
 
 
 export async function initializeApp() {
@@ -14,8 +14,13 @@ export async function initializeApp() {
     state.TWILIO_PHONE_NUMBER = config.TWILIO_PHONE_NUMBER;
     state.NGROK_URL = config.NGROK_URL;
 
+    // Load conversations and render them
     const conversations = await loadConversations();
-    renderConversations(conversations || []); // Ensure an array is passed
+
+    // Event listener will be attached after rendering conversations
+    renderConversations(conversations || []);
+
+    // Other initializations
     setupWebSocket();
     showNoConversationSelected();
   } catch (error) {
@@ -44,7 +49,11 @@ export function renderConversations(conversations) {
     if (currentConversation.sid) {
       document.getElementById(`conv-${currentConversation.sid}`)?.classList.add('selected');
     }
+
     feather.replace(); // Replace any new Feather icons
+
+    // Attach event listeners for conversation clicks after rendering
+    setupConversationListeners();
   } else {
     log('No conversations to render or invalid data received');
   }

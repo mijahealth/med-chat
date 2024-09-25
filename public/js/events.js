@@ -27,6 +27,7 @@ export function setupEventListeners() {
     sendMessageBtn.addEventListener('click', handleSendMessage);
   } else {
     log('New message input or send button not found');
+    setupConversationListeners();
   }
 
   // Theme Toggle Button
@@ -227,7 +228,6 @@ export function checkScrollPosition() {
 
 export async function selectConversation(sid) {
   console.log(`selectConversation called with SID: ${sid}`);
-  console.trace(); // This will print the stack trace, showing where the function is being called from
   if (!state.conversationsLoaded) {
     console.log('Conversations not loaded yet');
     alert('Please wait until conversations are fully loaded.');
@@ -347,7 +347,11 @@ function handleDeleteConversation(sid) {
 
 export function setupConversationListeners() {
   const conversationsContainer = document.getElementById('conversations');
-  conversationsContainer.addEventListener('click', handleConversationClick);
+  if (conversationsContainer) {
+    conversationsContainer.addEventListener('click', handleConversationClick);
+  } else {
+    console.error('Conversations container not found');
+  }
 }
 
 function handleConversationClick(event) {

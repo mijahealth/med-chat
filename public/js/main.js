@@ -10,6 +10,9 @@ import feather from 'feather-icons';
 
 // main.js
 
+// Initialize the application when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', initializeApplication);
+
 async function initializeApplication() {
   try {
     log('Initializing application...');
@@ -21,10 +24,6 @@ async function initializeApplication() {
     // Setup event listeners
     setupEventListeners();
     log('Event listeners set up');
-
-    // Load conversations
-    await loadConversations();
-    log('Conversations loaded');
 
     // Setup WebSocket connection (only once)
     setupWebSocket();
@@ -47,8 +46,7 @@ async function initializeApplication() {
 // Make closeModal globally available for use in HTML onclick attributes
 window.closeModal = closeModal;
 
-// Initialize the application when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', initializeApplication);
+
 
 // Handle any uncaught errors
 window.addEventListener('error', (event) => {
