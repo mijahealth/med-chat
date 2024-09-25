@@ -1,8 +1,9 @@
 // public/js/events.js
+
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
 import { playNotificationSound, isValidDate, debounce, log, toggleTheme } from './utils.js';
-import { loadConversations, updateLatestMessagePreview } from './conversations.js';
+import { loadConversations, updateLatestMessagePreview, deleteConversation } from './conversations.js';
 import { setupCallControls } from './call.js';
 import { 
   renderConversations, 
@@ -70,10 +71,11 @@ export function setupEventListeners() {
     log('Messages div not found');
   }
 
-  // Listen for conversation selection
+  // Listen for conversation selection and deletion
   document.addEventListener('click', (event) => {
     const conversationElement = event.target.closest('.conversation');
-    if (conversationElement) {
+    if (conversationElement && !event.target.closest('.delete-btn')) {
+      event.stopPropagation(); // Prevent event from bubbling up
       const sid = conversationElement.dataset.sid;
       console.log(`Conversation clicked, calling selectConversation with SID: ${sid}`);
       selectConversation(sid);
@@ -192,18 +194,11 @@ export function startConversation(event) {
 }
 
 function setupSearch() {
-  const searchInput = document.createElement('input');
-  searchInput.type = 'text';
-  searchInput.id = 'search-input';
-  searchInput.placeholder = 'Search conversations...';
-  searchInput.classList.add('search-input');
-
-  const sidebar = document.getElementById('sidebar');
-  if (sidebar) {
-    sidebar.insertBefore(searchInput, sidebar.firstChild);
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
     searchInput.addEventListener('input', debounce(performSearch, 300));
   } else {
-    log('Sidebar not found for search input');
+    log('Search input not found');
   }
 }
 
@@ -332,5 +327,20 @@ export function closeConversation() {
   // Fetch the latest message if the conversation wasn't deleted
   if (lastConversationSid) {
     updateLatestMessagePreview(lastConversationSid);
+  }
+}
+
+function handleDeleteConversation(sid) {
+  if (confirm('Are you sure you want to delete this conversation?')) {
+    deleteConversation(sid)
+      .then(() => {
+        if (currentConversation.sid === sid) {
+          closeConversation();
+        }
+      })
+      .catch((error) => {
+        console.error('Error deleting conversation:', error);
+        alert('Failed to delete conversation. Please try again.');
+      });
   }
 }

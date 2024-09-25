@@ -20,10 +20,10 @@ export async function loadConversations() {
     }
 
     state.conversationsLoaded = true;
-    return conversations; // Make sure to return the conversations
+    return conversations;
   } catch (error) {
     log('Error loading conversations', { error });
-    return []; // Return an empty array in case of error
+    return [];
   } finally {
     document.getElementById('loading-spinner').style.display = 'none';
   }
@@ -124,7 +124,6 @@ export function removeConversationFromUI(conversationSid) {
   }
 }
 
-// Additional functions mentioned in the export statement
 export async function fetchConversation(sid) {
   try {
     return await api.getConversationDetails(sid);
@@ -156,6 +155,7 @@ export async function deleteConversation(sid) {
   try {
     await api.deleteConversation(sid);
     removeConversationFromUI(sid);
+    log('Conversation deleted successfully', { sid });
   } catch (error) {
     log('Error deleting conversation', { sid, error });
     throw error;
@@ -219,4 +219,9 @@ function updateConversationPreview(conversationSid, latestMessage) {
   }
 }
 
-// No need for the separate export statement at the bottom, as all functions are already exported
+export function showNoConversationSelected() {
+  document.getElementById('messages-title').style.display = 'none';
+  document.getElementById('no-conversation').style.display = 'flex';
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('message-input').style.display = 'none';
+}
