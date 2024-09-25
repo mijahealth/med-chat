@@ -9,7 +9,8 @@ import {
   renderConversations, 
   updateConversationHeader, 
   showMessageInput, 
-  renderMessages 
+  renderMessages,
+  moveConversationToTop 
 } from './ui.js';
 import feather from 'feather-icons';
 
@@ -77,7 +78,6 @@ export function setupEventListeners() {
     if (conversationElement && !event.target.closest('.delete-btn')) {
       event.stopPropagation(); // Prevent event from bubbling up
       const sid = conversationElement.dataset.sid;
-      console.log(`Conversation clicked, calling selectConversation with SID: ${sid}`);
       selectConversation(sid);
     }
   });
@@ -99,6 +99,7 @@ export function handleSendMessage() {
   api.sendMessage(currentConversation.sid, message)
     .then(() => {
       inputField.value = ''; // Clear the input field after sending the message
+      
       // Show message sent indicator
       const indicator = document.getElementById('message-sent-indicator');
       if (indicator) {
@@ -108,6 +109,19 @@ export function handleSendMessage() {
           indicator.classList.remove('show');
         }, 3000); // Hide after 3 seconds
       }
+
+      // Optionally, you can update the conversation preview here
+      updateLatestMessagePreview(currentConversation.sid, {
+        body: message,
+        author: state.TWILIO_PHONE_NUMBER,
+        dateCreated: new Date().toISOString()
+      });
+
+      // Move the conversation to the top of the list
+      moveConversationToTop(currentConversation.sid);
+
+      // Note: We're not appending the message to the UI here.
+      // The WebSocket will handle displaying the message to ensure consistency.
     })
     .catch((error) => {
       console.error('Error sending message:', error);

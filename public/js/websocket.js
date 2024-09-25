@@ -12,11 +12,16 @@ import {
 let socket;
 
 export function setupWebSocket() {
+  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+    console.log('WebSocket is already connected or connecting');
+    return;
+  }
+
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   socket = new WebSocket(`${protocol}//${window.location.host}`);
 
   socket.onopen = () => {
-    log('WebSocket connection established');
+    console.log('WebSocket connection established');
   };
 
   socket.onmessage = (event) => {

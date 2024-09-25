@@ -8,6 +8,8 @@ import { state } from './state.js';
 import { log } from './utils.js';
 import feather from 'feather-icons';
 
+// main.js
+
 async function initializeApplication() {
   try {
     log('Initializing application...');
@@ -24,7 +26,7 @@ async function initializeApplication() {
     await loadConversations();
     log('Conversations loaded');
 
-    // Setup WebSocket connection
+    // Setup WebSocket connection (only once)
     setupWebSocket();
     log('WebSocket connection established');
 
@@ -38,7 +40,6 @@ async function initializeApplication() {
 
   } catch (error) {
     console.error('Error during application initialization:', error);
-    // You might want to show an error message to the user here
     alert('There was an error initializing the application. Please refresh the page and try again.');
   }
 }
