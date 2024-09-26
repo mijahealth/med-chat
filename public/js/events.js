@@ -273,6 +273,9 @@ export async function selectConversation(sid) {
 
     // Update the conversation header and call controls
     updateConversationHeader(sid, name, email, phoneNumber, dob, state);
+    // **Attach event listeners to the new call buttons**
+    setupCallControls();
+
 
     // Fetch and render messages
     const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
