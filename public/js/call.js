@@ -3,6 +3,7 @@ import { currentConversation, state } from './state.js';
 import { api } from './api.js';
 import { log } from './utils.js';
 import { Device } from 'twilio-client';
+import axios from 'axios';
 
 let call = null;
 let isMuted = false;
