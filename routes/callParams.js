@@ -1,6 +1,5 @@
-/* eslint-env node */
-
 // routes/callParams.js
+
 const express = require('express');
 const router = express.Router();
 const { param, validationResult } = require('express-validator');

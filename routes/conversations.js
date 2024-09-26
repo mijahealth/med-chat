@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 // routes/conversations.js
 
 const express = require('express');
