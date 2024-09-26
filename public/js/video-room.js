@@ -6,6 +6,7 @@ import feather from 'feather-icons';
 import Video from 'twilio-video';
 
 
+
 console.log('Video room script loaded');
 
 let videoRoom, localTrack, localAudioTrack;
@@ -336,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (joinCallBtn && userNameInput) {
       joinCallBtn.addEventListener('click', () => {
+        console.log('Call button clicked');
           if (userNameInput.value.trim()) {
               setupVideo();
           } else {

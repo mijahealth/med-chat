@@ -6,6 +6,7 @@ import { loadConversations } from './conversations.js';
 import { setupWebSocket } from './websocket.js';
 import { state } from './state.js';
 import { log } from './utils.js';
+import { setupCallControls } from './call.js';
 import feather from 'feather-icons';
 
 // main.js
@@ -24,6 +25,14 @@ async function initializeApplication() {
     // Setup event listeners
     setupEventListeners();
     log('Event listeners set up');
+
+    // Setup call controls if the function exists
+    if (typeof setupCallControls === 'function') {
+      setupCallControls();
+      log('Call controls set up');
+    } else {
+      log('setupCallControls function not found');
+    }
 
     // Setup WebSocket connection (only once)
     setupWebSocket();

@@ -11,31 +11,63 @@ let callStatusElement = null;
 let callStartTime;
 let callDurationInterval;
 
+// At the beginning of the file
+console.log('call.js loaded');
+
 export function setupCallControls() {
+  console.log('setupCallControls function called');
+
   // Initialize callStatusElement
   callStatusElement = document.getElementById('call-status');
+  console.log('Call status element:', callStatusElement);
 
   // Attach event listeners for the call controls
   const callBtn = document.getElementById('call-btn');
   if (callBtn) {
-    callBtn.addEventListener('click', makeCall);
+    console.log('Call button found');
+    callBtn.addEventListener('click', () => {
+      console.log('Call button clicked');
+      makeCall();
+    });
+  } else {
+    console.log('Call button not found');
   }
 
   const muteBtn = document.getElementById('mute-btn');
   if (muteBtn) {
-    muteBtn.addEventListener('click', toggleMute);
+    console.log('Mute button found');
+    muteBtn.addEventListener('click', () => {
+      console.log('Mute button clicked');
+      toggleMute();
+    });
+  } else {
+    console.log('Mute button not found');
   }
 
   const endCallBtn = document.getElementById('end-call-btn');
   if (endCallBtn) {
-    endCallBtn.addEventListener('click', endCall);
+    console.log('End call button found');
+    endCallBtn.addEventListener('click', () => {
+      console.log('End call button clicked');
+      endCall();
+    });
+  } else {
+    console.log('End call button not found');
   }
 
   // Video call button
   const startVideoCallBtn = document.getElementById('start-video-call-btn');
   if (startVideoCallBtn) {
-    startVideoCallBtn.addEventListener('click', startVideoCall);
+    console.log('Start video call button found');
+    startVideoCallBtn.addEventListener('click', () => {
+      console.log('Start video call button clicked');
+      startVideoCall();
+    });
+  } else {
+    console.log('Start video call button not found');
   }
+
+  console.log('setupCallControls function completed');
 }
 
 async function setupDevice() {
