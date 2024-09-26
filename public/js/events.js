@@ -325,27 +325,51 @@ export function closeConversation() {
   }
 }
 
-function handleDeleteConversation(sid) {
-  if (confirm('Are you sure you want to delete this conversation?')) {
-    deleteConversation(sid)
-      .then(() => {
-        if (currentConversation.sid === sid) {
-          closeConversation();
-        }
-      })
-      .catch((error) => {
-        console.error('Error deleting conversation:', error);
-        alert('Failed to delete conversation. Please try again.');
-      });
+async function handleDeleteConversation(sid) {
+  const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
+  if (deleteButton) {
+    deleteButton.disabled = true;
+    deleteButton.innerHTML = '<i data-feather="trash-2" aria-hidden="true"></i> Deleting...';
+    feather.replace();
+
+    try {
+      await deleteConversation(sid);
+      log('Conversation deleted successfully', { sid });
+    } catch (error) {
+      log('Error deleting conversation', { sid, error });
+      alert('Failed to delete conversation. Please try again.');
+      deleteButton.disabled = false;
+      deleteButton.innerHTML = '<i data-feather="trash-2" aria-hidden="true"></i>';
+      feather.replace();
+    }
   }
 }
 
 export function setupConversationListeners() {
   const conversationsContainer = document.getElementById('conversations');
   if (conversationsContainer) {
-    conversationsContainer.addEventListener('click', handleConversationClick);
+    conversationsContainer.addEventListener('click', (event) => {
+      const deleteButton = event.target.closest('.delete-btn');
+      if (deleteButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        const sid = deleteButton.dataset.sid;
+        if (sid) {
+          handleDeleteConversation(sid);
+        }
+      } else {
+        const conversationElement = event.target.closest('.conversation');
+        if (conversationElement) {
+          const sid = conversationElement.dataset.sid;
+          if (sid) {
+            selectConversation(sid);
+          }
+        }
+      }
+    });
+    log('Conversation container click listener added');
   } else {
-    console.error('Conversations container not found');
+    log('Conversations container not found');
   }
 }
 

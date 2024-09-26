@@ -1,5 +1,5 @@
 // public/js/ui.js
-import { loadConversations, incrementUnreadCount, handleNewConversation, handleUpdateConversation, removeConversationFromUI } from './conversations.js';
+import { loadConversations, incrementUnreadCount, handleNewConversation, handleUpdateConversation, removeConversationFromUI, deleteConversation} from './conversations.js';
 import { setupWebSocket } from './websocket.js';
 import { state, currentConversation } from './state.js';
 import { api } from './api.js';
@@ -104,13 +104,6 @@ function createConversationHtml(conversation) {
       </div>
     </div>
   `;
-
-  document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteConversation(btn.dataset.sid);
-    });
-  });
 }
 
 export function moveConversationToTop(conversationSid) {
@@ -118,20 +111,6 @@ export function moveConversationToTop(conversationSid) {
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
   if (conversationDiv && conversationsDiv.firstChild !== conversationDiv) {
     conversationsDiv.insertBefore(conversationDiv, conversationsDiv.firstChild);
-  }
-}
-
-async function deleteConversation(sid) {
-  try {
-    await api.deleteConversation(sid);
-    removeConversationFromUI(sid);
-    if (currentConversation.sid === sid) {
-      showNoConversationSelected();
-    }
-    log(`Conversation ${sid} deleted successfully`);
-  } catch (error) {
-    log('Error deleting conversation', { sid, error });
-    alert('Failed to delete conversation. Please try again.');
   }
 }
 
