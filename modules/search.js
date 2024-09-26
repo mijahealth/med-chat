@@ -18,14 +18,17 @@ async function updateCache() {
         conversations.map(async (conv) => {
           const participants = await client.conversations.v1.conversations(conv.sid).participants.list();
           const attributes = JSON.parse(conv.attributes || '{}');
+          const messages = await client.conversations.v1.conversations(conv.sid).messages.list({limit: 1, order: 'desc'});
+          const lastMessage = messages[0] ? messages[0].body : '';
+          const lastMessageTime = messages[0] ? messages[0].dateCreated : null;
           return {
             sid: conv.sid,
             friendlyName: conv.friendlyName,
             phoneNumber: participants[0]?.messagingBinding?.address || '',
             email: attributes.email || '',
             name: attributes.name || '',
-            lastMessage: conv.lastMessage?.body || '',
-            lastMessageTime: conv.lastMessage?.dateCreated || null,
+            lastMessage: lastMessage,
+            lastMessageTime: lastMessageTime,
           };
         })
       );
@@ -41,13 +44,15 @@ async function updateCache() {
 function searchConversations(query) {
   logger.info('Performing search', { query });
   const normalizedQuery = query.toLowerCase();
-  return conversationCache.filter(
+  const results = conversationCache.filter(
     (conv) =>
       conv.phoneNumber.includes(normalizedQuery) ||
       conv.email.toLowerCase().includes(normalizedQuery) ||
       conv.name.toLowerCase().includes(normalizedQuery) ||
       conv.friendlyName.toLowerCase().includes(normalizedQuery)
   );
+  logger.info('Search completed', { query, resultsCount: results.length });
+  return results;
 }
 
 // Initialize Cache

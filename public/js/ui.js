@@ -40,9 +40,22 @@ export function renderConversations(conversations) {
   const conversationsDiv = document.getElementById('conversations');
   conversationsDiv.innerHTML = ''; // Clear existing conversations
 
+  console.log('Rendering conversations:', conversations);
+
   if (Array.isArray(conversations)) {
     conversations.forEach((conversation) => {
-      const conversationHtml = createConversationHtml(conversation);
+      console.log('Processing conversation:', conversation);
+
+      // Ensure conversation.attributes exists
+      conversation.attributes = conversation.attributes || {};
+
+      const lastMessageText = conversation.lastMessage || 'No messages yet';
+      console.log('Last message text:', lastMessageText);
+
+      const conversationHtml = createConversationHtml({
+        ...conversation,
+        lastMessage: lastMessageText
+      });
       conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
     });
 
