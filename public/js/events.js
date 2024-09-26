@@ -2,7 +2,18 @@
 
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
-import { playNotificationSound, isValidDate, debounce, log, toggleTheme,setUserInteracted} from './utils.js';
+import { 
+  playNotificationSound, 
+  debounce, 
+  log, 
+  setUserInteracted,
+  isValidPhoneNumber,
+  isValidName,
+  isValidEmail,
+  isValidDate,
+  isValidState,
+  isValidMessage
+} from './utils.js';
 import { loadConversations, updateLatestMessagePreview, deleteConversation } from './conversations.js';
 import { setupCallControls } from './call.js';
 import { 
@@ -59,6 +70,78 @@ export function setupEventListeners() {
   } else {
     log('Messages div not found');
   }
+
+  // Setup form validation
+  setupFormValidation();
+}
+
+function setupFormValidation() {
+  const form = document.getElementById('new-conversation-form');
+  const inputs = form.querySelectorAll('[data-validate]');
+
+  inputs.forEach(input => {
+    input.addEventListener('input', validateInput);
+    input.addEventListener('blur', validateInput);
+  });
+}
+
+function validateInput(event) {
+  const input = event.target;
+  const value = input.value.trim();
+  const validationType = input.dataset.validate;
+  let isValid = true;
+  let errorMessage = '';
+
+  switch (validationType) {
+    case 'phone':
+      isValid = isValidPhoneNumber(value);
+      errorMessage = 'Please enter a valid phone number in the format +XXXXXXXXXXX';
+      break;
+    case 'name':
+      isValid = isValidName(value);
+      errorMessage = 'Name is required';
+      break;
+    case 'email':
+      isValid = isValidEmail(value);
+      errorMessage = 'Please enter a valid email address';
+      break;
+    case 'dob':
+      isValid = isValidDate(value);
+      errorMessage = 'Please enter a valid date of birth';
+      break;
+    case 'state':
+      isValid = isValidState(value);
+      errorMessage = 'State is required';
+      break;
+    case 'message':
+      isValid = isValidMessage(value);
+      errorMessage = 'Message is required';
+      break;
+  }
+
+  const errorElement = document.querySelector(`.error-message[data-for="${input.name}"]`);
+  if (!isValid) {
+    errorElement.textContent = errorMessage;
+    input.classList.add('invalid');
+  } else {
+    errorElement.textContent = '';
+    input.classList.remove('invalid');
+  }
+
+  return isValid;
+}
+
+function validateForm(form) {
+  const inputs = form.querySelectorAll('[data-validate]');
+  let isValid = true;
+
+  inputs.forEach(input => {
+    if (!validateInput({ target: input })) {
+      isValid = false;
+    }
+  });
+
+  return isValid;
 }
 
 export function handleSendMessage() {
@@ -128,36 +211,23 @@ function clearNewConversationForm() {
   const form = document.querySelector('#new-conversation-modal form');
   if (form) {
     form.reset();
+    form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
   }
 }
 
 export function startConversation(event) {
   event.preventDefault();
   const form = event.target;
-  const phoneNumber = form.phoneNumber.value.trim();
-  const message = form.message.value.trim();
-  const name = form.name.value.trim();
-  const email = form.email.value.trim();
-  const dob = form.dob.value.trim();
-  const stateField = form.state.value.trim();
 
-  // Additional validation
-  if (!/^\+[0-9]{10,15}$/.test(phoneNumber)) {
-    alert('Please enter a valid phone number in the format +XXXXXXXXXXX');
-    return;
-  }
+  if (validateForm(form)) {
+    const phoneNumber = form.phoneNumber.value.trim();
+    const message = form.message.value.trim();
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
+    const dob = form.dob.value.trim();
+    const stateField = form.state.value.trim();
 
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    alert('Please enter a valid email address');
-    return;
-  }
-
-  if (dob && !isValidDate(dob)) {
-    alert('Please enter a valid date of birth');
-    return;
-  }
-
-  if (phoneNumber && message && name) {
     api.startConversation({ phoneNumber, message, name, email, dob, state: stateField })
       .then(async (response) => {
         if (response.existing) {
@@ -180,8 +250,6 @@ export function startConversation(event) {
         console.error('Error starting conversation:', error);
         alert('Failed to start a new conversation. Please try again.');
       });
-  } else {
-    alert('Please fill in all required fields.');
   }
 }
 
@@ -275,7 +343,6 @@ export async function selectConversation(sid) {
     updateConversationHeader(sid, name, email, phoneNumber, dob, state);
     // **Attach event listeners to the new call buttons**
     setupCallControls();
-
 
     // Fetch and render messages
     const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });

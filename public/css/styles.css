@@ -778,3 +778,18 @@ body {
   height: 100%;
   background-color: black;
 }
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  display: block;
+}
+
+input.invalid, textarea.invalid {
+  border-color: #dc3545;
+}

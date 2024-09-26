@@ -67,22 +67,40 @@
     </div>
   </main>
 
-  <!-- New Conversation Modal -->
-  <div id="new-conversation-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="closeModal()">&times;</span>
-      <h2>Start a New Conversation</h2>
-      <form id="new-conversation-form">
-        <input type="text" name="phoneNumber" placeholder="+1XXXXXXXXXX" required aria-label="Phone Number" />
-        <input type="text" name="name" placeholder="Name" aria-label="Name" required />
-        <input type="email" name="email" placeholder="Email" aria-label="Email" />
-        <input type="date" name="dob" placeholder="Date of Birth" aria-label="Date of Birth" />
-        <input type="text" name="state" placeholder="State" aria-label="State" />
-        <textarea name="message" placeholder="Enter a message" required aria-label="Message"></textarea>
-        <button type="submit">Start Conversation</button>
-      </form>
-    </div>
+<!-- New Conversation Modal -->
+<div id="new-conversation-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" onclick="closeModal()">&times;</span>
+    <h2>Start a New Conversation</h2>
+    <form id="new-conversation-form">
+      <div class="form-group">
+        <input type="text" name="phoneNumber" placeholder="+1XXXXXXXXXX" required aria-label="Phone Number" data-validate="phone">
+        <span class="error-message" data-for="phoneNumber"></span>
+      </div>
+      <div class="form-group">
+        <input type="text" name="name" placeholder="Name" aria-label="Name" required data-validate="name">
+        <span class="error-message" data-for="name"></span>
+      </div>
+      <div class="form-group">
+        <input type="email" name="email" placeholder="Email" aria-label="Email" data-validate="email">
+        <span class="error-message" data-for="email"></span>
+      </div>
+      <div class="form-group">
+        <input type="date" name="dob" placeholder="Date of Birth" aria-label="Date of Birth" data-validate="dob">
+        <span class="error-message" data-for="dob"></span>
+      </div>
+      <div class="form-group">
+        <input type="text" name="state" placeholder="State" aria-label="State" data-validate="state">
+        <span class="error-message" data-for="state"></span>
+      </div>
+      <div class="form-group">
+        <textarea name="message" placeholder="Enter a message" required aria-label="Message" data-validate="message"></textarea>
+        <span class="error-message" data-for="message"></span>
+      </div>
+      <button type="submit">Start Conversation</button>
+    </form>
   </div>
+</div>
 
   <!-- Message Sent Indicator -->
   <div id="message-sent-indicator" class="message-sent-indicator">Message Sent</div>
