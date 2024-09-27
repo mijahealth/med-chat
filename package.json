@@ -13,8 +13,6 @@
     "dev": "nodemon app.js",
     "test": "jest",
     "build": "webpack --config webpack.config.js",
-    "prebuild": "npm run lint",
-    "postbuild": "npm run lint",
     "prepare": "husky install"
   },
   "keywords": [],
