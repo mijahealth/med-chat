@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+      "checkJs": true,
+      "target": "ESNext",
+      "module": "ESNext",
+      "strict": true
+    },
+    "include": ["./**/*.js"],
+    "exclude": ["node_modules", "dist", "build"]
+  }
