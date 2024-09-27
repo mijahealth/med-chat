@@ -5,13 +5,17 @@ import { handleNewMessage } from './messages.js';
 import {
   handleNewConversation,
   handleUpdateConversation,
-  removeConversationFromUI
+  removeConversationFromUI,
 } from './conversations.js';
 
 let socket;
 
 export function setupWebSocket() {
-  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+  if (
+    socket &&
+    (socket.readyState === WebSocket.OPEN ||
+      socket.readyState === WebSocket.CONNECTING)
+  ) {
     console.log('WebSocket is already connected or connecting');
     return;
   }
@@ -50,37 +54,37 @@ function handleWebSocketMessage(data) {
 
   switch (data.type) {
     case 'newMessage':
-      log('New message received', { 
+      log('New message received', {
         conversationSid: data.conversationSid,
         messageSid: data.messageSid,
         author: data.author,
-        body: data.body
+        body: data.body,
       });
       handleNewMessage(data);
       break;
 
     case 'newConversation':
-      log('New conversation received', { 
+      log('New conversation received', {
         conversationSid: data.conversationSid,
         friendlyName: data.friendlyName,
-        attributes: data.attributes
+        attributes: data.attributes,
       });
       handleNewConversation(data);
       break;
 
     case 'updateConversation':
-      log('Conversation update received', { 
+      log('Conversation update received', {
         conversationSid: data.conversationSid,
         friendlyName: data.friendlyName,
         lastMessage: data.lastMessage,
-        lastMessageTime: data.lastMessageTime
+        lastMessageTime: data.lastMessageTime,
       });
       handleUpdateConversation(data);
       break;
 
     case 'deleteConversation':
-      log('Conversation deletion notification received', { 
-        conversationSid: data.conversationSid 
+      log('Conversation deletion notification received', {
+        conversationSid: data.conversationSid,
       });
       removeConversationFromUI(data.conversationSid);
       if (currentConversation.sid === data.conversationSid) {
@@ -89,7 +93,9 @@ function handleWebSocketMessage(data) {
         document.getElementById('messages').innerHTML = '';
         document.getElementById('messages-title').innerHTML = '';
         document.getElementById('message-input').style.display = 'none';
-        log('Cleared message pane for deleted conversation', { conversationSid: data.conversationSid });
+        log('Cleared message pane for deleted conversation', {
+          conversationSid: data.conversationSid,
+        });
       }
       break;
 

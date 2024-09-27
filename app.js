@@ -94,7 +94,7 @@ app.get('/token', async (req, res, next) => {
       process.env.TWILIO_ACCOUNT_SID,
       process.env.TWILIO_API_KEY,
       process.env.TWILIO_API_SECRET,
-      { identity }
+      { identity },
     );
 
     const voiceGrant = new VoiceGrant({
@@ -142,7 +142,10 @@ app.post('/create-room', async (req, res, next) => {
     const { customerPhoneNumber, conversationSid } = req.body;
 
     // Validate Phone Number
-    if (!customerPhoneNumber || !/^\+[1-9]\d{1,14}$/.test(customerPhoneNumber)) {
+    if (
+      !customerPhoneNumber ||
+      !/^\+[1-9]\d{1,14}$/.test(customerPhoneNumber)
+    ) {
       logger.warn('Invalid customer phone number', { customerPhoneNumber });
       return res.status(400).json({ error: 'Invalid customer phone number' });
     }
@@ -156,7 +159,7 @@ app.post('/create-room', async (req, res, next) => {
       customerPhoneNumber,
       `Join the video call here: ${roomLink}`,
       conversationSid,
-      process.env.TWILIO_PHONE_NUMBER
+      process.env.TWILIO_PHONE_NUMBER,
     );
 
     res.json({ link: roomLink, roomName: room.sid });
@@ -172,63 +175,80 @@ app.get('/video-room/:roomName', (req, res) => {
 });
 
 // Twilio Webhook Endpoint
-app.post('/twilio-webhook', bodyParser.urlencoded({ extended: false }), async (req, res, next) => {
-  try {
-    const { EventType, ConversationSid, Body, Author, DateCreated, SmsMessageSid, From } = req.body;
-    // eslint-disable-next-line no-unused-vars
-    const MessageSid = req.body.MessageSid;
+app.post(
+  '/twilio-webhook',
+  bodyParser.urlencoded({ extended: false }),
+  async (req, res, next) => {
+    try {
+      const {
+        EventType,
+        ConversationSid,
+        Body,
+        Author,
+        DateCreated,
+        SmsMessageSid,
+        From,
+      } = req.body;
+      // eslint-disable-next-line no-unused-vars
+      const MessageSid = req.body.MessageSid;
 
-    if (EventType && ConversationSid) {
-      logger.info('Webhook event received', { EventType, ConversationSid });
+      if (EventType && ConversationSid) {
+        logger.info('Webhook event received', { EventType, ConversationSid });
 
-      if (EventType === 'onMessageAdded') {
-        // Handle Message Added
-        const conversation = await conversations.fetchConversation(ConversationSid);
-        broadcast({
-          type: 'updateConversation',
-          conversationSid: conversation.sid,
-          friendlyName: conversation.friendlyName,
-          lastMessage: Body,
-          lastMessageTime: DateCreated,
-          attributes: JSON.parse(conversation.attributes || '{}'),
-        });
+        if (EventType === 'onMessageAdded') {
+          // Handle Message Added
+          const conversation =
+            await conversations.fetchConversation(ConversationSid);
+          broadcast({
+            type: 'updateConversation',
+            conversationSid: conversation.sid,
+            friendlyName: conversation.friendlyName,
+            lastMessage: Body,
+            lastMessageTime: DateCreated,
+            attributes: JSON.parse(conversation.attributes || '{}'),
+          });
 
-        broadcast({
-          type: 'newMessage',
-          conversationSid: conversation.sid,
-          author: Author,
-          body: Body,
-          dateCreated: DateCreated,
-        });
+          broadcast({
+            type: 'newMessage',
+            conversationSid: conversation.sid,
+            author: Author,
+            body: Body,
+            dateCreated: DateCreated,
+          });
+        }
+      } else if (SmsMessageSid) {
+        // Handle Incoming SMS
+        logger.info('Incoming SMS received', { SmsMessageSid, From, Body });
+        // Additional processing can be handled here if needed
+      } else {
+        logger.warn('Unknown webhook format received', { reqBody: req.body });
       }
-    } else if (SmsMessageSid) {
-      // Handle Incoming SMS
-      logger.info('Incoming SMS received', { SmsMessageSid, From, Body });
-      // Additional processing can be handled here if needed
-    } else {
-      logger.warn('Unknown webhook format received', { reqBody: req.body });
-    }
 
-    res.status(200).send('<Response></Response>');
-  } catch (error) {
-    logger.error('Error processing webhook', { error });
-    next(error);
-  }
-});
+      res.status(200).send('<Response></Response>');
+    } catch (error) {
+      logger.error('Error processing webhook', { error });
+      next(error);
+    }
+  },
+);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
-  logger.error('Unhandled Error', { 
+  logger.error('Unhandled Error', {
     message: err.message,
     stack: err.stack,
-    ...err 
+    ...err,
   });
-  res.status(500).json({ error: 'Internal Server Error', details: err.message });
+  res
+    .status(500)
+    .json({ error: 'Internal Server Error', details: err.message });
   next(err);
 });
 
 // Start the Server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`, { ngrokUrl: process.env.NGROK_URL });
+  logger.info(`Server running on port ${PORT}`, {
+    ngrokUrl: process.env.NGROK_URL,
+  });
 });

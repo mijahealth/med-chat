@@ -73,10 +73,10 @@ export function setupCallControls() {
 
 async function setupDevice() {
   try {
-    const identity = 'user_' + Date.now();  // Generate a unique identity
+    const identity = `user_${Date.now()}`; // Generate a unique identity
     const response = await api.getConfig(); // Assuming your backend provides a token endpoint
     const tokenResponse = await axios.get(`${state.NGROK_URL}/token`, {
-      params: { identity: identity },
+      params: { identity },
       headers: {
         'ngrok-skip-browser-warning': 'true',
       },
@@ -141,11 +141,13 @@ async function makeCall() {
     const smsMessage = `Your provider is going to call you from ${params.From} in 5 seconds.`;
     await api.sendMessage(currentConversation.sid, smsMessage);
 
-    console.log('SMS notification sent. Waiting 5 seconds before initiating call...');
+    console.log(
+      'SMS notification sent. Waiting 5 seconds before initiating call...',
+    );
     updateCallStatus('Notifying patient...');
 
     // Wait for 5 seconds
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     console.log('Initiating call...');
     call = device.connect({ To: params.To, From: params.From });
@@ -172,10 +174,11 @@ async function makeCall() {
       console.error('Call error:', error);
       updateCallStatus('Call error');
     });
-
   } catch (error) {
     console.error('Error making call:', error);
-    alert('Failed to initiate call. Please check the console for more details.');
+    alert(
+      'Failed to initiate call. Please check the console for more details.',
+    );
   }
 }
 
@@ -183,7 +186,9 @@ function toggleMute() {
   if (call) {
     isMuted = !isMuted;
     call.mute(isMuted);
-    const muteButtonIcon = document.getElementById('mute-btn').querySelector('i');
+    const muteButtonIcon = document
+      .getElementById('mute-btn')
+      .querySelector('i');
     if (isMuted) {
       console.log('Call muted');
       muteButtonIcon.setAttribute('data-feather', 'mic-off');
@@ -246,7 +251,12 @@ function updateCallStatus(status) {
     callStatusElement.textContent = status;
 
     // Remove existing status classes
-    callStatusElement.classList.remove('calling', 'in-call', 'call-ended', 'call-error');
+    callStatusElement.classList.remove(
+      'calling',
+      'in-call',
+      'call-ended',
+      'call-error',
+    );
 
     // Add the appropriate class
     if (status.toLowerCase().includes('calling')) {
@@ -279,7 +289,10 @@ async function startVideoCall() {
       throw new Error(`Invalid phone number format: ${customerPhoneNumber}`);
     }
 
-    const response = await api.createVideoRoom({ customerPhoneNumber, conversationSid });
+    const response = await api.createVideoRoom({
+      customerPhoneNumber,
+      conversationSid,
+    });
     const { link, roomName } = response;
 
     console.log('Room link:', link);

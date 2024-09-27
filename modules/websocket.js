@@ -6,7 +6,7 @@ const broadcastModule = require('./broadcast');
 
 /**
  * Sets up WebSocket server and returns broadcast function
- * @param {http.Server} server 
+ * @param {http.Server} server
  * @returns {Object} - Contains broadcast method
  */
 function setupWebSocket(server) {
@@ -27,7 +27,7 @@ function setupWebSocket(server) {
 
   /**
    * Broadcasts data to all connected WebSocket clients
-   * @param {Object} data 
+   * @param {Object} data
    */
   function broadcast(data) {
     const dataString = JSON.stringify(data);

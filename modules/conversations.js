@@ -26,7 +26,9 @@ function isMessageRead(message) {
  */
 async function fetchConversation(sid) {
   try {
-    const conversation = await client.conversations.v1.conversations(sid).fetch();
+    const conversation = await client.conversations.v1
+      .conversations(sid)
+      .fetch();
     logger.info(`Fetched conversation: ${sid}`);
     return conversation;
   } catch (error) {
@@ -50,20 +52,24 @@ async function listConversations() {
       conversations.map(async (conv) => {
         try {
           // Fetch the latest message
-          const messages = await client.conversations.v1.conversations(conv.sid).messages.list({
-            limit: 1,
-            order: 'desc',
-          });
+          const messages = await client.conversations.v1
+            .conversations(conv.sid)
+            .messages.list({
+              limit: 1,
+              order: 'desc',
+            });
           const lastMessage = messages[0];
 
           // Fetch all messages to calculate unread count
-          const allMessages = await client.conversations.v1.conversations(conv.sid).messages.list({
-            limit: 1000, // Adjust as needed based on expected message volume
-            order: 'asc',
-          });
+          const allMessages = await client.conversations.v1
+            .conversations(conv.sid)
+            .messages.list({
+              limit: 1000, // Adjust as needed based on expected message volume
+              order: 'asc',
+            });
 
           const unreadCount = allMessages.filter(
-            (msg) => msg.author !== TWILIO_PHONE_NUMBER && !isMessageRead(msg)
+            (msg) => msg.author !== TWILIO_PHONE_NUMBER && !isMessageRead(msg),
           ).length;
 
           return {
@@ -72,10 +78,13 @@ async function listConversations() {
             attributes: JSON.parse(conv.attributes || '{}'),
             lastMessage: lastMessage ? lastMessage.body : 'No messages yet',
             lastMessageTime: lastMessage ? lastMessage.dateCreated : null,
-            unreadCount: unreadCount,
+            unreadCount,
           };
         } catch (error) {
-          logger.error('Error fetching details for conversation', { conversationSid: conv.sid, error });
+          logger.error('Error fetching details for conversation', {
+            conversationSid: conv.sid,
+            error,
+          });
           return {
             sid: conv.sid,
             friendlyName: conv.friendlyName,
@@ -85,7 +94,7 @@ async function listConversations() {
             unreadCount: 0,
           };
         }
-      })
+      }),
     );
 
     return conversationsWithDetails;
@@ -111,7 +120,11 @@ async function createConversation(friendlyName, attributes = {}) {
     logger.info(`Created conversation: ${conversation.sid}`);
     return conversation;
   } catch (error) {
-    logger.error('Error creating conversation', { friendlyName, attributes, error });
+    logger.error('Error creating conversation', {
+      friendlyName,
+      attributes,
+      error,
+    });
     throw error;
   }
 }
@@ -142,14 +155,23 @@ async function deleteConversation(sid) {
  */
 async function addMessage(conversationSid, message, author) {
   try {
-    const newMessage = await client.conversations.v1.conversations(conversationSid).messages.create({
-      body: message,
-      author,
-    });
-    logger.info(`Added message to conversation ${conversationSid}: ${newMessage.sid}`);
+    const newMessage = await client.conversations.v1
+      .conversations(conversationSid)
+      .messages.create({
+        body: message,
+        author,
+      });
+    logger.info(
+      `Added message to conversation ${conversationSid}: ${newMessage.sid}`,
+    );
     return newMessage;
   } catch (error) {
-    logger.error('Error adding message to conversation', { conversationSid, message, author, error });
+    logger.error('Error adding message to conversation', {
+      conversationSid,
+      message,
+      author,
+      error,
+    });
     throw error;
   }
 }
@@ -163,8 +185,12 @@ async function addMessage(conversationSid, message, author) {
  */
 async function listMessages(conversationSid, options = {}) {
   try {
-    const messages = await client.conversations.v1.conversations(conversationSid).messages.list(options);
-    logger.info(`Fetched ${messages.length} messages from conversation ${conversationSid}`);
+    const messages = await client.conversations.v1
+      .conversations(conversationSid)
+      .messages.list(options);
+    logger.info(
+      `Fetched ${messages.length} messages from conversation ${conversationSid}`,
+    );
     return messages;
   } catch (error) {
     logger.error('Error listing messages', { conversationSid, options, error });
@@ -181,7 +207,9 @@ async function listMessages(conversationSid, options = {}) {
 async function markMessagesAsRead(conversationSid) {
   try {
     // Fetch all messages in the conversation
-    const messages = await client.conversations.v1.conversations(conversationSid).messages.list({ limit: 1000 });
+    const messages = await client.conversations.v1
+      .conversations(conversationSid)
+      .messages.list({ limit: 1000 });
 
     // Iterate through messages and mark as read
     const updatePromises = messages.map(async (message) => {
@@ -195,18 +223,29 @@ async function markMessagesAsRead(conversationSid) {
       attributes.read = true;
 
       try {
-        await client.conversations.v1.conversations(conversationSid).messages(message.sid).update({
-          attributes: JSON.stringify(attributes),
-        });
-        logger.info(`Marked message ${message.sid} as read in conversation ${conversationSid}`);
+        await client.conversations.v1
+          .conversations(conversationSid)
+          .messages(message.sid)
+          .update({
+            attributes: JSON.stringify(attributes),
+          });
+        logger.info(
+          `Marked message ${message.sid} as read in conversation ${conversationSid}`,
+        );
       } catch (updateError) {
-        logger.error('Error marking message as read', { conversationSid, messageSid: message.sid, updateError });
+        logger.error('Error marking message as read', {
+          conversationSid,
+          messageSid: message.sid,
+          updateError,
+        });
       }
     });
 
     // Wait for all updates to complete
     await Promise.all(updatePromises);
-    logger.info(`All unread messages marked as read in conversation ${conversationSid}`);
+    logger.info(
+      `All unread messages marked as read in conversation ${conversationSid}`,
+    );
   } catch (error) {
     logger.error('Error marking messages as read', { conversationSid, error });
     throw error;
@@ -222,15 +261,23 @@ async function markMessagesAsRead(conversationSid) {
  */
 async function addParticipant(conversationSid, phoneNumber) {
   try {
-    const participant = await client.conversations.v1.conversations(conversationSid).participants.create({
-      'messagingBinding.address': phoneNumber,
-      'messagingBinding.proxyAddress': TWILIO_PHONE_NUMBER,
-      'messagingBinding.type': 'sms',
-    });
-    logger.info(`Added participant ${phoneNumber} to conversation ${conversationSid}`);
+    const participant = await client.conversations.v1
+      .conversations(conversationSid)
+      .participants.create({
+        'messagingBinding.address': phoneNumber,
+        'messagingBinding.proxyAddress': TWILIO_PHONE_NUMBER,
+        'messagingBinding.type': 'sms',
+      });
+    logger.info(
+      `Added participant ${phoneNumber} to conversation ${conversationSid}`,
+    );
     return participant;
   } catch (error) {
-    logger.error('Error adding participant to conversation', { conversationSid, phoneNumber, error });
+    logger.error('Error adding participant to conversation', {
+      conversationSid,
+      phoneNumber,
+      error,
+    });
     throw error;
   }
 }
@@ -243,12 +290,16 @@ async function addParticipant(conversationSid, phoneNumber) {
  */
 async function getConversationByPhoneNumber(phoneNumber) {
   try {
-    const conversationsList = await client.conversations.v1.conversations.list({ limit: 1000 });
+    const conversationsList = await client.conversations.v1.conversations.list({
+      limit: 1000,
+    });
 
     for (const conv of conversationsList) {
       const attributes = JSON.parse(conv.attributes || '{}');
       if (attributes.phoneNumber === phoneNumber) {
-        logger.info(`Found conversation ${conv.sid} for phone number ${phoneNumber}`);
+        logger.info(
+          `Found conversation ${conv.sid} for phone number ${phoneNumber}`,
+        );
         return conv;
       }
     }
@@ -256,7 +307,10 @@ async function getConversationByPhoneNumber(phoneNumber) {
     logger.info(`No conversation found for phone number ${phoneNumber}`);
     return null;
   } catch (error) {
-    logger.error('Error fetching conversation by phone number', { phoneNumber, error });
+    logger.error('Error fetching conversation by phone number', {
+      phoneNumber,
+      error,
+    });
     throw error;
   }
 }
@@ -272,5 +326,4 @@ module.exports = {
   addParticipant,
   getConversationByPhoneNumber,
   isMessageRead,
-
 };

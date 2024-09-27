@@ -3,7 +3,7 @@ let broadcastFunction = null;
 
 /**
  * Sets the broadcast function
- * @param {Function} func 
+ * @param {Function} func
  */
 function setBroadcast(func) {
   broadcastFunction = func;
@@ -11,7 +11,7 @@ function setBroadcast(func) {
 
 /**
  * Retrieves the broadcast function
- * @returns {Function} 
+ * @returns {Function}
  */
 function getBroadcast() {
   return broadcastFunction;

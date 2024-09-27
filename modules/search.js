@@ -16,9 +16,13 @@ async function updateCache() {
       const conversations = await client.conversations.v1.conversations.list();
       conversationCache = await Promise.all(
         conversations.map(async (conv) => {
-          const participants = await client.conversations.v1.conversations(conv.sid).participants.list();
+          const participants = await client.conversations.v1
+            .conversations(conv.sid)
+            .participants.list();
           const attributes = JSON.parse(conv.attributes || '{}');
-          const messages = await client.conversations.v1.conversations(conv.sid).messages.list({limit: 1, order: 'desc'});
+          const messages = await client.conversations.v1
+            .conversations(conv.sid)
+            .messages.list({ limit: 1, order: 'desc' });
           const lastMessage = messages[0] ? messages[0].body : '';
           const lastMessageTime = messages[0] ? messages[0].dateCreated : null;
           return {
@@ -27,13 +31,15 @@ async function updateCache() {
             phoneNumber: participants[0]?.messagingBinding?.address || '',
             email: attributes.email || '',
             name: attributes.name || '',
-            lastMessage: lastMessage,
-            lastMessageTime: lastMessageTime,
+            lastMessage,
+            lastMessageTime,
           };
-        })
+        }),
       );
       lastCacheUpdate = now;
-      logger.info(`Cache updated with ${conversationCache.length} conversations`);
+      logger.info(
+        `Cache updated with ${conversationCache.length} conversations`,
+      );
     } catch (error) {
       logger.error('Error updating conversation cache', { error });
     }
@@ -49,7 +55,7 @@ function searchConversations(query) {
       conv.phoneNumber.includes(normalizedQuery) ||
       conv.email.toLowerCase().includes(normalizedQuery) ||
       conv.name.toLowerCase().includes(normalizedQuery) ||
-      conv.friendlyName.toLowerCase().includes(normalizedQuery)
+      conv.friendlyName.toLowerCase().includes(normalizedQuery),
   );
   logger.info('Search completed', { query, resultsCount: results.length });
   return results;

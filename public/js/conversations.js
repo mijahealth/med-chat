@@ -11,12 +11,16 @@ export async function loadConversations() {
     const conversations = await api.getConversations();
 
     // Sort conversations by newest first
-    conversations.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+    conversations.sort(
+      (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime),
+    );
 
     renderConversations(conversations);
 
     if (currentConversation.sid) {
-      document.getElementById(`conv-${currentConversation.sid}`)?.classList.add('selected');
+      document
+        .getElementById(`conv-${currentConversation.sid}`)
+        ?.classList.add('selected');
     }
 
     state.conversationsLoaded = true;
@@ -31,14 +35,19 @@ export async function loadConversations() {
 
 export async function updateLatestMessagePreview(conversationSid) {
   try {
-    const messages = await api.getMessages(conversationSid, { limit: 1, order: 'desc' });
+    const messages = await api.getMessages(conversationSid, {
+      limit: 1,
+      order: 'desc',
+    });
     const latestMessage = messages[0];
     if (latestMessage) {
       updateConversationPreview(conversationSid, latestMessage);
     }
   } catch (error) {
     if (error.response && error.response.status === 404) {
-      log(`Conversation ${conversationSid} not found, it may have been deleted.`);
+      log(
+        `Conversation ${conversationSid} not found, it may have been deleted.`,
+      );
     } else {
       log('Error fetching latest message', { error });
     }
@@ -49,7 +58,7 @@ export function incrementUnreadCount(conversationSid) {
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
   if (conversationDiv) {
     conversationDiv.classList.add('unread');
-    let unreadBadge = conversationDiv.querySelector('.unread-badge');
+    const unreadBadge = conversationDiv.querySelector(".unread-badge");
     if (unreadBadge) {
       const currentCount = parseInt(unreadBadge.textContent) || 0;
       unreadBadge.textContent = currentCount + 1;
@@ -62,10 +71,14 @@ export function incrementUnreadCount(conversationSid) {
 }
 
 export function handleNewConversation(data) {
-  const existingConversation = document.getElementById(`conv-${data.conversationSid}`);
+  const existingConversation = document.getElementById(
+    `conv-${data.conversationSid}`,
+  );
 
   if (existingConversation) {
-    log('Conversation already exists, updating', { conversationSid: data.conversationSid });
+    log('Conversation already exists, updating', {
+      conversationSid: data.conversationSid,
+    });
     updateConversationPreview(data.conversationSid, {
       body: data.lastMessage,
       dateCreated: new Date().toISOString(),
@@ -78,7 +91,9 @@ export function handleNewConversation(data) {
 }
 
 export function handleUpdateConversation(data) {
-  const conversationDiv = document.getElementById(`conv-${data.conversationSid}`);
+  const conversationDiv = document.getElementById(
+    `conv-${data.conversationSid}`,
+  );
   if (conversationDiv) {
     // Update the friendly name
     const nameElement = conversationDiv.querySelector('strong');
@@ -106,7 +121,9 @@ export function handleUpdateConversation(data) {
 }
 
 export function removeConversationFromUI(conversationSid) {
-  const conversationElement = document.getElementById(`conv-${conversationSid}`);
+  const conversationElement = document.getElementById(
+    `conv-${conversationSid}`,
+  );
   if (conversationElement) {
     conversationElement.remove();
     log('Conversation removed from UI', { conversationSid });

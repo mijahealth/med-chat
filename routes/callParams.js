@@ -22,7 +22,9 @@ router.get(
   async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn('Validation errors on fetching call parameters', { errors: errors.array() });
+      logger.warn('Validation errors on fetching call parameters', {
+        errors: errors.array(),
+      });
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -36,7 +38,9 @@ router.get(
 
       if (!toNumber) {
         logger.warn('No phone number associated with conversation', { sid });
-        return res.status(400).json({ error: 'No phone number associated with this conversation.' });
+        return res.status(400).json({
+          error: 'No phone number associated with this conversation.',
+        });
       }
 
       res.json({ From: fromNumber, To: toNumber });
@@ -48,7 +52,7 @@ router.get(
         next(error);
       }
     }
-  }
+  },
 );
 
 module.exports = router;

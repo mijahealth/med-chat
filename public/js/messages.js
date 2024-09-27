@@ -1,8 +1,11 @@
 // public/js/messages.js
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
-import { appendMessage, renderMessages,moveConversationToTop } from './ui.js';
-import { updateLatestMessagePreview,incrementUnreadCount} from './conversations.js';
+import { appendMessage, renderMessages, moveConversationToTop } from './ui.js';
+import {
+  updateLatestMessagePreview,
+  incrementUnreadCount,
+} from './conversations.js';
 import { log, playNotificationSound } from './utils.js';
 export async function loadMessages(sid) {
   try {

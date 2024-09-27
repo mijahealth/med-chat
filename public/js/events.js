@@ -2,26 +2,30 @@
 
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
-import { 
-  playNotificationSound, 
-  debounce, 
-  log, 
+import {
+  playNotificationSound,
+  debounce,
+  log,
   setUserInteracted,
   isValidPhoneNumber,
   isValidName,
   isValidEmail,
   isValidDate,
   isValidState,
-  isValidMessage
+  isValidMessage,
 } from './utils.js';
-import { loadConversations, updateLatestMessagePreview, deleteConversation } from './conversations.js';
+import {
+  loadConversations,
+  updateLatestMessagePreview,
+  deleteConversation,
+} from './conversations.js';
 import { setupCallControls } from './call.js';
-import { 
-  renderConversations, 
-  updateConversationHeader, 
-  showMessageInput, 
+import {
+  renderConversations,
+  updateConversationHeader,
+  showMessageInput,
   renderMessages,
-  moveConversationToTop 
+  moveConversationToTop,
 } from './ui.js';
 import feather from 'feather-icons';
 
@@ -79,7 +83,7 @@ function setupFormValidation() {
   const form = document.getElementById('new-conversation-form');
   const inputs = form.querySelectorAll('[data-validate]');
 
-  inputs.forEach(input => {
+  inputs.forEach((input) => {
     input.addEventListener('input', validateInput);
     input.addEventListener('blur', validateInput);
   });
@@ -95,7 +99,8 @@ function validateInput(event) {
   switch (validationType) {
     case 'phone':
       isValid = isValidPhoneNumber(value);
-      errorMessage = 'Please enter a valid phone number in the format +XXXXXXXXXXX';
+      errorMessage =
+        'Please enter a valid phone number in the format +XXXXXXXXXXX';
       break;
     case 'name':
       isValid = isValidName(value);
@@ -119,7 +124,9 @@ function validateInput(event) {
       break;
   }
 
-  const errorElement = document.querySelector(`.error-message[data-for="${input.name}"]`);
+  const errorElement = document.querySelector(
+    `.error-message[data-for="${input.name}"]`,
+  );
   if (!isValid) {
     errorElement.textContent = errorMessage;
     input.classList.add('invalid');
@@ -135,7 +142,7 @@ function validateForm(form) {
   const inputs = form.querySelectorAll('[data-validate]');
   let isValid = true;
 
-  inputs.forEach(input => {
+  inputs.forEach((input) => {
     if (!validateInput({ target: input })) {
       isValid = false;
     }
@@ -157,10 +164,11 @@ export function handleSendMessage() {
     return;
   }
 
-  api.sendMessage(currentConversation.sid, message)
+  api
+    .sendMessage(currentConversation.sid, message)
     .then(() => {
       inputField.value = ''; // Clear the input field after sending the message
-      
+
       // Show message sent indicator
       const indicator = document.getElementById('message-sent-indicator');
       if (indicator) {
@@ -175,7 +183,7 @@ export function handleSendMessage() {
       updateLatestMessagePreview(currentConversation.sid, {
         body: message,
         author: state.TWILIO_PHONE_NUMBER,
-        dateCreated: new Date().toISOString()
+        dateCreated: new Date().toISOString(),
       });
 
       // Move the conversation to the top of the list
@@ -211,8 +219,12 @@ function clearNewConversationForm() {
   const form = document.querySelector('#new-conversation-modal form');
   if (form) {
     form.reset();
-    form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-    form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+    form
+      .querySelectorAll('.error-message')
+      .forEach((el) => (el.textContent = ''));
+    form
+      .querySelectorAll('.invalid')
+      .forEach((el) => el.classList.remove('invalid'));
   }
 }
 
@@ -228,11 +240,19 @@ export function startConversation(event) {
     const dob = form.dob.value.trim();
     const stateField = form.state.value.trim();
 
-    api.startConversation({ phoneNumber, message, name, email, dob, state: stateField })
+    api
+      .startConversation({
+        phoneNumber,
+        message,
+        name,
+        email,
+        dob,
+        state: stateField,
+      })
       .then(async (response) => {
         if (response.existing) {
           const userConfirmed = confirm(
-            'This conversation already exists. Would you like to open it?'
+            'This conversation already exists. Would you like to open it?',
           );
           if (userConfirmed) {
             closeModal();
@@ -279,7 +299,10 @@ export async function performSearch() {
 
 export function checkScrollPosition() {
   const messagesDiv = document.getElementById('messages');
-  if (messagesDiv.scrollTop + messagesDiv.clientHeight >= messagesDiv.scrollHeight - 10) {
+  if (
+    messagesDiv.scrollTop + messagesDiv.clientHeight >=
+    messagesDiv.scrollHeight - 10
+  ) {
     state.autoScrollEnabled = true;
   } else {
     state.autoScrollEnabled = false;
@@ -292,8 +315,8 @@ export async function selectConversation(sid) {
     console.log('Conversations not loaded yet');
     alert('Please wait until conversations are fully loaded.');
     return;
-  } 
-  setUserInteracted(); 
+  }
+  setUserInteracted();
   currentConversation.sid = sid;
   console.log(`Current conversation SID set to: ${currentConversation.sid}`);
 
@@ -347,14 +370,13 @@ export async function selectConversation(sid) {
     // Fetch and render messages
     const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
     renderMessages(messages);
-    
+
     document.getElementById('messages').style.display = 'block';
     showMessageInput();
 
     // Scroll to bottom of messages
     const messagesDiv = document.getElementById('messages');
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
   } catch (error) {
     console.error('Error in selectConversation:', error);
     if (error.response) {
@@ -396,7 +418,8 @@ async function handleDeleteConversation(sid) {
   const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
   if (deleteButton) {
     deleteButton.disabled = true;
-    deleteButton.innerHTML = '<i data-feather="trash-2" aria-hidden="true"></i> Deleting...';
+    deleteButton.innerHTML =
+      '<i data-feather="trash-2" aria-hidden="true"></i> Deleting...';
     feather.replace();
 
     try {
@@ -406,7 +429,8 @@ async function handleDeleteConversation(sid) {
       log('Error deleting conversation', { sid, error });
       alert('Failed to delete conversation. Please try again.');
       deleteButton.disabled = false;
-      deleteButton.innerHTML = '<i data-feather="trash-2" aria-hidden="true"></i>';
+      deleteButton.innerHTML =
+        '<i data-feather="trash-2" aria-hidden="true"></i>';
       feather.replace();
     }
   }

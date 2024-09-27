@@ -17,7 +17,7 @@ router.get('/', async (req, res, next) => {
     logger.info('Fetching all conversations');
     const conversationList = await conversations.listConversations();
 
-    const formattedConversations = conversationList.map(conv => {
+    const formattedConversations = conversationList.map((conv) => {
       const attributes = conv.attributes || {};
       return {
         sid: conv.sid,
@@ -56,7 +56,9 @@ router.get(
     // Validate Inputs
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn('Validation errors on fetching conversation details', { errors: errors.array() });
+      logger.warn('Validation errors on fetching conversation details', {
+        errors: errors.array(),
+      });
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -67,26 +69,40 @@ router.get(
       const conversation = await conversations.fetchConversation(sid);
       if (!conversation) {
         logger.warn(`Conversation not found: ${sid}`);
-        return res.status(404).json({ error: `Conversation ${sid} not found.` });
+        return res
+          .status(404)
+          .json({ error: `Conversation ${sid} not found.` });
       }
 
       // Fetch the latest message
-      const messages = await conversations.listMessages(sid, { limit: 1, order: 'desc' });
+      const messages = await conversations.listMessages(sid, {
+        limit: 1,
+        order: 'desc',
+      });
       const lastMessage = messages[0];
 
       // Fetch all messages to calculate unread count
-      const allMessages = await conversations.listMessages(sid, { limit: 1000, order: 'asc' });
+      const allMessages = await conversations.listMessages(sid, {
+        limit: 1000,
+        order: 'asc',
+      });
       const unreadCount = allMessages.filter(
-        (msg) => msg.author !== process.env.TWILIO_PHONE_NUMBER && !isMessageRead(msg)
+        (msg) =>
+          msg.author !== process.env.TWILIO_PHONE_NUMBER && !isMessageRead(msg),
       ).length;
 
-      logger.info(`Fetched ${allMessages.length} messages from conversation ${sid}`);
+      logger.info(
+        `Fetched ${allMessages.length} messages from conversation ${sid}`,
+      );
 
       let attributes = {};
       try {
         attributes = JSON.parse(conversation.attributes || '{}');
       } catch (parseError) {
-        logger.error('Error parsing conversation attributes', { sid, error: parseError });
+        logger.error('Error parsing conversation attributes', {
+          sid,
+          error: parseError,
+        });
         // Decide how to handle this case. For now, proceed with empty attributes.
       }
 
@@ -96,19 +112,19 @@ router.get(
         attributes,
         lastMessage: lastMessage ? lastMessage.body : 'No messages yet',
         lastMessageTime: lastMessage ? lastMessage.dateCreated : null,
-        unreadCount: unreadCount,
+        unreadCount,
       });
     } catch (error) {
       logger.error('Error fetching conversation details', { sid, error });
-      if (error.code === 20404) { // Twilio Not Found Error Code
+      if (error.code === 20404) {
+        // Twilio Not Found Error Code
         res.status(404).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error); // Pass to error handler
       }
     }
-  }
+  },
 );
-
 
 /**
  * @route   GET /conversations/:sid/messages
@@ -136,7 +152,9 @@ router.get(
     // Validate Inputs
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn('Validation errors on listing messages', { errors: errors.array() });
+      logger.warn('Validation errors on listing messages', {
+        errors: errors.array(),
+      });
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -145,10 +163,16 @@ router.get(
     const limitNumber = parseInt(limit, 10);
 
     try {
-      logger.info(`Listing messages for conversation SID: ${sid}`, { limit: limitNumber, order });
-      const messages = await conversations.listMessages(sid, { limit: limitNumber, order });
+      logger.info(`Listing messages for conversation SID: ${sid}`, {
+        limit: limitNumber,
+        order,
+      });
+      const messages = await conversations.listMessages(sid, {
+        limit: limitNumber,
+        order,
+      });
 
-      const formattedMessages = messages.map(msg => ({
+      const formattedMessages = messages.map((msg) => ({
         sid: msg.sid,
         body: msg.body,
         author: msg.author,
@@ -158,13 +182,14 @@ router.get(
       res.json(formattedMessages);
     } catch (error) {
       logger.error('Error listing messages', { sid, error });
-      if (error.code === 20404) { // Twilio error code for Not Found
+      if (error.code === 20404) {
+        // Twilio error code for Not Found
         res.status(404).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error);
       }
     }
-  }
+  },
 );
 
 /**
@@ -196,7 +221,9 @@ router.post(
     // Validate Inputs
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn('Validation errors on adding message', { errors: errors.array() });
+      logger.warn('Validation errors on adding message', {
+        errors: errors.array(),
+      });
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -205,7 +232,11 @@ router.post(
 
     try {
       logger.info(`Adding message to conversation ${sid}`, { message, author });
-      const newMessage = await conversations.addMessage(sid, message, author || process.env.TWILIO_PHONE_NUMBER);
+      const newMessage = await conversations.addMessage(
+        sid,
+        message,
+        author || process.env.TWILIO_PHONE_NUMBER,
+      );
 
       // Optionally, broadcast the new message via WebSockets
       // Assuming you have a broadcast module set up
@@ -222,14 +253,20 @@ router.post(
 
       res.status(201).json(newMessage);
     } catch (error) {
-      logger.error('Error adding message to conversation', { sid, message, author, error });
-      if (error.code === 20404) { // Twilio error code for Not Found
+      logger.error('Error adding message to conversation', {
+        sid,
+        message,
+        author,
+        error,
+      });
+      if (error.code === 20404) {
+        // Twilio error code for Not Found
         res.status(404).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error);
       }
     }
-  }
+  },
 );
 
 /**
@@ -256,7 +293,9 @@ router.delete(
     // Validate Inputs
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn('Validation errors on deleting conversation', { errors: errors.array() });
+      logger.warn('Validation errors on deleting conversation', {
+        errors: errors.array(),
+      });
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -265,7 +304,9 @@ router.delete(
 
     // Optional: Require a confirmation token for deletion
     if (confirmToken !== 'CONFIRM_DELETE') {
-      return res.status(400).json({ error: 'Invalid or missing confirmation token.' });
+      return res
+        .status(400)
+        .json({ error: 'Invalid or missing confirmation token.' });
     }
 
     try {
@@ -284,13 +325,14 @@ router.delete(
       res.json({ message: `Conversation ${sid} deleted successfully.` });
     } catch (error) {
       logger.error('Error deleting conversation', { sid, error });
-      if (error.code === 20404) { // Twilio error code for Not Found
+      if (error.code === 20404) {
+        // Twilio error code for Not Found
         res.status(404).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error);
       }
     }
-  }
+  },
 );
 
 /**
@@ -320,7 +362,7 @@ router.post(
     } catch (error) {
       next(error);
     }
-  }
+  },
 );
 
 module.exports = router;

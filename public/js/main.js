@@ -45,17 +45,16 @@ async function initializeApplication() {
     // Set the application as initialized
     state.appInitialized = true;
     log('Application initialization complete');
-
   } catch (error) {
     console.error('Error during application initialization:', error);
-    alert('There was an error initializing the application. Please refresh the page and try again.');
+    alert(
+      'There was an error initializing the application. Please refresh the page and try again.',
+    );
   }
 }
 
 // Make closeModal globally available for use in HTML onclick attributes
 window.closeModal = closeModal;
-
-
 
 // Handle any uncaught errors
 window.addEventListener('error', (event) => {
@@ -77,6 +76,4 @@ window.addEventListener('beforeunload', () => {
 //   // Set up development-specific configurations
 // }
 
-export {
-  initializeApplication
-}; 
+export { initializeApplication };

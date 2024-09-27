@@ -25,13 +25,16 @@ router.get(
     try {
       await searchModule.updateCache(); // Ensure cache is up-to-date
       const results = searchModule.searchConversations(searchQuery);
-      logger.info('Search completed', { query: searchQuery, resultsCount: results.length });
+      logger.info('Search completed', {
+        query: searchQuery,
+        resultsCount: results.length,
+      });
       res.json(results);
     } catch (error) {
       logger.error('Error performing search', { searchQuery, error });
       next(error);
     }
-  }
+  },
 );
 
 module.exports = router;

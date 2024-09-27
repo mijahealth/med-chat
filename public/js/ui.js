@@ -1,12 +1,22 @@
 // public/js/ui.js
-import { loadConversations, incrementUnreadCount, handleNewConversation, handleUpdateConversation, removeConversationFromUI, deleteConversation} from './conversations.js';
+import {
+  loadConversations,
+  incrementUnreadCount,
+  handleNewConversation,
+  handleUpdateConversation,
+  removeConversationFromUI,
+  deleteConversation,
+} from './conversations.js';
 import { setupWebSocket } from './websocket.js';
 import { state, currentConversation } from './state.js';
 import { api } from './api.js';
 import { log, formatTime } from './utils.js';
 import feather from 'feather-icons';
-import { closeConversation, selectConversation, setupConversationListeners} from './events.js';
-
+import {
+  closeConversation,
+  selectConversation,
+  setupConversationListeners,
+} from './events.js';
 
 export async function initializeApp() {
   try {
@@ -54,13 +64,15 @@ export function renderConversations(conversations) {
 
       const conversationHtml = createConversationHtml({
         ...conversation,
-        lastMessage: lastMessageText
+        lastMessage: lastMessageText,
       });
       conversationsDiv.insertAdjacentHTML('beforeend', conversationHtml);
     });
 
     if (currentConversation.sid) {
-      document.getElementById(`conv-${currentConversation.sid}`)?.classList.add('selected');
+      document
+        .getElementById(`conv-${currentConversation.sid}`)
+        ?.classList.add('selected');
     }
 
     feather.replace(); // Replace any new Feather icons
@@ -76,9 +88,10 @@ function createConversationHtml(conversation) {
   const lastMessageTime = formatTime(conversation.lastMessageTime);
   const displayName = conversation.friendlyName || conversation.sid;
   const lastMessageText = conversation.lastMessage || 'No messages yet';
-  const unreadBadge = conversation.unreadCount > 0
-    ? `<span class="unread-badge">${conversation.unreadCount}</span>`
-    : '<span class="unread-indicator"></span>';
+  const unreadBadge =
+    conversation.unreadCount > 0
+      ? `<span class="unread-badge">${conversation.unreadCount}</span>`
+      : '<span class="unread-indicator"></span>';
 
   return `
     <div class="conversation ${conversation.unreadCount > 0 ? 'unread' : ''}" id="conv-${conversation.sid}" data-sid="${conversation.sid}">
@@ -149,7 +162,14 @@ export function showMessageInput() {
   document.getElementById('message-input').style.display = 'flex';
 }
 
-export function updateConversationHeader(sid, name, email, phoneNumber, dob, state) {
+export function updateConversationHeader(
+  sid,
+  name,
+  email,
+  phoneNumber,
+  dob,
+  state,
+) {
   const headerElement = document.getElementById('messages-title');
   headerElement.style.display = 'flex';
   headerElement.innerHTML = `
@@ -210,7 +230,9 @@ export function updateConversationHeader(sid, name, email, phoneNumber, dob, sta
   `;
 
   // Attach event listener to close button
-  document.getElementById('close-conversation-btn').addEventListener('click', closeConversation);
+  document
+    .getElementById('close-conversation-btn')
+    .addEventListener('click', closeConversation);
 
   // Replace Feather Icons
   feather.replace();
