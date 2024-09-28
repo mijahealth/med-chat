@@ -236,6 +236,21 @@ function updateConversationPreview(conversationSid, latestMessage) {
   }
 }
 
+if (module.hot) {
+  module.hot.dispose(() => {
+    log('Cleaning up conversations module');
+    // Perform any necessary cleanup
+  });
+  module.hot.accept(() => {
+    log('Conversations module updated');
+    // Re-initialize conversations if necessary
+    loadConversations().catch((error) => {
+      console.error('Error reloading conversations:', error);
+    });
+  });
+}
+
+
 export function showNoConversationSelected() {
   document.getElementById('messages-title').style.display = 'none';
   document.getElementById('no-conversation').style.display = 'flex';

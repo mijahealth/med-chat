@@ -12,11 +12,7 @@ import { state, currentConversation } from './state.js';
 import { api } from './api.js';
 import { log, formatTime } from './utils.js';
 import feather from 'feather-icons';
-import {
-  closeConversation,
-  selectConversation,
-  setupConversationListeners,
-} from './events.js';
+import { closeConversation, selectConversation, setupConversationListeners } from './events.js';
 
 export async function initializeApp() {
   try {
@@ -236,6 +232,19 @@ export function updateConversationHeader(
 
   // Replace Feather Icons
   feather.replace();
+}
+if (module.hot) {
+  module.hot.dispose(() => {
+    // Clean up any event listeners or timers here
+    log('Cleaning up UI module');
+  });
+  module.hot.accept(() => {
+    log('UI module updated');
+    // Re-initialize UI if necessary
+    initializeApp().catch((error) => {
+      console.error('Error re-initializing UI:', error);
+    });
+  });
 }
 
 // Export all necessary functions

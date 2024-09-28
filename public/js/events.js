@@ -471,3 +471,17 @@ export function setupConversationListeners() {
     log('Conversations container not found');
   }
 }
+
+if (module.hot) {
+  module.hot.dispose(() => {
+    // Remove all event listeners
+    log('Removing event listeners');
+    document.removeEventListener('DOMContentLoaded', initializeApplication);
+    // Remove other event listeners as necessary
+  });
+  module.hot.accept(() => {
+    log('Events module updated');
+    // Re-attach event listeners
+    setupEventListeners();
+  });
+}

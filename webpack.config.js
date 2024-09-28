@@ -4,9 +4,10 @@ const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
+  mode: 'development',
   entry: {
-    main: './public/js/main.js',
-    'video-room': './public/js/video-room.js',
+    main: ['webpack-hot-middleware/client', './public/js/main.js'],
+    'video-room': ['webpack-hot-middleware/client', './public/js/video-room.js'],
   },
   output: {
     filename: '[name].bundle.js',
@@ -16,32 +17,31 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/, // Apply this rule to all .js files
-        exclude: /node_modules/, // Exclude node_modules from transpilation
+        test: /\.js$/,
+        exclude: /node_modules/,
         use: {
-          loader: 'babel-loader', // Use Babel to transpile JavaScript files
+          loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env'], // Preset for compiling ES6+ down to ES5
+            presets: ['@babel/preset-env'],
           },
         },
       },
-      // You can add more rules here if needed (e.g., for CSS, images)
     ],
   },
   resolve: {
     fallback: {
-      process: require.resolve('process/browser'), // Polyfill for 'process' module
-      util: require.resolve('util/'), // Polyfill for 'util' module
-      // Add other polyfills if necessary
+      process: require.resolve('process/browser'),
+      util: require.resolve('util/'),
     },
   },
   plugins: [
     new webpack.DefinePlugin({
-      'process.env': JSON.stringify(process.env), // Define environment variables
+      'process.env': JSON.stringify(process.env),
     }),
     new webpack.ProvidePlugin({
-      axios: 'axios', // Automatically load axios when it's used
+      axios: 'axios',
     }),
+    new webpack.HotModuleReplacementPlugin(),
   ],
-  devtool: 'source-map', // Enable source maps for easier debugging
+  devtool: 'eval-source-map',
 };

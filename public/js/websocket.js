@@ -112,5 +112,18 @@ function handleWebSocketMessage(data) {
   }
 }
 
+if (module.hot) {
+  module.hot.dispose(() => {
+    log('Closing WebSocket connection');
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.close();
+    }
+  });
+  module.hot.accept(() => {
+    log('WebSocket module updated');
+    setupWebSocket();
+  });
+}
+
 // Export the socket for potential use in other modules
 export { socket };

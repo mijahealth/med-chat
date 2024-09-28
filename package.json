@@ -7,10 +7,10 @@
   },
   "scripts": {
     "start": "node app.js",
+    "dev": "NODE_ENV=development nodemon app.js",
     "lint": "eslint --config eslint.config.mjs .",
     "lint:fix": "eslint --config eslint.config.mjs . --fix",
     "format": "prettier --write .",
-    "dev": "nodemon app.js",
     "test": "jest",
     "build": "webpack --config webpack.config.js",
     "prepare": "husky install"
@@ -60,6 +60,8 @@
     "typescript": "^5.6.2",
     "util": "^0.12.5",
     "webpack": "^5.94.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-middleware": "^7.4.2",
+    "webpack-hot-middleware": "^2.26.1"
   }
 }

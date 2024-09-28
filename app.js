@@ -7,6 +7,10 @@ const path = require('path');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
+const webpack = require('webpack');
+const webpackDevMiddleware = require('webpack-dev-middleware');
+const webpackHotMiddleware = require('webpack-hot-middleware');
+const config = require('./webpack.config.js');
 
 // Import Modules
 const setupWebSocket = require('./modules/websocket');
@@ -27,6 +31,15 @@ const broadcastModule = require('./modules/broadcast');
 // Initialize Express App
 const app = express();
 const server = http.createServer(app);
+
+// Webpack HMR setup
+if (process.env.NODE_ENV === 'development') {
+  const compiler = webpack(config);
+  app.use(webpackDevMiddleware(compiler, {
+    publicPath: config.output.publicPath,
+  }));
+  app.use(webpackHotMiddleware(compiler));
+}
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -74,9 +87,9 @@ app.get('/config', (req, res) => {
 
 // Token Generation Endpoint
 const twilio = require('twilio');
-const AccessToken = twilio.jwt.AccessToken;
-const VoiceGrant = AccessToken.VoiceGrant;
-const VideoGrant = AccessToken.VideoGrant;
+const {AccessToken} = twilio.jwt;
+const {VoiceGrant} = AccessToken;
+const {VideoGrant} = AccessToken;
 
 app.get('/token', async (req, res, next) => {
   try {
@@ -190,7 +203,7 @@ app.post(
         From,
       } = req.body;
       // eslint-disable-next-line no-unused-vars
-      const MessageSid = req.body.MessageSid;
+      const {MessageSid} = req.body;
 
       if (EventType && ConversationSid) {
         logger.info('Webhook event received', { EventType, ConversationSid });
