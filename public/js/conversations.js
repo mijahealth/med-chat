@@ -58,7 +58,7 @@ export function incrementUnreadCount(conversationSid) {
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
   if (conversationDiv) {
     conversationDiv.classList.add('unread');
-    const unreadBadge = conversationDiv.querySelector(".unread-badge");
+    const unreadBadge = conversationDiv.querySelector('.unread-badge');
     if (unreadBadge) {
       const currentCount = parseInt(unreadBadge.textContent) || 0;
       unreadBadge.textContent = currentCount + 1;

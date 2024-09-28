@@ -1,20 +1,11 @@
 // eslint.config.mjs
 import globals from 'globals';
 import js from '@eslint/js';
-import eslintConfigPrettier from 'eslint-config-prettier';
 import * as typescriptEslint from '@typescript-eslint/eslint-plugin';
-import jsdocPluginModule from 'eslint-plugin-jsdoc'; // Default import
-import prettierPluginModule from 'eslint-plugin-prettier'; // Default import
+import jsdocPluginModule from 'eslint-plugin-jsdoc';
 
 // Handle CommonJS export for ESM
 const jsdocPlugin = jsdocPluginModule.default || jsdocPluginModule;
-const prettierPlugin = prettierPluginModule.default || prettierPluginModule;
-
-// Extract Prettier rules to disable conflicting ESLint rules
-const prettierRules = eslintConfigPrettier.rules;
-
-// After importing and setting up prettierPlugin
-console.log('Prettier Rules:', Object.keys(prettierPlugin.rules));
 
 // Manually define JSDoc recommended rules to avoid legacy config issues
 const jsdocRules = {
@@ -58,27 +49,12 @@ export default [
   // 3. Apply JSDoc rules
   {
     plugins: {
-      jsdoc: jsdocPlugin, // Correctly imported as a default
+      jsdoc: jsdocPlugin,
     },
     rules: jsdocRules,
   },
 
-  // 4. Prettier Integration: Disable ESLint rules that conflict with Prettier
-  {
-    rules: prettierRules, // Wrapped inside a 'rules' key
-  },
-
-  // 5. Prettier Plugin Integration: Enforce Prettier formatting as ESLint rules
-  {
-    plugins: {
-      prettier: prettierPlugin, // Correctly imported
-    },
-    rules: {
-      'prettier/prettier': 'error',
-    },
-  },
-
-  // 6. Global configuration for all files except ignored ones
+  // 4. Global configuration for all files except ignored ones
   {
     languageOptions: {
       ecmaVersion: 'latest',
@@ -101,8 +77,6 @@ export default [
       'prefer-template': 'error',
       'quotes': ['error', 'single', { avoidEscape: true }],
       'semi': ['error', 'always'],
-      // Enforce Prettier rules
-      'prettier/prettier': 'error',
     },
   },
 

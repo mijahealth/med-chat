@@ -8,7 +8,7 @@ const logger = createLogger({
     format.printf(
       ({ timestamp, level, message, ...meta }) =>
         `${timestamp} [${level.toUpperCase()}]: ${message} ${
-          Object.keys(meta).length ? JSON.stringify(meta) : ""
+          Object.keys(meta).length ? JSON.stringify(meta) : ''
         }`,
     ),
   ),
