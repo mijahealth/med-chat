@@ -7,6 +7,9 @@ import {
   removeConversationFromUI,
 } from './conversations.js';
 
+// Constants
+const RECONNECT_DELAY = 5000; // in milliseconds
+
 let socket;
 
 export function setupWebSocket() {
@@ -20,7 +23,8 @@ export function setupWebSocket() {
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  socket = new WebSocket(`${protocol}//${window.location.host}`);
+  const wsUrl = `${protocol}//${window.location.host}`;
+  socket = new WebSocket(wsUrl);
 
   socket.onopen = () => {
     log('WebSocket connection established');
@@ -40,7 +44,7 @@ export function setupWebSocket() {
 
   socket.onclose = () => {
     log('WebSocket connection closed');
-    setTimeout(setupWebSocket, 5000); // Attempt to reconnect after 5 seconds
+    setTimeout(setupWebSocket, RECONNECT_DELAY); // Attempt to reconnect after 5 seconds
   };
 
   socket.onerror = (error) => {

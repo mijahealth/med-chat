@@ -35,7 +35,8 @@ router.get('/', async (req, res, next) => {
         name: attributes.name || '',
         lastMessage: conv.lastMessage || 'No messages yet',
         lastMessageTime: conv.lastMessageTime || null,
-        unreadCount: conv.unreadCount || 0, // Implement logic to calculate unread messages if applicable
+        // Implement logic to calculate unread messages if applicable
+        unreadCount: conv.unreadCount || 0,
       };
     });
 
@@ -87,7 +88,7 @@ router.get(
         limit: 1,
         order: 'desc',
       });
-      const lastMessage = messages[0];
+      const [lastMessage] = messages; // Updated to use array destructuring
 
       // Fetch all messages to calculate unread count
       const allMessages = await conversations.listMessages(sid, {
