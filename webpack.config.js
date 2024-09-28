@@ -1,13 +1,11 @@
-// webpack.config.js
-
 const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
   entry: {
-    main: ['webpack-hot-middleware/client', './public/js/main.js'],
-    'video-room': ['webpack-hot-middleware/client', './public/js/video-room.js'],
+    main: ['webpack-hot-middleware/client?reload=true', './public/js/main.js'],
+    'video-room': ['webpack-hot-middleware/client?reload=true', './public/js/video-room.js'],
   },
   output: {
     filename: '[name].bundle.js',

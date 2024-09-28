@@ -20,6 +20,9 @@ async function initializeApplication() {
     feather.replace();
     state.appInitialized = true;
     log('Application initialization complete');
+
+    // **Add this line for verification**
+    console.log('HMR Test: initializeApplication has been updated!');
   } catch (error) {
     console.error('Error during application initialization:', error);
     alert('There was an error initializing the application. Please refresh the page and try again.');

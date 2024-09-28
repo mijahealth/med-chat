@@ -35,10 +35,19 @@ const server = http.createServer(app);
 // Webpack HMR setup
 if (process.env.NODE_ENV === 'development') {
   const compiler = webpack(config);
-  app.use(webpackDevMiddleware(compiler, {
-    publicPath: config.output.publicPath,
-  }));
-  app.use(webpackHotMiddleware(compiler));
+  app.use(
+    webpackDevMiddleware(compiler, {
+      publicPath: config.output.publicPath,
+      stats: { colors: true },
+    })
+  );
+  app.use(
+    webpackHotMiddleware(compiler, {
+      log: console.log,
+      path: '/__webpack_hmr',
+      heartbeat: 10 * 1000,
+    })
+  );
 }
 
 // Rate Limiting
