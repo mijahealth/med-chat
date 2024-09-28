@@ -29,6 +29,8 @@ import {
 } from './ui.js';
 import feather from 'feather-icons';
 
+let isSelecting = false;
+
 export function setupEventListeners() {
   // Send Message on Enter and Button Click
   const newMessageInput = document.getElementById('new-message');
@@ -309,11 +311,16 @@ export function checkScrollPosition() {
   }
 }
 
-export async function selectConversation(sid) {
+export const selectConversation = debounce(async (sid) => {
+  if (isSelecting || sid === currentConversation.sid) {return;}
+  
+  isSelecting = true;
   console.log(`selectConversation called with SID: ${sid}`);
+  
   if (!state.conversationsLoaded) {
     console.log('Conversations not loaded yet');
     alert('Please wait until conversations are fully loaded.');
+    isSelecting = false;
     return;
   }
   setUserInteracted();
@@ -388,8 +395,9 @@ export async function selectConversation(sid) {
     }
   } finally {
     document.getElementById('loading-spinner').style.display = 'none';
+    isSelecting = false;
   }
-}
+}, 300);
 
 export function closeConversation() {
   const lastConversationSid = currentConversation.sid;
@@ -444,14 +452,14 @@ export function setupConversationListeners() {
       if (deleteButton) {
         event.preventDefault();
         event.stopPropagation();
-        const sid = deleteButton.dataset.sid;
+        const {sid} = deleteButton.dataset;
         if (sid) {
           handleDeleteConversation(sid);
         }
       } else {
         const conversationElement = event.target.closest('.conversation');
         if (conversationElement) {
-          const sid = conversationElement.dataset.sid;
+          const {sid} = conversationElement.dataset;
           if (sid) {
             selectConversation(sid);
           }
@@ -461,14 +469,5 @@ export function setupConversationListeners() {
     log('Conversation container click listener added');
   } else {
     log('Conversations container not found');
-  }
-}
-
-function handleConversationClick(event) {
-  const conversationElement = event.target.closest('.conversation');
-  if (conversationElement && !event.target.closest('.delete-btn')) {
-    event.preventDefault();
-    const sid = conversationElement.dataset.sid;
-    selectConversation(sid);
   }
 }
