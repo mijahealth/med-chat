@@ -1,4 +1,5 @@
 // eslint.config.mjs
+
 import globals from 'globals';
 import js from '@eslint/js';
 import * as typescriptEslint from '@typescript-eslint/eslint-plugin';
@@ -12,24 +13,22 @@ const jsdocRules = {
   'jsdoc/check-alignment': 'error',
   'jsdoc/check-examples': 'off',
   'jsdoc/check-indentation': 'error',
-  // Conditionally add 'newline-after-description' if available
   ...(jsdocPlugin.rules['newline-after-description'] && {
     'jsdoc/newline-after-description': 'error',
   }),
   'jsdoc/no-types': 'off',
-  'jsdoc/require-description': 'off',
+  'jsdoc/require-description': 'error', // Changed to 'error'
   'jsdoc/require-param': 'error',
   'jsdoc/require-param-description': 'error',
   'jsdoc/require-param-type': 'off',
-  'jsdoc/require-returns': 'off',
-  'jsdoc/require-returns-description': 'off',
+  'jsdoc/require-returns': 'error', // Changed to 'error'
+  'jsdoc/require-returns-description': 'error', // Changed to 'error'
   'jsdoc/require-returns-type': 'off',
-  // Add more JSDoc rules as needed
 };
 
 // Export the flat config array
 export default [
-  // 1. Ignore patterns
+  // 1. Ignore patterns (unchanged)
   {
     ignores: [
       'dist/**',
@@ -43,10 +42,10 @@ export default [
     ],
   },
 
-  // 2. Apply ESLint's recommended JavaScript rules
+  // 2. Apply ESLint's recommended JavaScript rules (unchanged)
   js.configs.recommended,
 
-  // 3. Apply JSDoc rules
+  // 3. Apply JSDoc rules (unchanged)
   {
     plugins: {
       jsdoc: jsdocPlugin,
@@ -77,6 +76,16 @@ export default [
       'prefer-template': 'error',
       'quotes': ['error', 'single', { avoidEscape: true }],
       'semi': ['error', 'always'],
+      // Added rules for scalability and best practices
+      'max-len': ['error', { code: 100, ignoreUrls: true }],
+      'complexity': ['error', 10],
+      'no-magic-numbers': ['warn', { ignore: [-1, 0, 1, 2] }],
+      'prefer-destructuring': ['error', { array: true, object: true }],
+      'no-param-reassign': 'error',
+      'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
+      'prefer-arrow-callback': 'error',
+      'prefer-rest-params': 'error',
+      'prefer-spread': 'error',
     },
   },
 
@@ -90,21 +99,24 @@ export default [
       },
     },
     plugins: {
-      '@typescript-eslint': typescriptEslint, // Correctly imported as a namespace
+      '@typescript-eslint': typescriptEslint,
     },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
-      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'error', // Changed to 'error'
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-inferrable-types': 'warn',
-      // Add more TypeScript rules as needed
+      '@typescript-eslint/strict-boolean-expressions': 'error', // Added
+      '@typescript-eslint/no-unnecessary-condition': 'error', // Added
+      '@typescript-eslint/no-floating-promises': 'error', // Added
+      '@typescript-eslint/await-thenable': 'error', // Added
     },
   },
 
-  // 8. Node.js specific configuration
+  // 8. Node.js specific configuration (unchanged)
   {
     files: ['**/*.js'],
     languageOptions: {
@@ -136,6 +148,8 @@ export default [
     },
     rules: {
       'no-alert': 'warn',
+      'no-var': 'error', // Added to enforce let/const in browser code
+      'prefer-const': 'error', // Added to prefer const in browser code
     },
   },
 ];

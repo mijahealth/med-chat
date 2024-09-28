@@ -20,7 +20,7 @@ async function logLatestMessage(conversationSid, context) {
       order: 'desc',
     });
     if (messages.length > 0) {
-      const latestMessage = messages[0];
+      const [latestMessage] = messages;
       logger.info(`Latest message ${context}`, {
         conversationSid,
         messageSid: latestMessage.sid,
@@ -38,6 +38,8 @@ async function logLatestMessage(conversationSid, context) {
     });
   }
 }
+
+const HTTP_BAD_REQUEST = 400;
 
 router.post(
   '/',
@@ -61,7 +63,7 @@ router.post(
       logger.warn('Validation errors on starting conversation', {
         errors: errors.array(),
       });
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(HTTP_BAD_REQUEST).json({ errors: errors.array() });
     }
 
     try {
@@ -100,7 +102,8 @@ router.post(
       await logLatestMessage(conversation.sid, 'After adding participant');
 
       const disclaimer =
-        '(Note: you may reply STOP to no longer receive messages from us. Msg&Data Rates may apply.)';
+        '(Note: you may reply STOP to no longer receive messages from us. ' +
+        'Msg&Data Rates may apply.)';
       const firstMessage = `${message} ${disclaimer}`;
 
       logger.info('Sending first SMS for new conversation', {
