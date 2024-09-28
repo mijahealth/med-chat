@@ -1,19 +1,24 @@
 // public/js/ui.js
+
 import {
   loadConversations,
   incrementUnreadCount,
   handleNewConversation,
   handleUpdateConversation,
   removeConversationFromUI,
-  deleteConversation,
 } from './conversations.js';
 import { setupWebSocket } from './websocket.js';
 import { state, currentConversation } from './state.js';
 import { api } from './api.js';
 import { log, formatTime } from './utils.js';
 import feather from 'feather-icons';
-import { closeConversation, selectConversation, setupConversationListeners } from './events.js';
+import { closeConversation, setupConversationListeners } from './events.js';
 
+/**
+ * This function starts the app. It loads the initial data (like conversations) and sets up other parts like WebSocket.
+ * @async
+ * @returns {Promise<void>}
+ */
 export async function initializeApp() {
   try {
     const config = await api.getConfig();
@@ -35,6 +40,9 @@ export async function initializeApp() {
   feather.replace();
 }
 
+/**
+ * This function displays a message when no conversation is selected.
+ */
 export function showNoConversationSelected() {
   document.getElementById('messages-title').style.display = 'none';
   document.getElementById('no-conversation').style.display = 'flex';
@@ -42,6 +50,10 @@ export function showNoConversationSelected() {
   document.getElementById('message-input').style.display = 'none';
 }
 
+/**
+ * This function displays all the conversations in the list on the screen.
+ * @param {Array} conversations - An array of conversation objects to be rendered.
+ */
 export function renderConversations(conversations) {
   const conversationsDiv = document.getElementById('conversations');
   conversationsDiv.innerHTML = ''; // Clear existing conversations
@@ -80,6 +92,11 @@ export function renderConversations(conversations) {
   }
 }
 
+/**
+ * This function creates the HTML structure for a conversation so it can be displayed on the screen.
+ * @param {Object} conversation - The conversation object containing details to display.
+ * @returns {string} The HTML string representing the conversation.
+ */
 function createConversationHtml(conversation) {
   const lastMessageTime = formatTime(conversation.lastMessageTime);
   const displayName = conversation.friendlyName || conversation.sid;
@@ -90,7 +107,9 @@ function createConversationHtml(conversation) {
       : '<span class="unread-indicator"></span>';
 
   return `
-    <div class="conversation ${conversation.unreadCount > 0 ? 'unread' : ''}" id="conv-${conversation.sid}" data-sid="${conversation.sid}">
+    <div class="conversation ${conversation.unreadCount > 0 ? 'unread' : ''}" 
+         id="conv-${conversation.sid}" 
+         data-sid="${conversation.sid}">
       <div class="conversation-header">
         <div class="unread-indicator-column">
           ${unreadBadge}
@@ -98,11 +117,14 @@ function createConversationHtml(conversation) {
         <div class="conversation-details">
           <div class="header-left">
             <strong>${displayName}</strong>
-            <span class="phone-number">${conversation.attributes?.phoneNumber || ''}</span>
+            <span class="phone-number">
+              ${conversation.attributes?.phoneNumber || ''}
+            </span>
           </div>
           <div class="header-right">
             <span class="time">${lastMessageTime}</span>
-            <button class="delete-btn" data-sid="${conversation.sid}" aria-label="Delete Conversation">
+            <button class="delete-btn" data-sid="${conversation.sid}" 
+                    aria-label="Delete Conversation">
               <i data-feather="trash-2" aria-hidden="true"></i>
             </button>
           </div>
@@ -115,6 +137,10 @@ function createConversationHtml(conversation) {
   `;
 }
 
+/**
+ * This function moves a conversation to the top of the list, usually when it gets a new message.
+ * @param {string} conversationSid - The unique identifier of the conversation to move to the top.
+ */
 export function moveConversationToTop(conversationSid) {
   const conversationsDiv = document.getElementById('conversations');
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
@@ -123,6 +149,10 @@ export function moveConversationToTop(conversationSid) {
   }
 }
 
+/**
+ * This function displays all the messages in the current conversation on the screen.
+ * @param {Array} messages - An array of message objects to be rendered.
+ */
 export function renderMessages(messages) {
   const messagesContainer = document.getElementById('messages');
   messagesContainer.innerHTML = ''; // Clear existing messages
@@ -135,6 +165,10 @@ export function renderMessages(messages) {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+/**
+ * This function adds a new message to the screen.
+ * @param {Object} message - The message object containing details to display.
+ */
 export function appendMessage(message) {
   const messagesContainer = document.getElementById('messages');
   const author = message.author.trim();
@@ -154,10 +188,22 @@ export function appendMessage(message) {
   }
 }
 
+/**
+ * This function makes the message input area visible.
+ */
 export function showMessageInput() {
   document.getElementById('message-input').style.display = 'flex';
 }
 
+/**
+ * This function updates the information at the top of the chat, such as the name and contact details.
+ * @param {string} sid - The unique identifier of the conversation.
+ * @param {string} name - The name of the contact.
+ * @param {string} email - The email of the contact.
+ * @param {string} phoneNumber - The phone number of the contact.
+ * @param {string} dob - The date of birth of the contact.
+ * @param {string} state - The state of the contact.
+ */
 export function updateConversationHeader(
   sid,
   name,
@@ -185,7 +231,11 @@ export function updateConversationHeader(
                 </div>
                 <div class="contact-item">
                   <i data-feather="mail" class="icon contact-icon"></i>
-                  <a href="mailto:${email}" target="_blank" rel="noopener noreferrer">${email || 'N/A'}</a>
+                  <a href="mailto:${email}" 
+                  target="_blank" 
+                  rel="noopener noreferrer">
+                  ${email || 'N/A'}
+                  </a>
                 </div>
               </div>
               <div class="contact-info-row">
@@ -233,6 +283,7 @@ export function updateConversationHeader(
   // Replace Feather Icons
   feather.replace();
 }
+
 if (module.hot) {
   module.hot.dispose(() => {
     // Clean up any event listeners or timers here
@@ -247,7 +298,7 @@ if (module.hot) {
   });
 }
 
-// Export all necessary functions
+// Export all necessary functions from the conversations module
 export {
   incrementUnreadCount,
   handleNewConversation,

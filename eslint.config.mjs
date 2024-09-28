@@ -67,7 +67,7 @@ export default [
       'no-undef': 'error',
       'eqeqeq': ['error', 'always'],
       'curly': ['error', 'all'],
-      'no-console': 'off', // Disabled the no-console rule
+      'no-console': 'off', 
       'prefer-const': 'error',
       'no-var': 'error',
       'arrow-body-style': ['error', 'as-needed'],
@@ -76,8 +76,7 @@ export default [
       'prefer-template': 'error',
       'quotes': ['error', 'single', { avoidEscape: true }],
       'semi': ['error', 'always'],
-      // Added rules for scalability and best practices
-      'max-len': ['error', { code: 100, ignoreUrls: true }],
+      'max-len': ['error', { code: 100, ignoreUrls: true, ignoreComments: true }],
       'complexity': ['error', 10],
       'no-magic-numbers': ['warn', { ignore: [-1, 0, 1, 2, 10, 20, 128] }],
       'prefer-destructuring': ['error', { array: true, object: true }],
