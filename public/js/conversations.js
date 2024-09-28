@@ -222,7 +222,7 @@ export function isMessageRead(message) {
   return message.read || false;
 }
 
-function updateConversationPreview(conversationSid, latestMessage) {
+export function updateConversationPreview(conversationSid, latestMessage) {
   const conversationDiv = document.getElementById(`conv-${conversationSid}`);
   if (conversationDiv) {
     const lastMessageDiv = conversationDiv.querySelector('.last-message');
