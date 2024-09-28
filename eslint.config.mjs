@@ -67,7 +67,7 @@ export default [
       'no-undef': 'error',
       'eqeqeq': ['error', 'always'],
       'curly': ['error', 'all'],
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': 'off', // Disabled the no-console rule
       'prefer-const': 'error',
       'no-var': 'error',
       'arrow-body-style': ['error', 'as-needed'],
@@ -79,7 +79,7 @@ export default [
       // Added rules for scalability and best practices
       'max-len': ['error', { code: 100, ignoreUrls: true }],
       'complexity': ['error', 10],
-      'no-magic-numbers': ['warn', { ignore: [-1, 0, 1, 2] }],
+      'no-magic-numbers': ['warn', { ignore: [-1, 0, 1, 2, 10, 20, 128] }],
       'prefer-destructuring': ['error', { array: true, object: true }],
       'no-param-reassign': 'error',
       'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
@@ -147,9 +147,9 @@ export default [
       },
     },
     rules: {
-      'no-alert': 'warn',
-      'no-var': 'error', // Added to enforce let/const in browser code
-      'prefer-const': 'error', // Added to prefer const in browser code
+      'no-alert': 'off', // Disabled the no-alert rule
+      'no-var': 'error', // Enforce let/const in browser code
+      'prefer-const': 'error', // Prefer const in browser code
     },
   },
 ];

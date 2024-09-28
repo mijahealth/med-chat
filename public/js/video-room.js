@@ -1,9 +1,11 @@
-// public/js/video-room.js
-
-/* global axios, feather, Twilio */
 import axios from 'axios';
 import feather from 'feather-icons';
 import Video from 'twilio-video';
+
+// Replace alert with a custom modal function or a logging mechanism
+function showAlert(message) {
+  alert(message);
+}
 
 console.log('Video room script loaded');
 
@@ -13,32 +15,39 @@ let isMuted = false;
 // Audio visualization
 let audioContext, analyser, dataArray;
 
+// Constants
+const AUDIO_LEVEL_DIVISOR = 128;
+const BOX_SHADOW_BLUR = 20;
+const BOX_SHADOW_SPREAD = 10;
+
 async function setupVideo() {
   const userName = document.getElementById('user-name').value.trim();
   if (!userName) {
-    alert('Please enter your name before joining.');
+    showAlert('Please enter your name before joining.');
     return;
   }
 
   console.log('Setup video called');
-  const roomName = window.location.pathname.split('/').pop().split('?')[0];
-  console.log('Room name:', roomName);
+  const lastPart = window.location.pathname.split('/').pop();
+  const [roomName] = lastPart.split('?');
+  
+    console.log('Room name:', roomName);
 
   try {
     showLoading(true);
     console.log('Fetching token');
     const response = await axios.get(
-      `/token?identity=${encodeURIComponent(userName)}`,
+      `/token?identity=${encodeURIComponent(userName)}`
     );
     const { token, identity } = response.data;
     console.log('Token received for identity:', identity);
     console.log('Creating local audio and video tracks');
     try {
-      // Create local tracks
-      [localAudioTrack, localTrack] = await Promise.all([
-        Twilio.Video.createLocalAudioTrack(),
-        Twilio.Video.createLocalVideoTrack(),
-      ]);
+      // Create local tracks using destructuring directly into the variables
+      ([localAudioTrack, localTrack] = await Promise.all([
+        Video.createLocalAudioTrack(),
+        Video.createLocalVideoTrack(),
+      ]));
 
       // Publish local tracks
       const tracksToPublish = [];
@@ -58,7 +67,7 @@ async function setupVideo() {
 
       // Connect to the video room with published tracks
       console.log('Connecting to video room with local tracks');
-      videoRoom = await Twilio.Video.connect(token, {
+      videoRoom = await Video.connect(token, {
         name: roomName,
         tracks: tracksToPublish,
         dominantSpeaker: true,
@@ -93,21 +102,23 @@ async function setupVideo() {
 
       // Setup audio visualization
       if (localAudioTrack) {
-        const audioStream = new MediaStream([localAudioTrack.mediaStreamTrack]);
+        const audioStream = new MediaStream([
+          localAudioTrack.mediaStreamTrack,
+        ]);
         setupAudioVisualization(audioStream);
       }
 
       showLoading(false);
     } catch (trackError) {
       console.error('Error creating or publishing local tracks:', trackError);
-      alert(
-        'Could not access the camera or microphone. Please ensure they are working and the page has permission to access them.',
+      showAlert(
+        'Could not access the camera or microphone. Please enable them.'
       );
       showLoading(false);
     }
   } catch (error) {
     console.error('Error connecting to video room:', error);
-    alert('Failed to connect to the video room. Please try again.');
+    showAlert('Failed to connect to the video room. Please try again.');
     showLoading(false);
   }
 }
@@ -216,7 +227,7 @@ function participantConnected(participant) {
     'px-2',
     'py-1',
     'rounded',
-    'z-10',
+    'z-10'
   );
   participantContainer.appendChild(nameOverlay);
 
@@ -281,7 +292,7 @@ function setupLocalParticipant(userName) {
     'px-2',
     'py-1',
     'rounded',
-    'z-10',
+    'z-10'
   );
   localMediaContainer.appendChild(nameOverlay);
 }
@@ -341,11 +352,13 @@ function updateAudioVisualization() {
     analyser.getByteFrequencyData(dataArray);
     const average =
       dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-    const audioLevel = average / 128; // Normalize to 0-1 range
+    const audioLevel = average / AUDIO_LEVEL_DIVISOR; // Normalize to 0-1 range
 
     const muteButton = document.getElementById('mute-btn');
     if (muteButton) {
-      muteButton.style.boxShadow = `0 0 ${audioLevel * 20}px ${audioLevel * 10}px rgba(59, 130, 246, ${audioLevel})`;
+      muteButton.style.boxShadow =
+        `0 0 ${audioLevel * BOX_SHADOW_BLUR}px ` +
+        `${audioLevel * BOX_SHADOW_SPREAD}px rgba(59, 130, 246, ${audioLevel})`;
     }
 
     requestAnimationFrame(updateAudioVisualization);
@@ -367,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (userNameInput.value.trim()) {
         setupVideo();
       } else {
-        alert('Please enter your name before joining.');
+        showAlert('Please enter your name before joining.');
       }
     });
     console.log('Join call button listener added');
