@@ -1,11 +1,17 @@
 // routes/search.js
+
 const express = require('express');
 const router = express.Router();
 const { query, validationResult } = require('express-validator');
 const logger = require('../modules/logger');
 const searchModule = require('../modules/search');
 
-// GET /search?query=...
+// Define HTTP status code constants
+const HTTP_STATUS_BAD_REQUEST = 400;
+
+/**
+ * GET /search?query=...
+ */
 router.get(
   '/',
   [query('query').isString().withMessage('Query must be a string')],
@@ -13,13 +19,13 @@ router.get(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       logger.warn('Validation errors on search', { errors: errors.array() });
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });
     }
 
     const { query: searchQuery } = req.query;
     if (!searchQuery) {
       logger.warn('Empty search query received');
-      return res.status(400).json({ error: 'Search query is required' });
+      return res.status(HTTP_STATUS_BAD_REQUEST).json({ error: 'Search query is required' });
     }
 
     try {

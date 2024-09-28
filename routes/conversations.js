@@ -6,6 +6,14 @@ const { param, query, body, validationResult } = require('express-validator');
 const logger = require('../modules/logger');
 const conversations = require('../modules/conversations');
 const { isMessageRead } = conversations; // Ensure this is correctly imported
+const { getBroadcast } = require('../modules/broadcast');
+
+// Define HTTP status code constants
+const HTTP_STATUS_BAD_REQUEST = 400;
+const HTTP_STATUS_NOT_FOUND = 404;
+const HTTP_STATUS_CREATED = 201;
+const HTTP_STATUS_OK = 200;
+const TWILIO_ERROR_NOT_FOUND = 20404;
 
 /**
  * @route   GET /conversations
@@ -59,7 +67,7 @@ router.get(
       logger.warn('Validation errors on fetching conversation details', {
         errors: errors.array(),
       });
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });
     }
 
     const { sid } = req.params;
@@ -70,7 +78,7 @@ router.get(
       if (!conversation) {
         logger.warn(`Conversation not found: ${sid}`);
         return res
-          .status(404)
+          .status(HTTP_STATUS_NOT_FOUND)
           .json({ error: `Conversation ${sid} not found.` });
       }
 
@@ -116,9 +124,9 @@ router.get(
       });
     } catch (error) {
       logger.error('Error fetching conversation details', { sid, error });
-      if (error.code === 20404) {
+      if (error.code === TWILIO_ERROR_NOT_FOUND) {
         // Twilio Not Found Error Code
-        res.status(404).json({ error: `Conversation ${sid} not found.` });
+        res.status(HTTP_STATUS_NOT_FOUND).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error); // Pass to error handler
       }
@@ -155,7 +163,7 @@ router.get(
       logger.warn('Validation errors on listing messages', {
         errors: errors.array(),
       });
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });
     }
 
     const { sid } = req.params;
@@ -182,9 +190,9 @@ router.get(
       res.json(formattedMessages);
     } catch (error) {
       logger.error('Error listing messages', { sid, error });
-      if (error.code === 20404) {
+      if (error.code === TWILIO_ERROR_NOT_FOUND) {
         // Twilio error code for Not Found
-        res.status(404).json({ error: `Conversation ${sid} not found.` });
+        res.status(HTTP_STATUS_NOT_FOUND).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error);
       }
@@ -224,7 +232,7 @@ router.post(
       logger.warn('Validation errors on adding message', {
         errors: errors.array(),
       });
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });
     }
 
     const { sid } = req.params;
@@ -239,19 +247,20 @@ router.post(
       );
 
       // Optionally, broadcast the new message via WebSockets
-      // Assuming you have a broadcast module set up
-      const broadcast = require('../modules/broadcast').getBroadcast();
-      if (broadcast) {
-        broadcast({
-          type: 'newMessage',
-          conversationSid: sid,
-          author: author || process.env.TWILIO_PHONE_NUMBER,
-          body: message,
-          dateCreated: newMessage.dateCreated,
-        });
+      if (getBroadcast) {
+        const broadcast = getBroadcast();
+        if (broadcast) {
+          broadcast({
+            type: 'newMessage',
+            conversationSid: sid,
+            author: author || process.env.TWILIO_PHONE_NUMBER,
+            body: message,
+            dateCreated: newMessage.dateCreated,
+          });
+        }
       }
 
-      res.status(201).json(newMessage);
+      res.status(HTTP_STATUS_CREATED).json(newMessage);
     } catch (error) {
       logger.error('Error adding message to conversation', {
         sid,
@@ -259,9 +268,9 @@ router.post(
         author,
         error,
       });
-      if (error.code === 20404) {
+      if (error.code === TWILIO_ERROR_NOT_FOUND) {
         // Twilio error code for Not Found
-        res.status(404).json({ error: `Conversation ${sid} not found.` });
+        res.status(HTTP_STATUS_NOT_FOUND).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error);
       }
@@ -296,7 +305,7 @@ router.delete(
       logger.warn('Validation errors on deleting conversation', {
         errors: errors.array(),
       });
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });
     }
 
     const { sid } = req.params;
@@ -305,7 +314,7 @@ router.delete(
     // Optional: Require a confirmation token for deletion
     if (confirmToken !== 'CONFIRM_DELETE') {
       return res
-        .status(400)
+        .status(HTTP_STATUS_BAD_REQUEST)
         .json({ error: 'Invalid or missing confirmation token.' });
     }
 
@@ -314,20 +323,22 @@ router.delete(
       await conversations.deleteConversation(sid);
 
       // Optionally, broadcast the deletion via WebSockets
-      const broadcast = require('../modules/broadcast').getBroadcast();
-      if (broadcast) {
-        broadcast({
-          type: 'deleteConversation',
-          conversationSid: sid,
-        });
+      if (getBroadcast) {
+        const broadcast = getBroadcast();
+        if (broadcast) {
+          broadcast({
+            type: 'deleteConversation',
+            conversationSid: sid,
+          });
+        }
       }
 
       res.json({ message: `Conversation ${sid} deleted successfully.` });
     } catch (error) {
       logger.error('Error deleting conversation', { sid, error });
-      if (error.code === 20404) {
+      if (error.code === TWILIO_ERROR_NOT_FOUND) {
         // Twilio error code for Not Found
-        res.status(404).json({ error: `Conversation ${sid} not found.` });
+        res.status(HTTP_STATUS_NOT_FOUND).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error);
       }
@@ -352,13 +363,13 @@ router.post(
   async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });
     }
 
     try {
       const { sid } = req.params;
       await conversations.markMessagesAsRead(sid);
-      res.status(200).json({ message: 'Messages marked as read' });
+      res.status(HTTP_STATUS_OK).json({ message: 'Messages marked as read' });
     } catch (error) {
       next(error);
     }

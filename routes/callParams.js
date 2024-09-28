@@ -6,6 +6,11 @@ const { param, validationResult } = require('express-validator');
 const logger = require('../modules/logger');
 const conversations = require('../modules/conversations');
 
+// Define HTTP status code constants
+const HTTP_STATUS_BAD_REQUEST = 400;
+const HTTP_STATUS_NOT_FOUND = 404;
+const TWILIO_ERROR_NOT_FOUND = 20404;
+
 /**
  * GET /call-params/:sid
  * Retrieves call parameters (From and To numbers) for a given conversation SID.
@@ -25,7 +30,7 @@ router.get(
       logger.warn('Validation errors on fetching call parameters', {
         errors: errors.array(),
       });
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });
     }
 
     const { sid } = req.params;
@@ -38,7 +43,7 @@ router.get(
 
       if (!toNumber) {
         logger.warn('No phone number associated with conversation', { sid });
-        return res.status(400).json({
+        return res.status(HTTP_STATUS_BAD_REQUEST).json({
           error: 'No phone number associated with this conversation.',
         });
       }
@@ -46,8 +51,8 @@ router.get(
       res.json({ From: fromNumber, To: toNumber });
     } catch (error) {
       logger.error('Error fetching call parameters', { sid, error });
-      if (error.code === 20404) {
-        res.status(404).json({ error: `Conversation ${sid} not found.` });
+      if (error.code === TWILIO_ERROR_NOT_FOUND) {
+        res.status(HTTP_STATUS_NOT_FOUND).json({ error: `Conversation ${sid} not found.` });
       } else {
         next(error);
       }
