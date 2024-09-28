@@ -3,7 +3,6 @@
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
 import {
-  playNotificationSound,
   debounce,
   log,
   setUserInteracted,
@@ -30,6 +29,18 @@ import {
 import feather from 'feather-icons';
 
 let isSelecting = false;
+
+// Constants for magic numbers
+const MESSAGE_DISPLAY_DURATION = 3000;
+const SEARCH_DEBOUNCE_DELAY = 300;
+const SELECT_CONVERSATION_DEBOUNCE_DELAY = 300;
+
+
+// Define initializeApplication function
+function initializeApplication() {
+  setupEventListeners();
+  // Add any other initialization logic here
+}
 
 export function setupEventListeners() {
   // Send Message on Enter and Button Click
@@ -178,7 +189,7 @@ export function handleSendMessage() {
         indicator.classList.add('show');
         setTimeout(() => {
           indicator.classList.remove('show');
-        }, 3000); // Hide after 3 seconds
+        }, MESSAGE_DISPLAY_DURATION); // Hide after 3 seconds
       }
 
       // Optionally, you can update the conversation preview here
@@ -203,7 +214,7 @@ export function handleSendMessage() {
         indicator.classList.add('show', 'error');
         setTimeout(() => {
           indicator.classList.remove('show', 'error');
-        }, 3000); // Hide after 3 seconds
+        }, MESSAGE_DISPLAY_DURATION); // Hide after 3 seconds
       }
     });
 }
@@ -230,55 +241,10 @@ function clearNewConversationForm() {
   }
 }
 
-export function startConversation(event) {
-  event.preventDefault();
-  const form = event.target;
-
-  if (validateForm(form)) {
-    const phoneNumber = form.phoneNumber.value.trim();
-    const message = form.message.value.trim();
-    const name = form.name.value.trim();
-    const email = form.email.value.trim();
-    const dob = form.dob.value.trim();
-    const stateField = form.state.value.trim();
-
-    api
-      .startConversation({
-        phoneNumber,
-        message,
-        name,
-        email,
-        dob,
-        state: stateField,
-      })
-      .then(async (response) => {
-        if (response.existing) {
-          const userConfirmed = confirm(
-            'This conversation already exists. Would you like to open it?',
-          );
-          if (userConfirmed) {
-            closeModal();
-            selectConversation(response.sid);
-          }
-        } else {
-          await loadConversations();
-          closeModal();
-          selectConversation(response.sid);
-        }
-        // Clear the form regardless of whether a new conversation was created or not
-        clearNewConversationForm();
-      })
-      .catch((error) => {
-        console.error('Error starting conversation:', error);
-        alert('Failed to start a new conversation. Please try again.');
-      });
-  }
-}
-
 function setupSearch() {
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
-    searchInput.addEventListener('input', debounce(performSearch, 300));
+    searchInput.addEventListener('input', debounce(performSearch, SEARCH_DEBOUNCE_DELAY));
   } else {
     log('Search input not found');
   }
@@ -311,6 +277,63 @@ export function checkScrollPosition() {
   }
 }
 
+// Helper functions to break down the complexity
+function updateUIForConversationSelection() {
+  document.getElementById('loading-spinner').style.display = 'block';
+  document.getElementById('messages').style.display = 'none';
+  document.getElementById('message-input').style.display = 'none';
+  document.getElementById('messages-title').style.display = 'flex';
+  document.getElementById('no-conversation').style.display = 'none';
+}
+
+function updateConversationSelection(sid) {
+  document.querySelectorAll('.conversation').forEach((conv) => {
+    conv.classList.remove('selected');
+  });
+  const selectedConversation = document.getElementById(`conv-${sid}`);
+  if (selectedConversation) {
+    selectedConversation.classList.add('selected');
+    selectedConversation.classList.remove('unread');
+    const unreadBadge = selectedConversation.querySelector('.unread-badge');
+    if (unreadBadge) {
+      unreadBadge.remove();
+    }
+  }
+}
+
+function updateConversationDetails(sid, conversation) {
+  const attributes = conversation.attributes || {};
+  const name = attributes.name || conversation.friendlyName;
+  const email = attributes.email || '';
+  const phoneNumber = attributes.phoneNumber || '';
+  const dob = attributes.dob || '';
+  const state = attributes.state || '';
+
+  updateConversationHeader(sid, name, email, phoneNumber, dob, state);
+  setupCallControls();
+}
+
+async function fetchAndRenderMessages(sid) {
+  const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
+  renderMessages(messages);
+  document.getElementById('messages').style.display = 'block';
+  showMessageInput();
+  const messagesDiv = document.getElementById('messages');
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function handleConversationError(error) {
+  console.error('Error in selectConversation:', error);
+  if (error.response) {
+    log('Error loading conversation', { error: error.response.data });
+    alert(`Error: ${error.response.data.error || 'Unknown error occurred.'}`);
+  } else {
+    log('Error loading conversation', { error: error.message });
+    alert(`Error: ${error.message}`);
+  }
+}
+
+// Refactored selectConversation function
 export const selectConversation = debounce(async (sid) => {
   if (isSelecting || sid === currentConversation.sid) {return;}
   
@@ -323,81 +346,35 @@ export const selectConversation = debounce(async (sid) => {
     isSelecting = false;
     return;
   }
+
   setUserInteracted();
   currentConversation.sid = sid;
   console.log(`Current conversation SID set to: ${currentConversation.sid}`);
 
-  document.getElementById('loading-spinner').style.display = 'block';
-  document.getElementById('messages').style.display = 'none';
-  document.getElementById('message-input').style.display = 'none';
-  document.getElementById('messages-title').style.display = 'flex';
-  document.getElementById('no-conversation').style.display = 'none';
+  updateUIForConversationSelection();
 
   try {
     console.log('Attempting to fetch conversation details');
     const conversation = await api.getConversationDetails(sid);
     console.log('Conversation details fetched:', conversation);
 
-    // Deselect other conversations
-    document.querySelectorAll('.conversation').forEach((conv) => {
-      conv.classList.remove('selected');
-    });
-    const selectedConversation = document.getElementById(`conv-${sid}`);
-    if (selectedConversation) {
-      selectedConversation.classList.add('selected');
+    updateConversationSelection(sid, conversation);
+    updateConversationDetails(sid, conversation);
 
-      // Remove unread indicators immediately
-      selectedConversation.classList.remove('unread');
-      const unreadBadge = selectedConversation.querySelector('.unread-badge');
-      if (unreadBadge) {
-        unreadBadge.remove();
-      }
-    }
-
-    const attributes = conversation.attributes || {};
-
-    // Conditionally call mark-read without awaiting
     if (conversation.unreadCount > 0) {
       api.markMessagesAsRead(sid).catch((error) => {
         log('Error marking messages as read', { error });
       });
     }
 
-    const name = attributes.name || conversation.friendlyName;
-    const email = attributes.email || '';
-    const phoneNumber = attributes.phoneNumber || '';
-    const dob = attributes.dob || '';
-    const state = attributes.state || '';
-
-    // Update the conversation header and call controls
-    updateConversationHeader(sid, name, email, phoneNumber, dob, state);
-    // **Attach event listeners to the new call buttons**
-    setupCallControls();
-
-    // Fetch and render messages
-    const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
-    renderMessages(messages);
-
-    document.getElementById('messages').style.display = 'block';
-    showMessageInput();
-
-    // Scroll to bottom of messages
-    const messagesDiv = document.getElementById('messages');
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    await fetchAndRenderMessages(sid);
   } catch (error) {
-    console.error('Error in selectConversation:', error);
-    if (error.response) {
-      log('Error loading conversation', { error: error.response.data });
-      alert(`Error: ${error.response.data.error || 'Unknown error occurred.'}`);
-    } else {
-      log('Error loading conversation', { error: error.message });
-      alert(`Error: ${error.message}`);
-    }
+    handleConversationError(error);
   } finally {
     document.getElementById('loading-spinner').style.display = 'none';
     isSelecting = false;
   }
-}, 300);
+}, SELECT_CONVERSATION_DEBOUNCE_DELAY);
 
 export function closeConversation() {
   const lastConversationSid = currentConversation.sid;
@@ -472,6 +449,52 @@ export function setupConversationListeners() {
   }
 }
 
+export function startConversation(event) {
+  event.preventDefault();
+  const form = event.target;
+
+  if (validateForm(form)) {
+    const phoneNumber = form.phoneNumber.value.trim();
+    const message = form.message.value.trim();
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
+    const dob = form.dob.value.trim();
+    const stateField = form.state.value.trim();
+
+    api
+      .startConversation({
+        phoneNumber,
+        message,
+        name,
+        email,
+        dob,
+        state: stateField,
+      })
+      .then(async (response) => {
+        if (response.existing) {
+          const userConfirmed = confirm(
+            'This conversation already exists. Would you like to open it?',
+          );
+          if (userConfirmed) {
+            closeModal();
+            selectConversation(response.sid);
+          }
+        } else {
+          await loadConversations();
+          closeModal();
+          selectConversation(response.sid);
+        }
+        // Clear the form regardless of whether a new conversation was created or not
+        clearNewConversationForm();
+      })
+      .catch((error) => {
+        console.error('Error starting conversation:', error);
+        alert('Failed to start a new conversation. Please try again.');
+      });
+  }
+}
+
+// Hot module replacement logic
 if (module.hot) {
   module.hot.dispose(() => {
     // Remove all event listeners
@@ -485,3 +508,6 @@ if (module.hot) {
     setupEventListeners();
   });
 }
+
+// Initialize the application when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', initializeApplication);
