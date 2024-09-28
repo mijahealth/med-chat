@@ -1,10 +1,20 @@
 {
-    "compilerOptions": {
-      "checkJs": true,
-      "target": "ESNext",
-      "module": "ESNext",
-      "strict": true
-    },
-    "include": ["./**/*.js"],
-    "exclude": ["node_modules", "dist", "build"]
-  }
+  "compilerOptions": {
+    "checkJs": true,
+    "target": "ESNext",
+    "module": "CommonJS",
+    "strict": false,
+    "noImplicitAny": false,
+    "allowJs": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["*", "src/*"]
+    }
+  },
+  "include": ["./**/*.js"],
+  "exclude": ["node_modules", "dist", "build"]
+}

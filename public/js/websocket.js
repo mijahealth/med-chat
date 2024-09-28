@@ -1,4 +1,3 @@
-// public/js/websocket.js
 import { currentConversation, state } from './state.js';
 import { playNotificationSound, log } from './utils.js';
 import { handleNewMessage } from './messages.js';
@@ -16,7 +15,7 @@ export function setupWebSocket() {
     (socket.readyState === WebSocket.OPEN ||
       socket.readyState === WebSocket.CONNECTING)
   ) {
-    console.log('WebSocket is already connected or connecting');
+    log('WebSocket is already connected or connecting');
     return;
   }
 
@@ -24,7 +23,7 @@ export function setupWebSocket() {
   socket = new WebSocket(`${protocol}//${window.location.host}`);
 
   socket.onopen = () => {
-    console.log('WebSocket connection established');
+    log('WebSocket connection established');
   };
 
   socket.onmessage = (event) => {
@@ -32,7 +31,7 @@ export function setupWebSocket() {
     try {
       data = JSON.parse(event.data);
     } catch (error) {
-      console.error('Error parsing WebSocket message:', error);
+      log('Error parsing WebSocket message:', error);
       return;
     }
 
@@ -45,7 +44,7 @@ export function setupWebSocket() {
   };
 
   socket.onerror = (error) => {
-    console.error('WebSocket error:', error);
+    log('WebSocket error:', error);
   };
 }
 

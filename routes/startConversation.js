@@ -12,16 +12,6 @@ const broadcastModule = require('../modules/broadcast');
 const smsService = smsServiceFactory(broadcastModule.getBroadcast());
 const { sendSMS } = smsService;
 
-// Validation Rules
-const {
-  validatePhoneNumber,
-  validateMessage,
-  validateName,
-  validateEmail,
-  validateDOB,
-  validateState,
-} = require('../utils/validation');
-
 // Helper function to log latest message
 async function logLatestMessage(conversationSid, context) {
   try {
