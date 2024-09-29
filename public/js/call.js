@@ -1,7 +1,18 @@
 // public/js/call.js
+
+/**
+ * The Phone Operator for Our Chat Playground
+ * 
+ * Imagine this file is like a friendly telephone operator in our chat playground.
+ * It helps set up phone calls and video chats between you and your friends.
+ * This operator knows how to dial numbers, mute calls, and even set up
+ * special video rooms for you to talk face-to-face with your friends through
+ * the computer. It's always there to make sure your calls go smoothly and
+ * to tell you how long you've been talking!
+ */
+
 import { currentConversation, state } from './state.js';
 import { api } from './api.js';
-import { log } from './utils.js';
 import { Device } from 'twilio-client';
 import axios from 'axios';
 
@@ -12,42 +23,57 @@ let callStatusElement = null;
 let callStartTime;
 let callDurationInterval;
 
+// Constants for magic numbers
+const CALL_END_STATUS_DURATION = 3000;
+const CALL_NOTIFICATION_DELAY = 5000;
+const CALL_DURATION_UPDATE_INTERVAL = 1000;
+const MILLISECONDS_IN_MINUTE = 60000;
+const MILLISECONDS_IN_SECOND = 1000;
+
 // At the beginning of the file
 console.log('call.js loaded');
 
+/**
+ * Sets up the call controls and event listeners.
+ *
+ * @returns {void}
+ */
 export function setupCallControls() {
-
   // Initialize callStatusElement
   callStatusElement = document.getElementById('call-status');
 
-// Attach event listeners for the call controls
-document.getElementById('call-btn')?.addEventListener('click', () => {
-  console.log('Call button clicked');
-  makeCall();
-});
+  // Attach event listeners for the call controls
+  document.getElementById('call-btn')?.addEventListener('click', () => {
+    console.log('Call button clicked');
+    makeCall();
+  });
 
-document.getElementById('mute-btn')?.addEventListener('click', () => {
-  console.log('Mute button clicked');
-  toggleMute();
-});
+  document.getElementById('mute-btn')?.addEventListener('click', () => {
+    console.log('Mute button clicked');
+    toggleMute();
+  });
 
-document.getElementById('end-call-btn')?.addEventListener('click', () => {
-  console.log('End call button clicked');
-  endCall();
-});
+  document.getElementById('end-call-btn')?.addEventListener('click', () => {
+    console.log('End call button clicked');
+    endCall();
+  });
 
-// Video call button
-document.getElementById('start-video-call-btn')?.addEventListener('click', () => {
-  console.log('Start video call button clicked');
-  startVideoCall();
-});
-
+  // Video call button
+  document.getElementById('start-video-call-btn')?.addEventListener('click', () => {
+    console.log('Start video call button clicked');
+    startVideoCall();
+  });
 }
 
+/**
+ * Sets up the Twilio device for making calls.
+ *
+ * @returns {Promise<void>}
+ * @throws {Error} If there's an issue setting up the device.
+ */
 async function setupDevice() {
   try {
     const identity = `user_${Date.now()}`; // Generate a unique identity
-    const response = await api.getConfig(); // Assuming your backend provides a token endpoint
     const tokenResponse = await axios.get(`${state.NGROK_URL}/token`, {
       params: { identity },
       headers: {
@@ -59,7 +85,7 @@ async function setupDevice() {
       throw new Error('No token received from server');
     }
 
-    device = new Twilio.Device(tokenResponse.data.token, {
+    device = new Device(tokenResponse.data.token, {
       codecPreferences: ['opus', 'pcmu'],
       fakeLocalDTMF: true,
       debug: true,
@@ -80,7 +106,7 @@ async function setupDevice() {
       stopCallDurationTimer();
       setTimeout(() => {
         updateCallStatus('');
-      }, 3000);
+      }, CALL_END_STATUS_DURATION);
     });
 
     console.log('Twilio.Device setup complete');
@@ -90,6 +116,11 @@ async function setupDevice() {
   }
 }
 
+/**
+ * Initiates a call to the current conversation.
+ *
+ * @returns {Promise<void>}
+ */
 async function makeCall() {
   if (!currentConversation.sid) {
     alert('Please select a conversation before making a call.');
@@ -120,7 +151,7 @@ async function makeCall() {
     updateCallStatus('Notifying patient...');
 
     // Wait for 5 seconds
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, CALL_NOTIFICATION_DELAY));
 
     console.log('Initiating call...');
     call = device.connect({ To: params.To, From: params.From });
@@ -155,6 +186,11 @@ async function makeCall() {
   }
 }
 
+/**
+ * Toggles the mute state of the current call.
+ *
+ * @returns {void}
+ */
 function toggleMute() {
   if (call) {
     isMuted = !isMuted;
@@ -173,6 +209,11 @@ function toggleMute() {
   }
 }
 
+/**
+ * Ends the current call.
+ *
+ * @returns {void}
+ */
 function endCall() {
   if (call) {
     call.disconnect();
@@ -181,6 +222,12 @@ function endCall() {
   }
 }
 
+/**
+ * Updates the call control buttons based on the call state.
+ *
+ * @param {boolean} isInCall - Whether a call is currently active.
+ * @returns {void}
+ */
 function updateCallControls(isInCall) {
   const callButton = document.getElementById('call-btn');
   const muteButton = document.getElementById('mute-btn');
@@ -199,26 +246,47 @@ function updateCallControls(isInCall) {
   }
 }
 
+/**
+ * Starts the call duration timer.
+ *
+ * @returns {void}
+ */
 function startCallDurationTimer() {
   callStartTime = new Date();
-  callDurationInterval = setInterval(updateCallDuration, 1000);
+  callDurationInterval = setInterval(updateCallDuration, CALL_DURATION_UPDATE_INTERVAL);
 }
 
+/**
+ * Stops the call duration timer.
+ *
+ * @returns {void}
+ */
 function stopCallDurationTimer() {
   clearInterval(callDurationInterval);
 }
 
+/**
+ * Updates the call duration display.
+ *
+ * @returns {void}
+ */
 function updateCallDuration() {
   const now = new Date();
   const duration = now - callStartTime;
-  const minutes = Math.floor(duration / 60000);
-  const seconds = Math.floor((duration % 60000) / 1000);
+  const minutes = Math.floor(duration / MILLISECONDS_IN_MINUTE);
+  const seconds = Math.floor((duration % MILLISECONDS_IN_MINUTE) / MILLISECONDS_IN_SECOND);
   const formattedDuration = `${minutes.toString().padStart(2, '0')}:${seconds
     .toString()
     .padStart(2, '0')}`;
   updateCallStatus(`In call - ${formattedDuration}`);
 }
 
+/**
+ * Updates the call status display.
+ *
+ * @param {string} status - The current call status.
+ * @returns {void}
+ */
 function updateCallStatus(status) {
   if (callStatusElement) {
     callStatusElement.textContent = status;
@@ -246,6 +314,11 @@ function updateCallStatus(status) {
   }
 }
 
+/**
+ * Initiates a video call.
+ *
+ * @returns {Promise<void>}
+ */
 async function startVideoCall() {
   try {
     const conversationSid = currentConversation.sid;
