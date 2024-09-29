@@ -1,5 +1,15 @@
 // public/js/events.js
 
+/**
+ * The Event Organizer for Our Chat Playground
+ * 
+ * Imagine this file is like a friendly robot that helps run our chat playground.
+ * It watches for when you want to do things like send a message, start a new chat,
+ * or look for a specific conversation. When you do these things, the robot knows
+ * exactly what to do to make the playground work just right. It's always ready to
+ * help you have fun and talk with your friends in the chat app!
+ */
+
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
 import {
@@ -35,13 +45,21 @@ const MESSAGE_DISPLAY_DURATION = 3000;
 const SEARCH_DEBOUNCE_DELAY = 300;
 const SELECT_CONVERSATION_DEBOUNCE_DELAY = 300;
 
-
-// Define initializeApplication function
+/**
+ * Initializes the application by setting up event listeners.
+ * 
+ * @returns {void}
+ */
 function initializeApplication() {
   setupEventListeners();
   // Add any other initialization logic here
 }
 
+/**
+ * Sets up all event listeners for the application.
+ * 
+ * @returns {void}
+ */
 export function setupEventListeners() {
   // Send Message on Enter and Button Click
   const newMessageInput = document.getElementById('new-message');
@@ -92,6 +110,11 @@ export function setupEventListeners() {
   setupFormValidation();
 }
 
+/**
+ * Sets up form validation for the new conversation form.
+ * 
+ * @returns {void}
+ */
 function setupFormValidation() {
   const form = document.getElementById('new-conversation-form');
   const inputs = form.querySelectorAll('[data-validate]');
@@ -102,6 +125,12 @@ function setupFormValidation() {
   });
 }
 
+/**
+ * Validates a single input field.
+ * 
+ * @param {Event} event - The input event.
+ * @returns {boolean} True if the input is valid, false otherwise.
+ */
 function validateInput(event) {
   const input = event.target;
   const value = input.value.trim();
@@ -151,6 +180,12 @@ function validateInput(event) {
   return isValid;
 }
 
+/**
+ * Validates the entire form.
+ * 
+ * @param {HTMLFormElement} form - The form to validate.
+ * @returns {boolean} True if the form is valid, false otherwise.
+ */
 function validateForm(form) {
   const inputs = form.querySelectorAll('[data-validate]');
   let isValid = true;
@@ -164,6 +199,11 @@ function validateForm(form) {
   return isValid;
 }
 
+/**
+ * Handles sending a new message.
+ * 
+ * @returns {void}
+ */
 export function handleSendMessage() {
   const inputField = document.getElementById('new-message');
   const message = inputField.value.trim();
@@ -219,15 +259,30 @@ export function handleSendMessage() {
     });
 }
 
+/**
+ * Opens the new conversation modal.
+ * 
+ * @returns {void}
+ */
 export function openNewConversationModal() {
   clearNewConversationForm();
   document.getElementById('new-conversation-modal').style.display = 'flex';
 }
 
+/**
+ * Closes the modal.
+ * 
+ * @returns {void}
+ */
 export function closeModal() {
   document.getElementById('new-conversation-modal').style.display = 'none';
 }
 
+/**
+ * Clears the new conversation form.
+ * 
+ * @returns {void}
+ */
 function clearNewConversationForm() {
   const form = document.querySelector('#new-conversation-modal form');
   if (form) {
@@ -241,6 +296,11 @@ function clearNewConversationForm() {
   }
 }
 
+/**
+ * Sets up the search functionality.
+ * 
+ * @returns {void}
+ */
 function setupSearch() {
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
@@ -250,6 +310,11 @@ function setupSearch() {
   }
 }
 
+/**
+ * Performs a search based on the current input.
+ * 
+ * @returns {Promise<void>}
+ */
 export async function performSearch() {
   const query = document.getElementById('search-input').value.trim();
   if (query === '') {
@@ -265,6 +330,11 @@ export async function performSearch() {
   }
 }
 
+/**
+ * Checks the scroll position of the messages div.
+ * 
+ * @returns {void}
+ */
 export function checkScrollPosition() {
   const messagesDiv = document.getElementById('messages');
   if (
@@ -277,7 +347,11 @@ export function checkScrollPosition() {
   }
 }
 
-// Helper functions to break down the complexity
+/**
+ * Updates the UI for conversation selection.
+ * 
+ * @returns {void}
+ */
 function updateUIForConversationSelection() {
   document.getElementById('loading-spinner').style.display = 'block';
   document.getElementById('messages').style.display = 'none';
@@ -286,6 +360,12 @@ function updateUIForConversationSelection() {
   document.getElementById('no-conversation').style.display = 'none';
 }
 
+/**
+ * Updates the selected conversation in the UI.
+ * 
+ * @param {string} sid - The SID of the selected conversation.
+ * @returns {void}
+ */
 function updateConversationSelection(sid) {
   document.querySelectorAll('.conversation').forEach((conv) => {
     conv.classList.remove('selected');
@@ -301,6 +381,13 @@ function updateConversationSelection(sid) {
   }
 }
 
+/**
+ * Updates the conversation details in the UI.
+ * 
+ * @param {string} sid - The SID of the conversation.
+ * @param {Object} conversation - The conversation object.
+ * @returns {void}
+ */
 function updateConversationDetails(sid, conversation) {
   const attributes = conversation.attributes || {};
   const name = attributes.name || conversation.friendlyName;
@@ -313,6 +400,12 @@ function updateConversationDetails(sid, conversation) {
   setupCallControls();
 }
 
+/**
+ * Fetches and renders messages for a conversation.
+ * 
+ * @param {string} sid - The SID of the conversation.
+ * @returns {Promise<void>}
+ */
 async function fetchAndRenderMessages(sid) {
   const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
   renderMessages(messages);
@@ -322,6 +415,12 @@ async function fetchAndRenderMessages(sid) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
+/**
+ * Handles errors that occur during conversation selection.
+ * 
+ * @param {Error} error - The error that occurred.
+ * @returns {void}
+ */
 function handleConversationError(error) {
   console.error('Error in selectConversation:', error);
   if (error.response) {
@@ -333,7 +432,12 @@ function handleConversationError(error) {
   }
 }
 
-// Refactored selectConversation function
+/**
+ * Selects a conversation and updates the UI accordingly.
+ * 
+ * @param {string} sid - The SID of the conversation to select.
+ * @returns {Promise<void>}
+ */
 export const selectConversation = debounce(async (sid) => {
   if (isSelecting || sid === currentConversation.sid) {return;}
   
@@ -376,6 +480,11 @@ export const selectConversation = debounce(async (sid) => {
   }
 }, SELECT_CONVERSATION_DEBOUNCE_DELAY);
 
+/**
+ * Closes the current conversation and updates the UI.
+ * 
+ * @returns {void}
+ */
 export function closeConversation() {
   const lastConversationSid = currentConversation.sid;
   currentConversation.sid = null;
@@ -399,6 +508,12 @@ export function closeConversation() {
   }
 }
 
+/**
+ * Handles the deletion of a conversation.
+ * 
+ * @param {string} sid - The SID of the conversation to delete.
+ * @returns {Promise<void>}
+ */
 async function handleDeleteConversation(sid) {
   const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
   if (deleteButton) {
@@ -421,6 +536,11 @@ async function handleDeleteConversation(sid) {
   }
 }
 
+/**
+ * Sets up event listeners for conversation interactions.
+ * 
+ * @returns {void}
+ */
 export function setupConversationListeners() {
   const conversationsContainer = document.getElementById('conversations');
   if (conversationsContainer) {
@@ -449,6 +569,12 @@ export function setupConversationListeners() {
   }
 }
 
+/**
+ * Starts a new conversation or opens an existing one.
+ * 
+ * @param {Event} event - The form submission event.
+ * @returns {void}
+ */
 export function startConversation(event) {
   event.preventDefault();
   const form = event.target;

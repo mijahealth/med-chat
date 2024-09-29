@@ -20,47 +20,27 @@ export function setupCallControls() {
   // Initialize callStatusElement
   callStatusElement = document.getElementById('call-status');
 
-  // Attach event listeners for the call controls
-  const callBtn = document.getElementById('call-btn');
-  if (callBtn) {
-    callBtn.addEventListener('click', () => {
-      console.log('Call button clicked');
-      makeCall();
-    });
-  } else {
-    console.log('Call button not found');
-  }
+// Attach event listeners for the call controls
+document.getElementById('call-btn')?.addEventListener('click', () => {
+  console.log('Call button clicked');
+  makeCall();
+});
 
-  const muteBtn = document.getElementById('mute-btn');
-  if (muteBtn) {
-    muteBtn.addEventListener('click', () => {
-      console.log('Mute button clicked');
-      toggleMute();
-    });
-  } else {
-    console.log('Mute button not found');
-  }
+document.getElementById('mute-btn')?.addEventListener('click', () => {
+  console.log('Mute button clicked');
+  toggleMute();
+});
 
-  const endCallBtn = document.getElementById('end-call-btn');
-  if (endCallBtn) {
-    endCallBtn.addEventListener('click', () => {
-      console.log('End call button clicked');
-      endCall();
-    });
-  } else {
-    console.log('End call button not found');
-  }
+document.getElementById('end-call-btn')?.addEventListener('click', () => {
+  console.log('End call button clicked');
+  endCall();
+});
 
-  // Video call button
-  const startVideoCallBtn = document.getElementById('start-video-call-btn');
-  if (startVideoCallBtn) {
-    startVideoCallBtn.addEventListener('click', () => {
-      console.log('Start video call button clicked');
-      startVideoCall();
-    });
-  } else {
-    console.log('Start video call button not found');
-  }
+// Video call button
+document.getElementById('start-video-call-btn')?.addEventListener('click', () => {
+  console.log('Start video call button clicked');
+  startVideoCall();
+});
 
 }
 

@@ -1,5 +1,14 @@
 // public/js/ui.js
 
+/**
+ * This file is like the manager of a big playground for our chat app.
+ * It helps set up all the different parts of the playground, like the
+ * slide (conversations list), the sandbox (message area), and the toy box
+ * (message input). It makes sure everything looks nice and works well
+ * together, so you can have fun chatting with your friends!
+ */
+
+
 import {
   loadConversations,
   incrementUnreadCount,
