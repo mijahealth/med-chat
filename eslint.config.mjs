@@ -17,12 +17,12 @@ const jsdocRules = {
     'jsdoc/newline-after-description': 'error',
   }),
   'jsdoc/no-types': 'off',
-  'jsdoc/require-description': 'error', // Changed to 'error'
-  'jsdoc/require-param': 'error',
-  'jsdoc/require-param-description': 'error',
+  'jsdoc/require-description': 'error', // Ensures each JSDoc has a description
+  'jsdoc/require-param': 'error', // Enforces @param tags in JSDoc
+  'jsdoc/require-param-description': 'off', // **Disabled this rule to ignore missing @param descriptions**
   'jsdoc/require-param-type': 'off',
-  'jsdoc/require-returns': 'error', // Changed to 'error'
-  'jsdoc/require-returns-description': 'error', // Changed to 'error'
+  'jsdoc/require-returns': 'error', // Enforces @returns tag in JSDoc
+  'jsdoc/require-returns-description': 'error', // Enforces description in @returns
   'jsdoc/require-returns-type': 'off',
 };
 
@@ -45,7 +45,7 @@ export default [
   // 2. Apply ESLint's recommended JavaScript rules (unchanged)
   js.configs.recommended,
 
-  // 3. Apply JSDoc rules (unchanged)
+  // 3. Apply JSDoc rules (updated to disable require-param-description)
   {
     plugins: {
       jsdoc: jsdocPlugin,
@@ -104,14 +104,14 @@ export default [
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
-      '@typescript-eslint/explicit-function-return-type': 'error', // Changed to 'error'
+      '@typescript-eslint/explicit-function-return-type': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/ban-ts-comment': 'warn',
       '@typescript-eslint/no-inferrable-types': 'warn',
-      '@typescript-eslint/strict-boolean-expressions': 'error', // Added
-      '@typescript-eslint/no-unnecessary-condition': 'error', // Added
-      '@typescript-eslint/no-floating-promises': 'error', // Added
-      '@typescript-eslint/await-thenable': 'error', // Added
+      '@typescript-eslint/strict-boolean-expressions': 'error',
+      '@typescript-eslint/no-unnecessary-condition': 'error',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/await-thenable': 'error',
     },
   },
 

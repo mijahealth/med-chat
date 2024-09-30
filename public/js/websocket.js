@@ -1,3 +1,11 @@
+/**
+ * ELI5 Summary:
+ * This file sets up a special phone line (WebSocket) between your computer and a server.
+ * It listens for different types of messages, like new chat messages or updates to conversations.
+ * When it receives a message, it figures out what type it is and does the right thing with it,
+ * like showing a new message or updating a conversation on your screen.
+ */
+
 import { currentConversation, state } from './state.js';
 import { playNotificationSound, log } from './utils.js';
 import { handleNewMessage } from './messages.js';
@@ -12,7 +20,15 @@ const RECONNECT_DELAY = 5000; // in milliseconds
 
 let socket;
 
-export function setupWebSocket() {
+/**
+ * Sets up the WebSocket connection.
+ * ELI5: This function creates a special phone line to talk to the server.
+ * If the line is already working, it doesn't do anything.
+ * If the line gets cut, it tries to call back after a short wait.
+ * 
+ * @param {string} [server] The WebSocket server URL to connect to. If not provided, it will use the current window's location to create the connection.
+ */
+export function setupWebSocket(server) {
   if (
     socket &&
     (socket.readyState === WebSocket.OPEN ||
@@ -23,7 +39,7 @@ export function setupWebSocket() {
   }
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}`;
+  const wsUrl = server || `${protocol}//${window.location.host}`;
   socket = new WebSocket(wsUrl);
 
   socket.onopen = () => {
@@ -44,7 +60,7 @@ export function setupWebSocket() {
 
   socket.onclose = () => {
     log('WebSocket connection closed');
-    setTimeout(setupWebSocket, RECONNECT_DELAY); // Attempt to reconnect after 5 seconds
+    setTimeout(() => setupWebSocket(server), RECONNECT_DELAY);
   };
 
   socket.onerror = (error) => {
@@ -52,6 +68,22 @@ export function setupWebSocket() {
   };
 }
 
+/**
+ * Handles incoming WebSocket messages.
+ * ELI5: This function is like a mail sorter. It looks at each message that comes in,
+ * figures out what kind of message it is, and then sends it to the right place to be dealt with.
+ * 
+ * @param {Object} data The parsed message data from the WebSocket.
+ * @param {string} data.type The type of the message (e.g., 'newMessage', 'newConversation').
+ * @param {string} [data.conversationSid] The unique identifier for the conversation.
+ * @param {string} [data.messageSid] The unique identifier for the message.
+ * @param {string} [data.author] The author of the message.
+ * @param {string} [data.body] The content of the message.
+ * @param {string} [data.friendlyName] The friendly name of the conversation.
+ * @param {Object} [data.attributes] Additional attributes of the conversation.
+ * @param {string} [data.lastMessage] The last message in the conversation.
+ * @param {string} [data.lastMessageTime] The timestamp of the last message.
+ */
 function handleWebSocketMessage(data) {
   log('Received WebSocket message', data);
 

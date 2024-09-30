@@ -14,7 +14,7 @@ function smsService(broadcast) {
 
   /**
    * Adds a message key to the cache to prevent duplication
-   * @param {string} messageKey
+   * @param {string} messageKey - The unique key of the message
    */
   function addToCache(messageKey) {
     sentMessagesCache.add(messageKey);
@@ -24,22 +24,153 @@ function smsService(broadcast) {
   }
 
   /**
-   * Generates a unique key for a message based on recipient and body
-   * @param {string} to
-   * @param {string} body
-   * @returns {string}
+   * Generates a unique key for a message based on recipient and body.
+   * @param {string} to - The recipient's phone number.
+   * @param {string} body - The content of the message.
+   * @returns {string} A unique key combining the recipient and message body.
    */
   function generateMessageKey(to, body) {
     return `${to}-${body}`;
   }
 
   /**
-   * Sends an SMS message via Twilio
-   * @param {string} to - Recipient phone number
-   * @param {string} body - Message content
-   * @param {string|null} conversationSid - Associated Conversation SID
-   * @param {string|null} author - Author of the message
-   * @returns {Promise<Object|null>} - Twilio message object or null if duplicate
+   * Broadcasts a message if the broadcast function is available.
+   * @param {Object} messageDetails - The details of the message to broadcast.
+   */
+  function broadcastMessage(messageDetails) {
+    if (typeof broadcast === 'function') {
+      logger.info('Broadcasting message', { messageDetails });
+      broadcast(messageDetails);
+    } else {
+      logger.warn('Broadcast function is not available', { messageDetails });
+    }
+  }
+
+  /**
+   * Sends an SMS message via Twilio Conversations.
+   * @param {string} to - Recipient phone number.
+   * @param {string} body - Message content.
+   * @param {string|null} conversationSid - Associated Conversation SID.
+   * @param {string|null} author - Author of the message.
+   * @param {string} messageKey - Unique key for the message.
+   * @returns {Promise<Object>} - Result containing success status and message SID.
+   */
+  async function sendViaConversation(to, body, conversationSid, author, messageKey) {
+    logger.info('Sending SMS via Conversation', { conversationSid, body });
+    const conversationMessage = await client.conversations.v1
+      .conversations(conversationSid)
+      .messages.create({
+        body,
+        author: author || process.env.TWILIO_PHONE_NUMBER,
+      });
+    logger.info('Message added to conversation', {
+      conversationSid,
+      conversationMessageSid: conversationMessage.sid,
+    });
+
+    // Add to cache to prevent duplicates
+    addToCache(messageKey);
+    logger.info('Added message to cache', { messageKey });
+
+    // Prepare message details for broadcasting
+    const messageDetails = {
+      type: 'newMessage',
+      conversationSid,
+      messageSid: conversationMessage.sid,
+      author: author || process.env.TWILIO_PHONE_NUMBER,
+      body,
+      dateCreated: new Date().toISOString(),
+    };
+
+    // Broadcast the new message
+    broadcastMessage(messageDetails);
+
+    // Update conversation preview if applicable
+    try {
+      logger.info('Fetching conversation for update', { conversationSid });
+      const conversation = await client.conversations.v1
+        .conversations(conversationSid)
+        .fetch();
+      const updateDetails = {
+        type: 'updateConversation',
+        conversationSid: conversation.sid,
+        friendlyName: conversation.friendlyName,
+        lastMessage: body,
+        lastMessageTime: messageDetails.dateCreated,
+        attributes: JSON.parse(conversation.attributes || '{}'),
+      };
+      logger.info('Broadcasting conversation update', { updateDetails });
+      broadcastMessage(updateDetails);
+    } catch (convError) {
+      logger.error('Error fetching conversation for update', {
+        conversationSid,
+        error: convError,
+      });
+    }
+
+    logger.info('SMS sent successfully via Conversation', {
+      to,
+      body,
+      conversationSid,
+      messageSid: conversationMessage.sid,
+    });
+
+    return { success: true, messageSid: conversationMessage.sid };
+  }
+
+  /**
+   * Sends an SMS message directly via Twilio Messages API.
+   * @param {string} to - Recipient phone number.
+   * @param {string} body - Message content.
+   * @param {string} messageKey - Unique key for the message.
+   * @returns {Promise<Object>} - Result containing success status and message SID.
+   */
+  async function sendViaMessagesAPI(to, body, messageKey) {
+    logger.info('Sending SMS via Twilio Messages API', { to, body });
+    const message = await client.messages.create({
+      body,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to,
+    });
+    logger.info('SMS sent via Twilio Messages API', {
+      messageSid: message.sid,
+      to,
+      body,
+    });
+
+    // Add to cache to prevent duplicates
+    addToCache(messageKey);
+    logger.info('Added message to cache', { messageKey });
+
+    // Prepare message details for broadcasting
+    const messageDetails = {
+      type: 'newMessage',
+      to,
+      messageSid: message.sid,
+      author: process.env.TWILIO_PHONE_NUMBER,
+      body,
+      dateCreated: new Date().toISOString(),
+    };
+
+    // Broadcast the new message
+    broadcastMessage(messageDetails);
+
+    logger.info('SMS sent successfully via Messages API', {
+      to,
+      body,
+      messageSid: message.sid,
+    });
+
+    return { success: true, messageSid: message.sid };
+  }
+
+  /**
+   * Sends an SMS message via Twilio.
+   * @param {string} to - Recipient phone number.
+   * @param {string} body - Message content.
+   * @param {string|null} conversationSid - Associated Conversation SID.
+   * @param {string|null} author - Author of the message.
+   * @returns {Promise<Object|null>} - Twilio message object or null if duplicate.
    */
   async function sendSMS(to, body, conversationSid = null, author = null) {
     const messageKey = generateMessageKey(to, body);
@@ -58,121 +189,9 @@ function smsService(broadcast) {
 
     try {
       if (conversationSid) {
-        // Send SMS via conversation messaging binding
-        logger.info('Sending SMS via Conversation', { conversationSid, body });
-        const conversationMessage = await client.conversations.v1
-          .conversations(conversationSid)
-          .messages.create({
-            body,
-            author: author || process.env.TWILIO_PHONE_NUMBER,
-          });
-        logger.info('Message added to conversation', {
-          conversationSid,
-          conversationMessageSid: conversationMessage.sid,
-        });
-
-        // Add to cache to prevent duplicates
-        addToCache(messageKey);
-        logger.info('Added message to cache', { messageKey });
-
-        // Prepare message details for broadcasting
-        const messageDetails = {
-          type: 'newMessage',
-          conversationSid,
-          messageSid: conversationMessage.sid,
-          author: author || process.env.TWILIO_PHONE_NUMBER,
-          body,
-          dateCreated: new Date().toISOString(),
-        };
-
-        // Broadcast the new message
-        if (typeof broadcast === 'function') {
-          logger.info('Broadcasting new message', { messageDetails });
-          broadcast(messageDetails);
-        } else {
-          logger.warn('Broadcast function is not available', {
-            messageDetails,
-          });
-        }
-
-        // Update conversation preview if applicable
-        try {
-          logger.info('Fetching conversation for update', { conversationSid });
-          const conversation = await client.conversations.v1
-            .conversations(conversationSid)
-            .fetch();
-          if (typeof broadcast === 'function') {
-            const updateDetails = {
-              type: 'updateConversation',
-              conversationSid: conversation.sid,
-              friendlyName: conversation.friendlyName,
-              lastMessage: body,
-              lastMessageTime: messageDetails.dateCreated,
-              attributes: JSON.parse(conversation.attributes || '{}'),
-            };
-            logger.info('Broadcasting conversation update', { updateDetails });
-            broadcast(updateDetails);
-          }
-        } catch (convError) {
-          logger.error('Error fetching conversation for update', {
-            conversationSid,
-            error: convError,
-          });
-        }
-
-        logger.info('SMS sent successfully via Conversation', {
-          to,
-          body,
-          conversationSid,
-          messageSid: conversationMessage.sid,
-        });
-
-        return { success: true, messageSid: conversationMessage.sid };
+        return await sendViaConversation(to, body, conversationSid, author, messageKey);
       } else {
-        // Send SMS directly via messages.create
-        logger.info('Sending SMS via Twilio Messages API', { to, body });
-        const message = await client.messages.create({
-          body,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to,
-        });
-        logger.info('SMS sent via Twilio Messages API', {
-          messageSid: message.sid,
-          to,
-          body,
-        });
-
-        // Add to cache to prevent duplicates
-        addToCache(messageKey);
-        logger.info('Added message to cache', { messageKey });
-
-        // Prepare message details for broadcasting
-        const messageDetails = {
-          type: 'newMessage',
-          to,
-          messageSid: message.sid,
-          author: process.env.TWILIO_PHONE_NUMBER,
-          body,
-          dateCreated: new Date().toISOString(),
-        };
-
-        // Broadcast the new message
-        if (typeof broadcast === 'function') {
-          logger.info('Broadcasting new message', { messageDetails });
-          broadcast(messageDetails);
-        } else {
-          logger.warn('Broadcast function is not available', {
-            messageDetails,
-          });
-        }
-
-        logger.info('SMS sent successfully via Messages API', {
-          to,
-          body,
-          messageSid: message.sid,
-        });
-
-        return { success: true, messageSid: message.sid };
+        return await sendViaMessagesAPI(to, body, messageKey);
       }
     } catch (error) {
       logger.error('Error sending SMS', {
