@@ -46,31 +46,29 @@ const SEARCH_DEBOUNCE_DELAY = 300;
 const SELECT_CONVERSATION_DEBOUNCE_DELAY = 300;
 
 /**
- * Initializes the application by setting up event listeners.
- * 
- * @returns {void}
- */
-function initializeApplication() {
-  setupEventListeners();
-  // Add any other initialization logic here
-}
-
-/**
  * Sets up all event listeners for the application.
  * 
  * @returns {void}
  */
+let sendMessageKeyPressHandler = null;
+let sendMessageClickHandler = null;
+
 export function setupEventListeners() {
-  // Send Message on Enter and Button Click
   const newMessageInput = document.getElementById('new-message');
   const sendMessageBtn = document.getElementById('send-message-btn');
+
   if (newMessageInput && sendMessageBtn) {
-    newMessageInput.addEventListener('keypress', (e) => {
+    sendMessageKeyPressHandler = (e) => {
       if (e.key === 'Enter') {
         handleSendMessage();
       }
-    });
-    sendMessageBtn.addEventListener('click', handleSendMessage);
+    };
+    newMessageInput.addEventListener('keypress', sendMessageKeyPressHandler);
+
+    sendMessageClickHandler = () => {
+      handleSendMessage();
+    };
+    sendMessageBtn.addEventListener('click', sendMessageClickHandler);
   } else {
     log('New message input or send button not found');
     setupConversationListeners();
@@ -623,17 +621,24 @@ export function startConversation(event) {
 // Hot module replacement logic
 if (module.hot) {
   module.hot.dispose(() => {
-    // Remove all event listeners
-    log('Removing event listeners');
-    document.removeEventListener('DOMContentLoaded', initializeApplication);
+    // Remove event listeners to prevent duplication
+    const newMessageInput = document.getElementById('new-message');
+    const sendMessageBtn = document.getElementById('send-message-btn');
+
+    if (newMessageInput && sendMessageKeyPressHandler) {
+      newMessageInput.removeEventListener('keypress', sendMessageKeyPressHandler);
+    }
+
+    if (sendMessageBtn && sendMessageClickHandler) {
+      sendMessageBtn.removeEventListener('click', sendMessageClickHandler);
+    }
+
     // Remove other event listeners as necessary
+    log('Removed event listeners for HMR');
   });
+
   module.hot.accept(() => {
     log('Events module updated');
-    // Re-attach event listeners
     setupEventListeners();
   });
 }
-
-// Initialize the application when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', initializeApplication);
