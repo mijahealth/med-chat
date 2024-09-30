@@ -2,17 +2,35 @@
 
 const client = require('../twilioClient'); // Ensure the path is correct
 const logger = require('./logger');
-
-const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER; // Ensure this is set in your environment variables
+const {TWILIO_PHONE_NUMBER} = process.env; // Ensure this is set in your environment variables
 
 /**
- * Determines if a message has been read.
- * This function checks the message's attributes to determine its read status.
- * Implement your own logic based on how your application tracks read/unread messages.
+ * Determines whether a given message has been marked as read.
  *
- * @param {Object} message - The message object.
- * @returns {boolean} - True if the message is read, false otherwise.
+ * This function inspects the `attributes` property of a message object to ascertain its read status.
+ * It parses the JSON-formatted `attributes` string and checks for a `read` flag.
+ * If the `read` attribute is set to a truthy value, the function returns `true`, indicating that
+ * the message has been read. Otherwise, it returns `false`, signifying that the message remains unread.
+ *
+ * **Note:** 
+ * - Ensure that the `attributes` property of the message object contains a valid JSON string.
+ * - The structure and meaning of the `read` attribute should align with your application's logic
+ * for tracking message statuses.
+ *
+ * @param {Object} message - The message object to evaluate.
+ * @param {string} [message.attributes='{}'] - A JSON string representing additional attributes of the message.
+ *
+ * @returns {boolean} - Returns `true` if the message is marked as read; otherwise, returns `false`.
+ *
+ * @example
+ * const message = {
+ *   attributes: '{"read": true, "priority": "high"}'
+ * };
+ * 
+ * const hasBeenRead = isMessageRead(message);
+ * console.log(hasBeenRead); // Output: true
  */
+
 function isMessageRead(message) {
   const attributes = JSON.parse(message.attributes || '{}');
   return attributes.read || false;
@@ -58,8 +76,8 @@ async function listConversations() {
               limit: 1,
               order: 'desc',
             });
-          const lastMessage = messages[0];
-
+            const [lastMessage] = messages;
+            
           // Fetch all messages to calculate unread count
           const allMessages = await client.conversations.v1
             .conversations(conv.sid)

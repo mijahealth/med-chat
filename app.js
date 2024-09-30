@@ -28,6 +28,18 @@ const callParamsRouter = require('./routes/callParams');
 // Import Broadcast Singleton
 const broadcastModule = require('./modules/broadcast');
 
+// Constants
+const MILLISECONDS_IN_SECOND = 1000;
+const SECONDS_IN_MINUTE = 60;
+const HEARTBEAT_INTERVAL_MS = 10 * MILLISECONDS_IN_SECOND; // 10 seconds
+const RATE_LIMIT_WINDOW_MINUTES = 15;
+const RATE_LIMIT_WINDOW_MS = RATE_LIMIT_WINDOW_MINUTES * SECONDS_IN_MINUTE * MILLISECONDS_IN_SECOND; // 15 minutes
+const RATE_LIMIT_MAX_REQUESTS = 100;
+const HTTP_OK = 200;
+const HTTP_BAD_REQUEST = 400;
+const HTTP_INTERNAL_SERVER_ERROR = 500;
+const DEFAULT_PORT = 3000;
+
 // Initialize Express App
 const app = express();
 const server = http.createServer(app);
@@ -45,15 +57,15 @@ if (process.env.NODE_ENV === 'development') {
     webpackHotMiddleware(compiler, {
       log: console.log,
       path: '/__webpack_hmr',
-      heartbeat: 10 * 1000,
+      heartbeat: HEARTBEAT_INTERVAL_MS,
     })
   );
 }
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: RATE_LIMIT_WINDOW_MS, // 15 minutes
+max: RATE_LIMIT_MAX_REQUESTS, // limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -107,7 +119,7 @@ app.get('/token', async (req, res, next) => {
     const { identity } = req.query;
     if (!identity || !identity.trim()) {
       logger.warn('Missing identity in token request');
-      return res.status(400).json({
+      return res.status(HTTP_BAD_REQUEST).json({
         error: 'Identity is required and must not be empty',
       });
     }
@@ -144,7 +156,7 @@ app.post('/voice', async (req, res, next) => {
     const { To } = req.body;
     if (!To) {
       logger.warn('Missing "To" phone number in voice request');
-      return res.status(400).send('Missing "To" phone number.');
+      return res.status(HTTP_BAD_REQUEST).send('Missing "To" phone number.');
     }
 
     const twiml = new twilio.twiml.VoiceResponse();
@@ -169,7 +181,7 @@ app.post('/create-room', async (req, res, next) => {
       !/^\+[1-9]\d{1,14}$/.test(customerPhoneNumber)
     ) {
       logger.warn('Invalid customer phone number', { customerPhoneNumber });
-      return res.status(400).json({ error: 'Invalid customer phone number' });
+      return res.status(HTTP_BAD_REQUEST).json({ error: 'Invalid customer phone number' });
     }
 
     // Create Video Room
@@ -246,7 +258,7 @@ app.post(
         logger.warn('Unknown webhook format received', { reqBody: req.body });
       }
 
-      res.status(200).send('<Response></Response>');
+      res.status(HTTP_OK).send('<Response></Response>');
     } catch (error) {
       logger.error('Error processing webhook', { error });
       next(error);
@@ -262,13 +274,13 @@ app.use((err, req, res, next) => {
     ...err,
   });
   res
-    .status(500)
+    .status(HTTP_INTERNAL_SERVER_ERROR)
     .json({ error: 'Internal Server Error', details: err.message });
   next(err);
 });
 
 // Start the Server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || DEFAULT_PORT;
 server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`, {
     ngrokUrl: process.env.NGROK_URL,
