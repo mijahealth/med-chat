@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "NODE_ENV=development nodemon app.js",
+    "predev": "npm run lint",
     "lint": "eslint --config eslint.config.mjs .",
     "lint:fix": "eslint --config eslint.config.mjs . --fix",
     "format": "prettier --write .",
