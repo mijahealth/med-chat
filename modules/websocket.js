@@ -10,6 +10,12 @@ const broadcastModule = require('./broadcast');
  * @returns {Object} - Contains broadcast method
  */
 function setupWebSocket(server) {
+  // Do not set up WebSocket server in test environment
+  if (process.env.NODE_ENV === 'test') {
+    logger.info('WebSocket server not initialized in test environment');
+    return { broadcast: () => {} };
+  }
+
   const wss = new WebSocket.Server({ server });
 
   wss.on('connection', (ws) => {

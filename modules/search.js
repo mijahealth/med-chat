@@ -1,4 +1,5 @@
 // modules/search.js
+
 const client = require('../twilioClient');
 const logger = require('./logger');
 
@@ -7,7 +8,9 @@ let conversationCache = [];
 let lastCacheUpdate = 0;
 const CACHE_TTL = 60000; // 60 seconds
 
-// Update Cache Function
+/**
+ * Updates the conversation cache by fetching data from Twilio
+ */
 async function updateCache() {
   const now = Date.now();
   if (now - lastCacheUpdate > CACHE_TTL) {
@@ -34,11 +37,11 @@ async function updateCache() {
             lastMessage,
             lastMessageTime,
           };
-        }),
+        })
       );
       lastCacheUpdate = now;
       logger.info(
-        `Cache updated with ${conversationCache.length} conversations`,
+        `Cache updated with ${conversationCache.length} conversations`
       );
     } catch (error) {
       logger.error('Error updating conversation cache', { error });
@@ -46,7 +49,11 @@ async function updateCache() {
   }
 }
 
-// Search Function
+/**
+ * Searches conversations based on the query
+ * @param {string} query - The search query
+ * @returns {Array} - Array of matching conversations
+ */
 function searchConversations(query) {
   logger.info('Performing search', { query });
   const normalizedQuery = query.toLowerCase();
@@ -55,17 +62,20 @@ function searchConversations(query) {
       conv.phoneNumber.includes(normalizedQuery) ||
       conv.email.toLowerCase().includes(normalizedQuery) ||
       conv.name.toLowerCase().includes(normalizedQuery) ||
-      conv.friendlyName.toLowerCase().includes(normalizedQuery),
+      conv.friendlyName.toLowerCase().includes(normalizedQuery)
   );
   logger.info('Search completed', { query, resultsCount: results.length });
   return results;
 }
 
-// Initialize Cache
-updateCache();
+// Only initialize cache updates if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  // Initial cache update
+  updateCache();
 
-// Periodic Cache Update
-setInterval(updateCache, CACHE_TTL);
+  // Periodic Cache Update
+  setInterval(updateCache, CACHE_TTL);
+}
 
 module.exports = {
   searchConversations,

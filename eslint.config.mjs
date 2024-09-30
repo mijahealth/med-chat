@@ -1,5 +1,3 @@
-// eslint.config.mjs
-
 import globals from 'globals';
 import js from '@eslint/js';
 import * as typescriptEslint from '@typescript-eslint/eslint-plugin';
@@ -28,7 +26,7 @@ const jsdocRules = {
 
 // Export the flat config array
 export default [
-  // 1. Ignore patterns (unchanged)
+  // 1. Ignore patterns
   {
     ignores: [
       'dist/**',
@@ -42,10 +40,10 @@ export default [
     ],
   },
 
-  // 2. Apply ESLint's recommended JavaScript rules (unchanged)
+  // 2. Apply ESLint's recommended JavaScript rules
   js.configs.recommended,
 
-  // 3. Apply JSDoc rules (updated to disable require-param-description)
+  // 3. Apply JSDoc rules
   {
     plugins: {
       jsdoc: jsdocPlugin,
@@ -53,8 +51,9 @@ export default [
     rules: jsdocRules,
   },
 
-  // 4. Global configuration for all files except ignored ones
+  // 4. Global configuration for all JavaScript files except ignored ones
   {
+    files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -76,9 +75,9 @@ export default [
       'prefer-template': 'error',
       'quotes': ['error', 'single', { avoidEscape: true }],
       'semi': ['error', 'always'],
-      'max-len': ['error', { code: 100, ignoreUrls: true, ignoreComments: true }],
+      'max-len': ['error', { code: 150, ignoreUrls: true, ignoreComments: true }],
       'complexity': ['error', 10],
-      'no-magic-numbers': ['warn', { ignore: [-1, 0, 1, 2, 10, 20, 128] }],
+      'no-magic-numbers': ['warn', { ignore: [-1, 0, 1, 2, 10, 20, 128, 1000, 200, 256], detectObjects: true }],
       'prefer-destructuring': ['error', { array: true, object: true }],
       'no-param-reassign': 'error',
       'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
@@ -88,7 +87,22 @@ export default [
     },
   },
 
-  // 7. TypeScript specific configuration
+  // 5. Jest-specific configuration for test and mock files
+  {
+    files: ['__tests__/**/*.js', '__mocks__/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      'no-undef': 'off', // Jest defines globals like `describe`, `it`, `expect`, `jest`
+    },
+  },
+
+  // 6. TypeScript-specific configuration
   {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
@@ -115,10 +129,12 @@ export default [
     },
   },
 
-  // 8. Node.js specific configuration (unchanged)
+  // 7. Node.js-specific configuration
   {
     files: ['**/*.js'],
     languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
         ...globals.node,
       },
@@ -134,10 +150,12 @@ export default [
     },
   },
 
-  // 9. Browser-specific configuration
+  // 8. Browser-specific configuration
   {
     files: ['public/**/*.js'],
     languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
         ...globals.browser,
         axios: 'readonly',

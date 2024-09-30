@@ -1,6 +1,11 @@
 // app.js
 
-require('dotenv').config();
+if (process.env.NODE_ENV === 'test') {
+  require('dotenv').config({ path: '.env.test' });
+} else {
+  require('dotenv').config();
+}
+
 const express = require('express');
 const http = require('http');
 const path = require('path');
@@ -45,7 +50,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Webpack HMR setup
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV === 'development') {
   const compiler = webpack(config);
   app.use(
     webpackDevMiddleware(compiler, {
@@ -65,7 +70,7 @@ if (process.env.NODE_ENV === 'development') {
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: RATE_LIMIT_WINDOW_MS, // 15 minutes
-max: RATE_LIMIT_MAX_REQUESTS, // limit each IP to 100 requests per windowMs
+  max: RATE_LIMIT_MAX_REQUESTS, // limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -84,13 +89,21 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Logger
 const logger = require('./modules/logger');
 
-// Initialize WebSocket
-const { broadcast } = setupWebSocket(server);
-broadcastModule.setBroadcast(broadcast); // Set the broadcast function in the singleton
-
 // Initialize SMS Service
-const smsService = smsServiceFactory(broadcastModule.getBroadcast());
-const { sendSMS } = smsService;
+let sendSMS = () => {
+  console.warn('SMS service not initialized');
+};
+
+// Initialize WebSocket and Other Asynchronous Operations Only If Not in Test Environment
+if (process.env.NODE_ENV !== 'test') {
+  // Initialize WebSocket
+  const { broadcast } = setupWebSocket(server);
+  broadcastModule.setBroadcast(broadcast); // Set the broadcast function in the singleton
+
+  // Initialize SMS Service
+  const smsService = smsServiceFactory(broadcastModule.getBroadcast());
+  ({ sendSMS } = smsService);
+}
 
 // Routes
 app.use('/conversations', conversationsRouter);
@@ -108,9 +121,9 @@ app.get('/config', (req, res) => {
 
 // Token Generation Endpoint
 const twilio = require('twilio');
-const {AccessToken} = twilio.jwt;
-const {VoiceGrant} = AccessToken;
-const {VideoGrant} = AccessToken;
+const { AccessToken } = twilio.jwt;
+const { VoiceGrant } = AccessToken;
+const { VideoGrant } = AccessToken;
 
 app.get('/token', async (req, res, next) => {
   try {
@@ -128,7 +141,7 @@ app.get('/token', async (req, res, next) => {
       process.env.TWILIO_ACCOUNT_SID,
       process.env.TWILIO_API_KEY,
       process.env.TWILIO_API_SECRET,
-      { identity },
+      { identity }
     );
 
     const voiceGrant = new VoiceGrant({
@@ -188,13 +201,15 @@ app.post('/create-room', async (req, res, next) => {
     const room = await videoModule.createVideoRoom();
     const roomLink = `${process.env.NGROK_URL}/video-room/${room.sid}`;
 
-    // Send SMS via Centralized Function
-    await sendSMS(
-      customerPhoneNumber,
-      `Join the video call here: ${roomLink}`,
-      conversationSid,
-      process.env.TWILIO_PHONE_NUMBER,
-    );
+    // Send SMS
+    if (process.env.NODE_ENV !== 'test') {
+      await sendSMS(
+        customerPhoneNumber,
+        `Join the video call here: ${roomLink}`,
+        conversationSid,
+        process.env.TWILIO_PHONE_NUMBER,
+      );
+    }
 
     res.json({ link: roomLink, roomName: room.sid });
   } catch (error) {
@@ -224,7 +239,7 @@ app.post(
         From,
       } = req.body;
       // eslint-disable-next-line no-unused-vars
-      const {MessageSid} = req.body;
+      const { MessageSid } = req.body;
 
       if (EventType && ConversationSid) {
         logger.info('Webhook event received', { EventType, ConversationSid });
@@ -233,7 +248,7 @@ app.post(
           // Handle Message Added
           const conversation =
             await conversations.fetchConversation(ConversationSid);
-          broadcast({
+          broadcastModule.broadcast({
             type: 'updateConversation',
             conversationSid: conversation.sid,
             friendlyName: conversation.friendlyName,
@@ -242,7 +257,7 @@ app.post(
             attributes: JSON.parse(conversation.attributes || '{}'),
           });
 
-          broadcast({
+          broadcastModule.broadcast({
             type: 'newMessage',
             conversationSid: conversation.sid,
             author: Author,
@@ -263,7 +278,7 @@ app.post(
       logger.error('Error processing webhook', { error });
       next(error);
     }
-  },
+  }
 );
 
 // Error Handling Middleware
@@ -279,10 +294,15 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// Start the Server
-const PORT = process.env.PORT || DEFAULT_PORT;
-server.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`, {
-    ngrokUrl: process.env.NGROK_URL,
+// Start the Server Only If Not in Test Environment and If App.js is Run Directly
+if (process.env.NODE_ENV !== 'test' && require.main === module) {
+  const PORT = process.env.PORT || DEFAULT_PORT;
+  server.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`, {
+      ngrokUrl: process.env.NGROK_URL,
+    });
   });
-});
+}
+
+// Export the Express app for testing
+module.exports = app;
