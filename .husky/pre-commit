@@ -1,4 +1,8 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Run Jest tests
+npm test
+
+# Run lint-staged to lint and format code
 npx lint-staged

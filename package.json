@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "NODE_ENV=development nodemon app.js",
-    "predev": "npm run lint",
+    "predev": "npm run lint && npm test",    
     "lint": "eslint --config eslint.config.mjs .",
     "lint:fix": "eslint --config eslint.config.mjs . --fix",
     "format": "prettier --write .",
@@ -21,6 +21,18 @@
       "eslint --config eslint.config.mjs --fix"
     ]
   },
+  "jest": {
+  "collectCoverage": true,
+  "coverageDirectory": "coverage",
+  "coverageThreshold": {
+    "global": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 80,
+      "statements": 80
+    }
+  }
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

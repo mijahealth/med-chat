@@ -74,7 +74,9 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(limiter);
+if (process.env.NODE_ENV !== 'test') {
+  app.use(limiter);
+}
 
 // CORS Middleware
 app.use(cors());
@@ -238,32 +240,32 @@ app.post(
         SmsMessageSid,
         From,
       } = req.body;
-      // eslint-disable-next-line no-unused-vars
-      const { MessageSid } = req.body;
 
       if (EventType && ConversationSid) {
         logger.info('Webhook event received', { EventType, ConversationSid });
 
         if (EventType === 'onMessageAdded') {
-          // Handle Message Added
-          const conversation =
-            await conversations.fetchConversation(ConversationSid);
-          broadcastModule.broadcast({
-            type: 'updateConversation',
-            conversationSid: conversation.sid,
-            friendlyName: conversation.friendlyName,
-            lastMessage: Body,
-            lastMessageTime: DateCreated,
-            attributes: JSON.parse(conversation.attributes || '{}'),
-          });
+          const conversation = await conversations.fetchConversation(ConversationSid);
+          const broadcast = broadcastModule.getBroadcast();
 
-          broadcastModule.broadcast({
-            type: 'newMessage',
-            conversationSid: conversation.sid,
-            author: Author,
-            body: Body,
-            dateCreated: DateCreated,
-          });
+          if (broadcast) {
+            broadcast({
+              type: 'updateConversation',
+              conversationSid: conversation.sid,
+              friendlyName: conversation.friendlyName,
+              lastMessage: Body,
+              lastMessageTime: DateCreated,
+              attributes: JSON.parse(conversation.attributes || '{}'),
+            });
+
+            broadcast({
+              type: 'newMessage',
+              conversationSid: conversation.sid,
+              author: Author,
+              body: Body,
+              dateCreated: DateCreated,
+            });
+          }
         }
       } else if (SmsMessageSid) {
         // Handle Incoming SMS
