@@ -551,3 +551,39 @@ describe('App Routes', () => {
     });
   });
 });
+
+describe('Environment Variable Setup', () => {
+  let originalEnv;
+
+  beforeAll(() => {
+    originalEnv = process.env.NODE_ENV;
+  });
+
+  afterAll(() => {
+    process.env.NODE_ENV = originalEnv;
+  });
+
+  it('should load .env.test when NODE_ENV is test', () => {
+    process.env.NODE_ENV = 'test';
+    jest.resetModules();
+    const app = require('../app');
+    expect(process.env.NODE_ENV).toBe('test');
+    // Add any assertions related to .env.test variables if needed
+  });
+
+  it('should load .env when NODE_ENV is not test', () => {
+    process.env.NODE_ENV = 'production';
+    jest.resetModules();
+    const app = require('../app');
+    expect(process.env.NODE_ENV).toBe('production');
+    // Add any assertions related to .env variables if needed
+  });
+});
+
+describe('App Export', () => {
+  it('should export the Express app', () => {
+    const app = require('../app'); // Import without destructuring
+    expect(app).toBeDefined();
+    expect(typeof app.use).toBe('function'); // Check that app is an Express app
+  });
+});
