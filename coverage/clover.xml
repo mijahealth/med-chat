@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1727762831003" clover="3.2.0">
-  <project timestamp="1727762831003" name="All files">
+<coverage generated="1727837427298" clover="3.2.0">
+  <project timestamp="1727837427298" name="All files">
     <metrics statements="376" coveredstatements="315" conditionals="122" coveredconditionals="75" methods="32" coveredmethods="27" elements="530" coveredelements="417" complexity="0" loc="376" ncloc="376" packages="3" files="9" classes="9"/>
     <package name="med-chat">
       <metrics statements="135" coveredstatements="112" conditionals="40" coveredconditionals="26" methods="9" coveredmethods="7"/>

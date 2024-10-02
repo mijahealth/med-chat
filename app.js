@@ -297,14 +297,14 @@ app.use((err, req, res, next) => {
 });
 
 // Start the Server Only If Not in Test Environment and If App.js is Run Directly
-if (process.env.NODE_ENV !== 'test' && require.main === module) {
-  const PORT = process.env.PORT || DEFAULT_PORT;
-  server.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`, {
-      ngrokUrl: process.env.NGROK_URL,
+  if (process.env.NODE_ENV !== 'test' && require.main === module) {
+    const PORT = process.env.PORT || DEFAULT_PORT;
+    server.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`, {
+        ngrokUrl: process.env.NGROK_URL,
+      });
     });
-  });
-}
+  }
 
 // Export the Express app for testing
 module.exports = app;
