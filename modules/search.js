@@ -1,5 +1,3 @@
-// modules/search.js
-
 const client = require('../twilioClient');
 const logger = require('./logger');
 
@@ -7,6 +5,8 @@ const logger = require('./logger');
 let conversationCache = [];
 let lastCacheUpdate = 0;
 const CACHE_TTL = 60000; // 60 seconds
+
+let cacheUpdateInterval;
 
 /**
  * Updates the conversation cache by fetching data from Twilio
@@ -68,16 +68,37 @@ function searchConversations(query) {
   return results;
 }
 
-// Only initialize cache updates if not in test environment
-if (process.env.NODE_ENV !== 'test') {
+/**
+ * Initializes the cache update process
+ */
+function initializeCacheUpdates() {
   // Initial cache update
   updateCache();
 
   // Periodic Cache Update
-  setInterval(updateCache, CACHE_TTL);
+  cacheUpdateInterval = setInterval(updateCache, CACHE_TTL);
+}
+
+/**
+ * Stops the cache update process
+ */
+function stopCacheUpdates() {
+  if (cacheUpdateInterval) {
+    clearInterval(cacheUpdateInterval);
+    cacheUpdateInterval = null;
+  }
+}
+
+// Only initialize cache updates if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  initializeCacheUpdates();
 }
 
 module.exports = {
   searchConversations,
   updateCache,
+  initializeCacheUpdates,
+  stopCacheUpdates,
+  // Exporting for testing purposes
+  _conversationCache: conversationCache,
 };

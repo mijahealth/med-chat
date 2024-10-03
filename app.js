@@ -1,5 +1,6 @@
 // app.js
 
+// Load environment variables based on NODE_ENV
 if (process.env.NODE_ENV === 'test') {
   require('dotenv').config({ path: '.env.test' });
 } else {
@@ -12,10 +13,11 @@ const path = require('path');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
-const webpack = require('webpack');
-const webpackDevMiddleware = require('webpack-dev-middleware');
-const webpackHotMiddleware = require('webpack-hot-middleware');
-const config = require('./webpack.config.js');
+// Remove webpack requires from the top
+// const webpack = require('webpack');
+// const webpackDevMiddleware = require('webpack-dev-middleware');
+// const webpackHotMiddleware = require('webpack-hot-middleware');
+// const config = require('./webpack.config.js');
 
 // Import Modules
 const setupWebSocket = require('./modules/websocket');
@@ -49,8 +51,13 @@ const DEFAULT_PORT = 3000;
 const app = express();
 const server = http.createServer(app);
 
-// Webpack HMR setup
+// Conditionally require webpack and related middleware
 if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV === 'development') {
+  const webpack = require('webpack');
+  const webpackDevMiddleware = require('webpack-dev-middleware');
+  const webpackHotMiddleware = require('webpack-hot-middleware');
+  const config = require('./webpack.config.js'); // Ensure webpack.config.js is correctly configured
+
   const compiler = webpack(config);
   app.use(
     webpackDevMiddleware(compiler, {

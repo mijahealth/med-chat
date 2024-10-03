@@ -1,5 +1,8 @@
 // __tests__/app.test.js
 
+// 0. Set NODE_ENV to 'test' before importing any modules
+process.env.NODE_ENV = 'test';
+
 // 1. Mock Twilio before importing any modules that use it
 jest.mock('twilio');
 
@@ -47,9 +50,28 @@ const {setSmsService} = app;
 const logger = require('../modules/logger');
 
 // Constants
+const { stopCacheUpdates } = require('../modules/search');
 const HTTP_OK = 200;
 const HTTP_BAD_REQUEST = 400;
 const HTTP_INTERNAL_SERVER_ERROR = 500;
+
+
+// Ensure cache updates are stopped before and after all tests
+beforeAll(() => {
+  jest.useFakeTimers();
+  stopCacheUpdates();
+});
+
+afterAll(() => {
+  jest.useRealTimers();
+  stopCacheUpdates();
+});
+
+// Additional cleanup after each test
+afterEach(() => {
+  jest.useFakeTimers();
+  stopCacheUpdates();
+});
 
 // Tests
 describe('App.js Routes', () => {
@@ -194,6 +216,7 @@ describe('Environment Variable Setup', () => {
 
   afterAll(() => {
     process.env.NODE_ENV = originalEnv;
+    stopCacheUpdates();
   });
 
   it('should load .env.test when NODE_ENV is test', () => {
@@ -210,6 +233,8 @@ describe('Environment Variable Setup', () => {
     const app = require('../app');
     expect(process.env.NODE_ENV).toBe('production');
     // Add any assertions related to .env variables if needed
+    // After setting to production, stop cache updates
+    stopCacheUpdates();
   });
 });
 
@@ -369,4 +394,8 @@ describe('SMS Service Initialization', () => {
       '+1234567890'
     );
   });
+});
+
+afterAll(() => {
+  stopCacheUpdates();
 });

@@ -7,13 +7,12 @@
   },
   "scripts": {
     "start": "node app.js",
-    "dev": "NODE_ENV=development nodemon app.js",
-    "predev": "npm run lint && npm test",    
+    "dev": "cross-env NODE_ENV=development nodemon app.js",
     "lint": "eslint --config eslint.config.mjs .",
     "lint:fix": "eslint --config eslint.config.mjs . --fix",
     "format": "prettier --write .",
     "test": "jest",
-    "build": "webpack --config webpack.config.js",
+    "build": "cross-env NODE_ENV=production webpack --config webpack.config.js",
     "prepare": "husky install"
   },
   "lint-staged": {
@@ -22,17 +21,17 @@
     ]
   },
   "jest": {
-  "collectCoverage": true,
-  "coverageDirectory": "coverage",
-  "coverageThreshold": {
-    "global": {
-      "branches": 80,
-      "functions": 80,
-      "lines": 80,
-      "statements": 80
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
     }
-  }
-},
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -62,6 +61,7 @@
     "@typescript-eslint/eslint-plugin": "^8.7.0",
     "@typescript-eslint/parser": "^8.7.0",
     "babel-loader": "^9.2.1",
+    "cross-env": "^7.0.3",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-jsdoc": "^50.3.0",
