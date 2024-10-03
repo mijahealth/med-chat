@@ -8,6 +8,14 @@ const conversations = require('../modules/conversations');
 const { isMessageRead } = conversations; // Ensure this is correctly imported
 const { getBroadcast } = require('../modules/broadcast');
 
+const conversationSidValidation = [
+  param('sid')
+    .isString()
+    .withMessage('Conversation SID must be a string')
+    .matches(/^CH[0-9a-fA-F]{32}$/)
+    .withMessage('Invalid Conversation SID format'),
+];
+
 // Define HTTP status code constants
 const HTTP_STATUS_BAD_REQUEST = 400;
 const HTTP_STATUS_NOT_FOUND = 404;
