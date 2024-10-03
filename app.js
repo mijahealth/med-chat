@@ -68,13 +68,16 @@ if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV === 'development') {
 }
 
 // Rate Limiting
+const isTestEnv = process.env.NODE_ENV === 'test';
+const shouldApplyRateLimiting = !isTestEnv || process.env.TEST_RATE_LIMITING === 'true';
+
 const limiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS, // 15 minutes
-  max: RATE_LIMIT_MAX_REQUESTS, // limit each IP to 100 requests per windowMs
+  windowMs: RATE_LIMIT_WINDOW_MS, // configurable window
+  max: RATE_LIMIT_MAX_REQUESTS, // configurable max requests
   standardHeaders: true,
   legacyHeaders: false,
 });
-if (process.env.NODE_ENV !== 'test') {
+if (shouldApplyRateLimiting) {
   app.use(limiter);
 }
 
@@ -185,6 +188,19 @@ app.post('/voice', async (req, res, next) => {
   }
 });
 
+// SMS Service setup
+let smsService;
+if (process.env.NODE_ENV === 'test') {
+  smsService = { sendSMS: () => Promise.resolve({ messageSid: 'SM123', success: true }) };
+} else {
+  const smsServiceFactory = require('./modules/smsService');
+  smsService = smsServiceFactory(broadcastModule.getBroadcast());
+}
+
+const setSmsService = (service) => {
+  smsService = service;
+};
+
 // Video Room Creation Endpoint
 app.post('/create-room', async (req, res, next) => {
   try {
@@ -204,14 +220,12 @@ app.post('/create-room', async (req, res, next) => {
     const roomLink = `${process.env.NGROK_URL}/video-room/${room.sid}`;
 
     // Send SMS
-    if (process.env.NODE_ENV !== 'test') {
-      await sendSMS(
-        customerPhoneNumber,
-        `Join the video call here: ${roomLink}`,
-        conversationSid,
-        process.env.TWILIO_PHONE_NUMBER,
-      );
-    }
+    await smsService.sendSMS(
+      customerPhoneNumber,
+      `Join the video call here: ${roomLink}`,
+      conversationSid,
+      process.env.TWILIO_PHONE_NUMBER
+    );
 
     res.json({ link: roomLink, roomName: room.sid });
   } catch (error) {
@@ -308,3 +322,4 @@ app.use((err, req, res, next) => {
 
 // Export the Express app for testing
 module.exports = app;
+module.exports.setSmsService = setSmsService;

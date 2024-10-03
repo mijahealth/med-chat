@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">82.6% </span>
+                <span class="strong">34.78% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>19/23</span>
+                <span class='fraction'>8/23</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>3/4</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>0/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">82.6% </span>
+                <span class="strong">34.78% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>19/23</span>
+                <span class='fraction'>8/23</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -126,26 +126,26 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -170,27 +170,27 @@ const HTTP_STATUS_BAD_REQUEST = 400;
 router.get(
   '/',
   [query('query').isString().withMessage('Query must be a string')],
-  async (req, res, next) =&gt; {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn('Validation errors on search', { errors: errors.array() });
-      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });
+<span class="fstat-no" title="function not covered" >  as</span>ync (req, res, next) =&gt; {
+    const errors = <span class="cstat-no" title="statement not covered" >validationResult(req);</span>
+<span class="cstat-no" title="statement not covered" >    if (!errors.isEmpty()) {</span>
+<span class="cstat-no" title="statement not covered" >      logger.warn('Validation errors on search', { errors: errors.array() });</span>
+<span class="cstat-no" title="statement not covered" >      return res.status(HTTP_STATUS_BAD_REQUEST).json({ errors: errors.array() });</span>
     }
 &nbsp;
-    const { query: searchQuery } = req.query;
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (!searchQuery) {
+    const { query: searchQuery } = <span class="cstat-no" title="statement not covered" >req.query;</span>
+<span class="cstat-no" title="statement not covered" >    if (!searchQuery) {</span>
 <span class="cstat-no" title="statement not covered" >      logger.warn('Empty search query received');</span>
 <span class="cstat-no" title="statement not covered" >      return res.status(HTTP_STATUS_BAD_REQUEST).json({ error: 'Search query is required' });</span>
     }
 &nbsp;
-    try {
-      await searchModule.updateCache(); // Ensure cache is up-to-date
-      const results = searchModule.searchConversations(searchQuery);
-      logger.info('Search completed', {
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      await searchModule.updateCache(); </span>// Ensure cache is up-to-date
+      const results = <span class="cstat-no" title="statement not covered" >searchModule.searchConversations(searchQuery);</span>
+<span class="cstat-no" title="statement not covered" >      logger.info('Search completed', {</span>
         query: searchQuery,
         resultsCount: results.length,
       });
-      res.json(results);
+<span class="cstat-no" title="statement not covered" >      res.json(results);</span>
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      logger.error('Error performing search', { searchQuery, error });</span>
 <span class="cstat-no" title="statement not covered" >      next(error);</span>
@@ -205,7 +205,7 @@ module.exports = router;</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-10-02T03:57:09.742Z
+                at 2024-10-03T03:45:24.412Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
