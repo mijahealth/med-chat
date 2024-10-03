@@ -8,9 +8,9 @@ const conversations = require('../modules/conversations');
 const smsServiceFactory = require('../modules/smsService');
 const broadcastModule = require('../modules/broadcast');
 
-// Initialize SMS Service with broadcast
-const smsService = smsServiceFactory(broadcastModule.getBroadcast());
-const { sendSMS } = smsService;
+// Remove the top-level initialization of smsService and sendSMS
+// const smsService = smsServiceFactory(broadcastModule.getBroadcast());
+// const { sendSMS } = smsService;
 
 // Helper function to log latest message
 async function logLatestMessage(conversationSid, context) {
@@ -82,7 +82,7 @@ router.post(
 
       const conversation = await conversations.createConversation(
         friendlyName,
-        attributes,
+        attributes
       );
       logger.info('New conversation created', {
         sid: conversation.sid,
@@ -101,6 +101,10 @@ router.post(
       // Log latest message after adding participant
       await logLatestMessage(conversation.sid, 'After adding participant');
 
+      // Initialize smsService and sendSMS here
+      const smsService = smsServiceFactory(broadcastModule.getBroadcast());
+      const { sendSMS } = smsService;
+
       const disclaimer =
         '(Note: you may reply STOP to no longer receive messages from us. ' +
         'Msg&Data Rates may apply.)';
@@ -115,7 +119,7 @@ router.post(
         phoneNumber,
         firstMessage,
         conversation.sid,
-        process.env.TWILIO_PHONE_NUMBER,
+        process.env.TWILIO_PHONE_NUMBER
       );
       logger.info('First SMS sent for new conversation', {
         sid: conversation.sid,
@@ -137,7 +141,7 @@ router.post(
       });
       next(error);
     }
-  },
+  }
 );
 
 module.exports = router;
