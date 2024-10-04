@@ -132,29 +132,7 @@ describe('smsService', () => {
       });
     });
 
-    it('should prevent sending duplicate messages', async () => {
-      const to = '+1987654321';
-      const body = 'Test message';
-
-      const mockMessage = { sid: 'SM123' };
-      client.messages.create.mockResolvedValue(mockMessage);
-
-      const result1 = await smsService.sendSMS(to, body);
-      const result2 = await smsService.sendSMS(to, body);
-
-      expect(result1).toEqual({ success: true, messageSid: 'SM123' });
-      expect(result2).toBeNull();
-
-      // Ensure client.messages.create was called only once
-      expect(client.messages.create).toHaveBeenCalledTimes(1);
-
-      // Ensure logger.warn was called for duplicate
-      expect(logger.warn).toHaveBeenCalledWith('Duplicate SMS detected', {
-        to,
-        body,
-        messageKey: `${to}-${body}`,
-      });
-    });
+    // Removed the duplicate message test as caching logic has been removed.
 
     it('should handle error when sending SMS via Conversation', async () => {
       const to = '+1987654321';

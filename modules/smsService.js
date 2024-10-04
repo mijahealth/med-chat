@@ -8,31 +8,6 @@ const logger = require('./logger');
  * @returns {Object} - SMS service with sendSMS method
  */
 function smsService(broadcast) {
-  // In-memory cache for deduplication
-  const sentMessagesCache = new Set();
-  const CACHE_TTL = 60000; // 60 seconds
-
-  /**
-   * Adds a message key to the cache to prevent duplication
-   * @param {string} messageKey - The unique key of the message
-   */
-  function addToCache(messageKey) {
-    sentMessagesCache.add(messageKey);
-    setTimeout(() => {
-      sentMessagesCache.delete(messageKey);
-    }, CACHE_TTL);
-  }
-
-  /**
-   * Generates a unique key for a message based on recipient and body.
-   * @param {string} to - The recipient's phone number.
-   * @param {string} body - The content of the message.
-   * @returns {string} A unique key combining the recipient and message body.
-   */
-  function generateMessageKey(to, body) {
-    return `${to}-${body}`;
-  }
-
   /**
    * Broadcasts a message if the broadcast function is available.
    * @param {Object} messageDetails - The details of the message to broadcast.
@@ -52,10 +27,9 @@ function smsService(broadcast) {
    * @param {string} body - Message content.
    * @param {string|null} conversationSid - Associated Conversation SID.
    * @param {string|null} author - Author of the message.
-   * @param {string} messageKey - Unique key for the message.
    * @returns {Promise<Object>} - Result containing success status and message SID.
    */
-  async function sendViaConversation(to, body, conversationSid, author, messageKey) {
+  async function sendViaConversation(to, body, conversationSid, author) {
     logger.info('Sending SMS via Conversation', { conversationSid, body });
     const conversationMessage = await client.conversations.v1
       .conversations(conversationSid)
@@ -67,10 +41,6 @@ function smsService(broadcast) {
       conversationSid,
       conversationMessageSid: conversationMessage.sid,
     });
-
-    // Add to cache to prevent duplicates
-    addToCache(messageKey);
-    logger.info('Added message to cache', { messageKey });
 
     // Prepare message details for broadcasting
     const messageDetails = {
@@ -122,10 +92,9 @@ function smsService(broadcast) {
    * Sends an SMS message directly via Twilio Messages API.
    * @param {string} to - Recipient phone number.
    * @param {string} body - Message content.
-   * @param {string} messageKey - Unique key for the message.
    * @returns {Promise<Object>} - Result containing success status and message SID.
    */
-  async function sendViaMessagesAPI(to, body, messageKey) {
+  async function sendViaMessagesAPI(to, body) {
     logger.info('Sending SMS via Twilio Messages API', { to, body });
     const message = await client.messages.create({
       body,
@@ -137,10 +106,6 @@ function smsService(broadcast) {
       to,
       body,
     });
-
-    // Add to cache to prevent duplicates
-    addToCache(messageKey);
-    logger.info('Added message to cache', { messageKey });
 
     // Prepare message details for broadcasting
     const messageDetails = {
@@ -170,28 +135,20 @@ function smsService(broadcast) {
    * @param {string} body - Message content.
    * @param {string|null} conversationSid - Associated Conversation SID.
    * @param {string|null} author - Author of the message.
-   * @returns {Promise<Object|null>} - Twilio message object or null if duplicate.
+   * @returns {Promise<Object>} - Twilio message object.
    */
   async function sendSMS(to, body, conversationSid = null, author = null) {
-    const messageKey = generateMessageKey(to, body);
-
     logger.info('Attempting to send SMS', {
       to,
       body,
       conversationSid,
-      messageKey,
     });
-
-    if (sentMessagesCache.has(messageKey)) {
-      logger.warn('Duplicate SMS detected', { to, body, messageKey });
-      return null;
-    }
 
     try {
       if (conversationSid) {
-        return await sendViaConversation(to, body, conversationSid, author, messageKey);
+        return await sendViaConversation(to, body, conversationSid, author);
       } else {
-        return await sendViaMessagesAPI(to, body, messageKey);
+        return await sendViaMessagesAPI(to, body);
       }
     } catch (error) {
       logger.error('Error sending SMS', {
