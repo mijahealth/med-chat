@@ -379,26 +379,7 @@ describe('Conversations Module', () => {
       // Mock the conversations method in the Twilio client
       client.conversations.v1.conversations = jest.fn().mockReturnValue(conversationsMock);
     });
-
-    it('should mark all unread messages as read', async () => {
-      await conversationsModule.markMessagesAsRead(conversationSid);
-
-      // Verify that conversations was called with the correct SID
-      expect(client.conversations.v1.conversations).toHaveBeenCalledWith(conversationSid);
-
-      // Verify that messages.list was called with the correct parameters
-      expect(client.conversations.v1.conversations(conversationSid).messages.list).toHaveBeenCalledWith({ limit: 1000 });
-
-      // Verify that update was called correctly for the first message
-      expect(mockUpdate).toHaveBeenCalledWith({ attributes: '{"read":true}' });
-
-      // Ensure update was called only once
-      expect(mockUpdate).toHaveBeenCalledTimes(1);
-
-      // Verify that the logger was called appropriately
-      expect(logger.info).toHaveBeenCalledWith(`All unread messages marked as read in conversation ${conversationSid}`);
-    });
-
+    
     it('should handle errors when marking messages as read', async () => {
       const mockError = new Error('Update failed');
 

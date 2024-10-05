@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1728094800037" clover="3.2.0">
-  <project timestamp="1728094800037" name="All files">
-    <metrics statements="555" coveredstatements="501" conditionals="184" coveredconditionals="136" methods="59" coveredmethods="54" elements="798" coveredelements="691" complexity="0" loc="555" ncloc="555" packages="3" files="13" classes="13"/>
+<coverage generated="1728097091276" clover="3.2.0">
+  <project timestamp="1728097091276" name="All files">
+    <metrics statements="555" coveredstatements="505" conditionals="184" coveredconditionals="136" methods="59" coveredmethods="55" elements="798" coveredelements="696" complexity="0" loc="555" ncloc="555" packages="3" files="13" classes="13"/>
     <package name="med-chat">
       <metrics statements="146" coveredstatements="127" conditionals="42" coveredconditionals="36" methods="11" coveredmethods="9"/>
       <file name="app.js" path="/Users/mattward/Desktop/Projects/med-chat/app.js">
@@ -149,16 +149,16 @@
       </file>
       <file name="twilioClient.js" path="/Users/mattward/Desktop/Projects/med-chat/twilioClient.js">
         <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-        <line num="3" count="6" type="stmt"/>
-        <line num="4" count="6" type="stmt"/>
-        <line num="5" count="6" type="stmt"/>
-        <line num="8" count="6" type="stmt"/>
-        <line num="14" count="6" type="stmt"/>
-        <line num="17" count="6" type="stmt"/>
+        <line num="3" count="7" type="stmt"/>
+        <line num="4" count="7" type="stmt"/>
+        <line num="5" count="7" type="stmt"/>
+        <line num="8" count="7" type="stmt"/>
+        <line num="14" count="7" type="stmt"/>
+        <line num="17" count="7" type="stmt"/>
       </file>
     </package>
     <package name="med-chat.modules">
-      <metrics statements="197" coveredstatements="191" conditionals="66" coveredconditionals="51" methods="35" coveredmethods="33"/>
+      <metrics statements="197" coveredstatements="182" conditionals="66" coveredconditionals="48" methods="35" coveredmethods="33"/>
       <file name="broadcast.js" path="/Users/mattward/Desktop/Projects/med-chat/modules/broadcast.js">
         <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="2"/>
         <line num="2" count="2" type="stmt"/>
@@ -167,12 +167,12 @@
         <line num="20" count="2" type="stmt"/>
       </file>
       <file name="conversations.js" path="/Users/mattward/Desktop/Projects/med-chat/modules/conversations.js">
-        <metrics statements="83" coveredstatements="80" conditionals="26" coveredconditionals="19" methods="13" coveredmethods="13"/>
+        <metrics statements="83" coveredstatements="70" conditionals="26" coveredconditionals="14" methods="13" coveredmethods="12"/>
         <line num="3" count="2" type="stmt"/>
         <line num="4" count="2" type="stmt"/>
         <line num="5" count="2" type="stmt"/>
-        <line num="35" count="8" type="cond" truecount="2" falsecount="0"/>
-        <line num="36" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="35" count="6" type="cond" truecount="2" falsecount="0"/>
+        <line num="36" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="46" count="2" type="stmt"/>
         <line num="47" count="2" type="stmt"/>
         <line num="50" count="1" type="stmt"/>
@@ -218,19 +218,19 @@
         <line num="212" count="2" type="stmt"/>
         <line num="214" count="1" type="stmt"/>
         <line num="215" count="1" type="stmt"/>
-        <line num="226" count="2" type="stmt"/>
-        <line num="228" count="2" type="stmt"/>
-        <line num="233" count="1" type="stmt"/>
-        <line num="235" count="3" type="cond" truecount="4" falsecount="0"/>
-        <line num="236" count="2" type="stmt"/>
-        <line num="240" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="241" count="1" type="stmt"/>
-        <line num="243" count="1" type="stmt"/>
-        <line num="244" count="1" type="stmt"/>
+        <line num="226" count="1" type="stmt"/>
+        <line num="228" count="1" type="stmt"/>
+        <line num="233" count="0" type="stmt"/>
+        <line num="235" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="236" count="0" type="stmt"/>
+        <line num="240" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="241" count="0" type="stmt"/>
+        <line num="243" count="0" type="stmt"/>
+        <line num="244" count="0" type="stmt"/>
         <line num="250" count="0" type="stmt"/>
-        <line num="254" count="1" type="stmt"/>
-        <line num="263" count="1" type="stmt"/>
-        <line num="264" count="1" type="stmt"/>
+        <line num="254" count="0" type="stmt"/>
+        <line num="263" count="0" type="stmt"/>
+        <line num="264" count="0" type="stmt"/>
         <line num="268" count="1" type="stmt"/>
         <line num="269" count="1" type="stmt"/>
         <line num="281" count="2" type="stmt"/>
@@ -253,19 +253,19 @@
         <line num="336" count="2" type="stmt"/>
       </file>
       <file name="logger.js" path="/Users/mattward/Desktop/Projects/med-chat/modules/logger.js">
-        <metrics statements="4" coveredstatements="3" conditionals="2" coveredconditionals="0" methods="1" coveredmethods="0"/>
-        <line num="2" count="4" type="stmt"/>
-        <line num="4" count="4" type="stmt"/>
-        <line num="10" count="0" type="stmt"/>
-        <line num="21" count="4" type="stmt"/>
+        <metrics statements="4" coveredstatements="4" conditionals="2" coveredconditionals="2" methods="1" coveredmethods="1"/>
+        <line num="2" count="6" type="stmt"/>
+        <line num="4" count="6" type="stmt"/>
+        <line num="10" count="8" type="stmt"/>
+        <line num="21" count="6" type="stmt"/>
       </file>
       <file name="search.js" path="/Users/mattward/Desktop/Projects/med-chat/modules/search.js">
         <metrics statements="39" coveredstatements="37" conditionals="22" coveredconditionals="20" methods="6" coveredmethods="6"/>
-        <line num="3" count="5" type="stmt"/>
-        <line num="4" count="5" type="stmt"/>
-        <line num="7" count="5" type="stmt"/>
-        <line num="11" count="5" type="stmt"/>
-        <line num="18" count="5" type="stmt"/>
+        <line num="3" count="6" type="stmt"/>
+        <line num="4" count="6" type="stmt"/>
+        <line num="7" count="6" type="stmt"/>
+        <line num="11" count="6" type="stmt"/>
+        <line num="18" count="6" type="stmt"/>
         <line num="19" count="6" type="stmt"/>
         <line num="20" count="6" type="cond" truecount="2" falsecount="0"/>
         <line num="21" count="5" type="stmt"/>
@@ -297,9 +297,9 @@
         <line num="97" count="51" type="cond" truecount="1" falsecount="1"/>
         <line num="98" count="0" type="stmt"/>
         <line num="99" count="0" type="stmt"/>
-        <line num="104" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="104" count="6" type="cond" truecount="2" falsecount="0"/>
         <line num="105" count="1" type="stmt"/>
-        <line num="108" count="5" type="stmt"/>
+        <line num="108" count="6" type="stmt"/>
       </file>
       <file name="smsService.js" path="/Users/mattward/Desktop/Projects/med-chat/modules/smsService.js">
         <metrics statements="36" coveredstatements="36" conditionals="12" coveredconditionals="9" methods="5" coveredmethods="5"/>
@@ -379,7 +379,7 @@
       </file>
     </package>
     <package name="med-chat.routes">
-      <metrics statements="212" coveredstatements="183" conditionals="76" coveredconditionals="49" methods="13" coveredmethods="12"/>
+      <metrics statements="212" coveredstatements="196" conditionals="76" coveredconditionals="52" methods="13" coveredmethods="13"/>
       <file name="callParams.js" path="/Users/mattward/Desktop/Projects/med-chat/routes/callParams.js">
         <metrics statements="28" coveredstatements="26" conditionals="8" coveredconditionals="6" methods="1" coveredmethods="1"/>
         <line num="3" count="5" type="stmt"/>
@@ -532,30 +532,30 @@
         <line num="388" count="4" type="stmt"/>
       </file>
       <file name="search.js" path="/Users/mattward/Desktop/Projects/med-chat/routes/search.js">
-        <metrics statements="23" coveredstatements="8" conditionals="4" coveredconditionals="0" methods="1" coveredmethods="0"/>
-        <line num="3" count="4" type="stmt"/>
-        <line num="4" count="4" type="stmt"/>
-        <line num="5" count="4" type="stmt"/>
-        <line num="6" count="4" type="stmt"/>
-        <line num="7" count="4" type="stmt"/>
-        <line num="10" count="4" type="stmt"/>
-        <line num="15" count="4" type="stmt"/>
-        <line num="19" count="0" type="stmt"/>
-        <line num="20" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="21" count="0" type="stmt"/>
-        <line num="22" count="0" type="stmt"/>
-        <line num="25" count="0" type="stmt"/>
-        <line num="26" count="0" type="cond" truecount="0" falsecount="2"/>
+        <metrics statements="23" coveredstatements="21" conditionals="4" coveredconditionals="3" methods="1" coveredmethods="1"/>
+        <line num="3" count="5" type="stmt"/>
+        <line num="4" count="5" type="stmt"/>
+        <line num="5" count="5" type="stmt"/>
+        <line num="6" count="5" type="stmt"/>
+        <line num="7" count="5" type="stmt"/>
+        <line num="10" count="5" type="stmt"/>
+        <line num="15" count="5" type="stmt"/>
+        <line num="19" count="5" type="stmt"/>
+        <line num="20" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="21" count="2" type="stmt"/>
+        <line num="22" count="2" type="stmt"/>
+        <line num="25" count="3" type="stmt"/>
+        <line num="26" count="3" type="cond" truecount="1" falsecount="1"/>
         <line num="27" count="0" type="stmt"/>
         <line num="28" count="0" type="stmt"/>
-        <line num="31" count="0" type="stmt"/>
-        <line num="32" count="0" type="stmt"/>
-        <line num="33" count="0" type="stmt"/>
-        <line num="34" count="0" type="stmt"/>
-        <line num="38" count="0" type="stmt"/>
-        <line num="40" count="0" type="stmt"/>
-        <line num="41" count="0" type="stmt"/>
-        <line num="46" count="4" type="stmt"/>
+        <line num="31" count="3" type="stmt"/>
+        <line num="32" count="3" type="stmt"/>
+        <line num="33" count="2" type="stmt"/>
+        <line num="34" count="1" type="stmt"/>
+        <line num="38" count="1" type="stmt"/>
+        <line num="40" count="2" type="stmt"/>
+        <line num="41" count="2" type="stmt"/>
+        <line num="46" count="5" type="stmt"/>
       </file>
       <file name="startConversation.js" path="/Users/mattward/Desktop/Projects/med-chat/routes/startConversation.js">
         <metrics statements="44" coveredstatements="41" conditionals="6" coveredconditionals="4" methods="2" coveredmethods="2"/>
