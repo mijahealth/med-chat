@@ -40,6 +40,15 @@ describe('Conversations Module', () => {
       };
       expect(() => conversationsModule.isMessageRead(message)).toThrow(SyntaxError);
     });
+    it('should return false for messages with empty attributes', () => {
+      const message = { attributes: '{}' };
+      expect(conversationsModule.isMessageRead(message)).toBe(false);
+    });
+
+    it('should return false for messages with undefined attributes', () => {
+      const message = {};
+      expect(conversationsModule.isMessageRead(message)).toBe(false);
+    });
   });
 
   describe('fetchConversation', () => {
@@ -267,6 +276,23 @@ describe('Conversations Module', () => {
       expect(client.conversations.v1.conversations(conversationSid).messages.list).toHaveBeenCalledWith({});
       expect(result).toBe(mockMessages);
     });
+
+    it('should handle empty message list', async () => {
+      const conversationSid = 'C1234567890';
+      const mockList = jest.fn().mockResolvedValue([]);
+      client.conversations.v1.conversations.mockImplementation(() => ({
+        messages: {
+          list: mockList,
+        },
+      }));
+
+      const result = await conversationsModule.listMessages(conversationSid);
+
+      expect(result).toEqual([]);
+      expect(logger.info).toHaveBeenCalledWith(
+        'Fetched 0 messages from conversation C1234567890'
+      );
+    });
   });
 
   describe('getConversationByPhoneNumber', () => {
@@ -310,6 +336,15 @@ describe('Conversations Module', () => {
         phoneNumber,
         error: mockError,
       });
+    });
+    it('should return null when no conversations exist', async () => {
+      const phoneNumber = '+4444444444';
+      client.conversations.v1.conversations.list.mockResolvedValue([]);
+
+      const result = await conversationsModule.getConversationByPhoneNumber(phoneNumber);
+
+      expect(result).toBeNull();
+      expect(logger.info).toHaveBeenCalledWith('No conversation found for phone number +4444444444');
     });
   });
 
@@ -396,6 +431,20 @@ describe('Conversations Module', () => {
       await expect(conversationsModule.markMessagesAsRead(conversationSid)).rejects.toThrow('Update failed');
       expect(logger.error).toHaveBeenCalledWith('Error marking messages as read', { conversationSid, error: mockError });
     });
+
+    it('should not update messages that are already read', async () => {
+      mockList.mockResolvedValue([
+        { sid: 'M1', author: '+1234567890', attributes: '{"read":true}' },
+        { sid: 'M2', author: '+1234567890', attributes: '{"read":true}' },
+      ]);
+
+      await conversationsModule.markMessagesAsRead(conversationSid);
+
+      expect(mockUpdate).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(
+        'All unread messages marked as read in conversation C1234567890'
+      );
+    });
   });
 
   describe('addParticipant', () => {
@@ -441,5 +490,4 @@ describe('Conversations Module', () => {
       });
     });
   });
-
 });
