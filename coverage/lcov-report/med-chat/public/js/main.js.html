@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">22.72% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>5/22</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">25% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/4</span>
+                <span class='fraction'>1/4</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">22.72% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/22</span>
+                <span class='fraction'>5/22</span>
             </div>
         
             
@@ -224,7 +224,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -232,18 +232,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -252,7 +241,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -262,7 +252,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -334,7 +334,7 @@ async function <span class="fstat-no" title="function not covered" >initializeAp
  * This is like telling a race car to start its engine when the track is clear.
  * We wait for the webpage to be fully loaded before we begin.
  */
-<span class="cstat-no" title="statement not covered" >document.addEventListener('DOMContentLoaded', initializeApplication);</span>
+document.addEventListener('DOMContentLoaded', initializeApplication);
 &nbsp;
 /**
  * Makes it easy to close windows in our app from anywhere.
@@ -342,7 +342,7 @@ async function <span class="fstat-no" title="function not covered" >initializeAp
  * This is like having a magic wand that can close any door in a big castle.
  * We can use it from any room (any part of our code) to close a specific door (modal).
  */
-<span class="cstat-no" title="statement not covered" >window.closeModal = closeModal;</span>
+window.closeModal = closeModal;
 &nbsp;
 /**
  * Catches any unexpected problems in our app.
@@ -352,7 +352,7 @@ async function <span class="fstat-no" title="function not covered" >initializeAp
  * 
  * @param {ErrorEvent} event - Information about what went wrong.
  */
-<span class="cstat-no" title="statement not covered" >window.addEventListener('error', <span class="fstat-no" title="function not covered" >(e</span>vent) =&gt; {</span>
+window.addEventListener('error', <span class="fstat-no" title="function not covered" >(e</span>vent) =&gt; {
 <span class="cstat-no" title="statement not covered" >  console.error('Uncaught error:', event.error);</span>
 });
 &nbsp;
@@ -362,7 +362,7 @@ async function <span class="fstat-no" title="function not covered" >initializeAp
  * This is like waving goodbye to a friend when they leave.
  * It lets the computer know we're done using the app.
  */
-<span class="cstat-no" title="statement not covered" >window.addEventListener('beforeunload', <span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
+window.addEventListener('beforeunload', <span class="fstat-no" title="function not covered" >()</span> =&gt; {
 <span class="cstat-no" title="statement not covered" >  log('Application closing');</span>
 });
 &nbsp;
@@ -372,7 +372,7 @@ async function <span class="fstat-no" title="function not covered" >initializeAp
  * This is like changing the tires on a car while it's still moving.
  * It's a special trick that helps developers update the app quickly.
  */
-<span class="cstat-no" title="statement not covered" >if (module.hot) {</span>
+<span class="missing-if-branch" title="if path not taken" >I</span>if (module.hot) {
 <span class="cstat-no" title="statement not covered" >  module.hot.accept([</span>
     './ui.js',
     './events.js',
@@ -400,7 +400,7 @@ export { initializeApplication };</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-10-05T04:41:45.133Z
+                at 2024-10-05T14:18:07.293Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
