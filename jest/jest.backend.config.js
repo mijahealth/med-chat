@@ -1,10 +1,8 @@
 // jest/jest.backend.config.js
-
 /** @type {import('jest').Config} */
 module.exports = {
   displayName: 'backend',
   rootDir: '../', // Set rootDir to the project root
-  collectCoverage: true,
   coverageDirectory: 'coverage/backend',
   collectCoverageFrom: [
     'app.js',
@@ -25,8 +23,7 @@ module.exports = {
     '**/__tests__/**/*.js?(x)',
   ],
   testPathIgnorePatterns: [
-    '<rootDir>/jest/',        // Ignore the jest/ directory
-    '<rootDir>/node_modules/', // Ensure node_modules is ignored
+    '<rootDir>/jest/',
+    '<rootDir>/node_modules/',
   ],
-  // Ensure 'preset' is not set unless necessary
 };
