@@ -1,3 +1,5 @@
+// __tests__/modules.websocket.js
+
 const WebSocket = require('ws');
 const http = require('http');
 const setupWebSocket = require('../modules/websocket');

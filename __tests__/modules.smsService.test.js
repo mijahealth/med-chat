@@ -1,4 +1,4 @@
-// __tests__/smsService.test.js
+// __tests__/modules.smsService.test.js
 
 // Set NODE_ENV to 'test' before importing any modules
 process.env.NODE_ENV = 'test';

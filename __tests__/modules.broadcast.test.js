@@ -1,4 +1,4 @@
-// __tests__/broadcast.test.js
+// __tests__/modules.broadcast.test.js
 const broadcastModule = require('../modules/broadcast');
 
 describe('Broadcast Module', () => {

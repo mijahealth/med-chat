@@ -1,4 +1,4 @@
-// __tests__/conversations.test.js
+// __tests__/routes.conversations.test.js
 
 // Set NODE_ENV and TWILIO_PHONE_NUMBER before importing any modules
 process.env.NODE_ENV = 'test';

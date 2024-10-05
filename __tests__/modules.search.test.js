@@ -1,4 +1,4 @@
-// __tests__/search.module.test.js
+// __tests__/modules.search.test.js
 
 // Set NODE_ENV to 'test' before importing any modules
 process.env.NODE_ENV = 'test';

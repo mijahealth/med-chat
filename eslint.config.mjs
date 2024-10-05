@@ -77,7 +77,6 @@ export default [
       'semi': ['error', 'always'],
       'max-len': ['error', { code: 150, ignoreUrls: true, ignoreComments: true }],
       'complexity': ['error', 10],
-      'no-magic-numbers': ['warn', { ignore: [-1, 0, 1, 2, 10, 20, 128, 1000, 200, 256], detectObjects: true }],
       'prefer-destructuring': ['error', { array: true, object: true }],
       'no-param-reassign': 'error',
       'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],

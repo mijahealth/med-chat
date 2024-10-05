@@ -1,4 +1,4 @@
-// __tests__/startConversation.test.js
+// __tests__/routes.startConversation.test.js
 
 // Set NODE_ENV before importing any modules
 process.env.NODE_ENV = 'test';
