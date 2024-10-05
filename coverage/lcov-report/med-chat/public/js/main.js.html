@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">22.72% </span>
+                <span class="strong">68.18% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/22</span>
+                <span class='fraction'>15/22</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">50% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>2/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">25% </span>
-                <span class="quiet">Branches</span>
+                <span class="quiet">Functions</span>
                 <span class='fraction'>1/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
-                <span class="quiet">Functions</span>
-                <span class='fraction'>0/4</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">22.72% </span>
+                <span class="strong">68.18% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/22</span>
+                <span class='fraction'>15/22</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -201,17 +201,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -310,18 +310,18 @@ import feather from 'feather-icons';
  * 
  * @returns {Promise&lt;void&gt;} Nothing, but it might take a little time to finish.
  */
-async function <span class="fstat-no" title="function not covered" >initializeApplication(</span>) {
-<span class="cstat-no" title="statement not covered" >  try {</span>
-<span class="cstat-no" title="statement not covered" >    log('Initializing application...');</span>
-<span class="cstat-no" title="statement not covered" >    await initializeApp();</span>
-<span class="cstat-no" title="statement not covered" >    setupEventListeners();</span>
-<span class="cstat-no" title="statement not covered" >    if (typeof setupCallControls === 'function') {</span>
-<span class="cstat-no" title="statement not covered" >      setupCallControls();</span>
+async function initializeApplication() {
+  try {
+    log('Initializing application...');
+    await initializeApp();
+    setupEventListeners();
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof setupCallControls === 'function') {
+      setupCallControls();
     }
-<span class="cstat-no" title="statement not covered" >    setupWebSocket();</span>
-<span class="cstat-no" title="statement not covered" >    feather.replace();</span>
-<span class="cstat-no" title="statement not covered" >    state.appInitialized = true;</span>
-<span class="cstat-no" title="statement not covered" >    log('Application initialization complete');</span>
+    setupWebSocket();
+    feather.replace();
+    state.appInitialized = true;
+    log('Application initialization complete');
   } catch (error) {
 <span class="cstat-no" title="statement not covered" >    console.error('Error during application initialization:', error);</span>
 <span class="cstat-no" title="statement not covered" >    alert('There was an error initializing the application. Please refresh.');</span>
@@ -400,7 +400,7 @@ export { initializeApplication };</pre></td></tr></table></pre>
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-10-05T14:18:07.293Z
+                at 2024-10-05T20:49:49.923Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
