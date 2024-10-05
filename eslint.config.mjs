@@ -37,6 +37,7 @@ export default [
       'webpack.config.js',
       'node_modules/**',
       'eslint.config.mjs',
+      '__tests__/**',
     ],
   },
 

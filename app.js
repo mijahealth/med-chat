@@ -13,18 +13,12 @@ const path = require('path');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
-// Remove webpack requires from the top
-// const webpack = require('webpack');
-// const webpackDevMiddleware = require('webpack-dev-middleware');
-// const webpackHotMiddleware = require('webpack-hot-middleware');
-// const config = require('./webpack.config.js');
 
 // Import Modules
 const setupWebSocket = require('./modules/websocket');
 const smsServiceFactory = require('./modules/smsService');
 const videoModule = require('./modules/video');
 const conversations = require('./modules/conversations');
-// const searchModule = require('./modules/search');
 
 // Import Routes
 const conversationsRouter = require('./routes/conversations');
@@ -101,11 +95,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Logger
 const logger = require('./modules/logger');
 
-// Initialize SMS Service
-let sendSMS = () => {
-  console.warn('SMS service not initialized');
-};
-
 // Initialize WebSocket and Other Asynchronous Operations Only If Not in Test Environment
 if (process.env.NODE_ENV !== 'test') {
   // Initialize WebSocket
@@ -113,8 +102,7 @@ if (process.env.NODE_ENV !== 'test') {
   broadcastModule.setBroadcast(broadcast); // Set the broadcast function in the singleton
 
   // Initialize SMS Service
-  const smsService = smsServiceFactory(broadcastModule.getBroadcast());
-  ({ sendSMS } = smsService);
+  smsServiceFactory(broadcastModule.getBroadcast());
 }
 
 // Routes
@@ -200,7 +188,6 @@ let smsService;
 if (process.env.NODE_ENV === 'test') {
   smsService = { sendSMS: () => Promise.resolve({ messageSid: 'SM123', success: true }) };
 } else {
-  const smsServiceFactory = require('./modules/smsService');
   smsService = smsServiceFactory(broadcastModule.getBroadcast());
 }
 
@@ -318,14 +305,14 @@ app.use((err, req, res, next) => {
 });
 
 // Start the Server Only If Not in Test Environment and If App.js is Run Directly
-  if (process.env.NODE_ENV !== 'test' && require.main === module) {
-    const PORT = process.env.PORT || DEFAULT_PORT;
-    server.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`, {
-        ngrokUrl: process.env.NGROK_URL,
-      });
+if (process.env.NODE_ENV !== 'test' && require.main === module) {
+  const PORT = process.env.PORT || DEFAULT_PORT;
+  server.listen(PORT, () => {
+    logger.info(`Server running on port ${PORT}`, {
+      ngrokUrl: process.env.NGROK_URL,
     });
-  }
+  });
+}
 
 // Export the Express app for testing
 module.exports = app;

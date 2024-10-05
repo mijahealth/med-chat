@@ -1,3 +1,5 @@
+// public/js/websocket.js
+
 /**
  * ELI5 Summary:
  * This file sets up a special phone line (WebSocket) between your computer and a server.

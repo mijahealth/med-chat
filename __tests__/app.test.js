@@ -53,8 +53,6 @@ const logger = require('../modules/logger');
 const { stopCacheUpdates } = require('../modules/search');
 const HTTP_OK = 200;
 const HTTP_BAD_REQUEST = 400;
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-
 
 // Ensure cache updates are stopped before and after all tests
 beforeAll(() => {

@@ -1,4 +1,4 @@
-// main.js
+// public/js/main.js
 
 /**
  * This file is like the control center for our app.

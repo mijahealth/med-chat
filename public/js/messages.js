@@ -1,3 +1,5 @@
+// public/js/messages.js
+
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
 import { updateConversationPreview, incrementUnreadCount } from './conversations.js';
