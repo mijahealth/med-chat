@@ -312,4 +312,153 @@ describe('Conversations Module', () => {
       });
     });
   });
+
+  describe('listConversations', () => {
+    it('should list conversations with details', async () => {
+      const mockConversations = [
+        { sid: 'C1', friendlyName: 'Conv1', attributes: '{}' },
+        { sid: 'C2', friendlyName: 'Conv2', attributes: '{"phoneNumber":"+1234567890"}' },
+      ];
+      const mockMessages = [
+        { body: 'Hello', dateCreated: new Date(), author: '+9876543210' },
+      ];
+      client.conversations.v1.conversations.list.mockResolvedValue(mockConversations);
+      client.conversations.v1.conversations().messages.list.mockResolvedValue(mockMessages);
+
+      const result = await conversationsModule.listConversations();
+
+      expect(client.conversations.v1.conversations.list).toHaveBeenCalled();
+      expect(client.conversations.v1.conversations().messages.list).toHaveBeenCalledTimes(4); // 2 calls per conversation
+      expect(result).toHaveLength(2);
+      expect(result[0]).toHaveProperty('lastMessage', 'Hello');
+      expect(result[0]).toHaveProperty('unreadCount', 1);
+      expect(logger.info).toHaveBeenCalledWith('Fetched 2 conversations');
+    });
+
+    it('should handle errors when listing conversations', async () => {
+      const mockError = new Error('Listing failed');
+      client.conversations.v1.conversations.list.mockRejectedValue(mockError);
+
+      await expect(conversationsModule.listConversations()).rejects.toThrow('Listing failed');
+      expect(logger.error).toHaveBeenCalledWith('Error listing conversations', { error: mockError });
+    });
+  });
+
+  describe('markMessagesAsRead', () => {
+    const conversationSid = 'C1234567890';
+    let mockUpdate;
+    let mockList;
+
+    beforeEach(() => {
+      // Reset mocks before each test
+      jest.clearAllMocks();
+
+      // Mock the update function for messages
+      mockUpdate = jest.fn().mockResolvedValue({});
+
+      // Mock the list function to return sample messages
+      mockList = jest.fn().mockResolvedValue([
+        { sid: 'M1', author: '+1234567890', attributes: '{}' },
+        { sid: 'M2', author: process.env.TWILIO_PHONE_NUMBER, attributes: '{}' },
+        { sid: 'M3', author: '+1234567890', attributes: '{"read":true}' },
+      ]);
+
+      // Mock the messages function that returns an object with list and messages methods
+      const messagesMock = {
+        list: mockList,
+        messages: jest.fn().mockImplementation((messageSid) => ({
+          update: mockUpdate,
+        })),
+      };
+
+      // Mock the conversations method to return an object with messages
+      const conversationsMock = {
+        messages: messagesMock,
+      };
+
+      // Mock the conversations method in the Twilio client
+      client.conversations.v1.conversations = jest.fn().mockReturnValue(conversationsMock);
+    });
+
+    it('should mark all unread messages as read', async () => {
+      await conversationsModule.markMessagesAsRead(conversationSid);
+
+      // Verify that conversations was called with the correct SID
+      expect(client.conversations.v1.conversations).toHaveBeenCalledWith(conversationSid);
+
+      // Verify that messages.list was called with the correct parameters
+      expect(client.conversations.v1.conversations(conversationSid).messages.list).toHaveBeenCalledWith({ limit: 1000 });
+
+      // Verify that update was called correctly for the first message
+      expect(mockUpdate).toHaveBeenCalledWith({ attributes: '{"read":true}' });
+
+      // Ensure update was called only once
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+
+      // Verify that the logger was called appropriately
+      expect(logger.info).toHaveBeenCalledWith(`All unread messages marked as read in conversation ${conversationSid}`);
+    });
+
+    it('should handle errors when marking messages as read', async () => {
+      const mockError = new Error('Update failed');
+
+      // Redefine the conversations method to make list throw an error
+      client.conversations.v1.conversations.mockImplementation(() => ({
+        messages: {
+          list: jest.fn().mockRejectedValue(mockError),
+          messages: jest.fn().mockImplementation((messageSid) => ({
+            update: jest.fn(),
+          })),
+        },
+      }));
+
+      await expect(conversationsModule.markMessagesAsRead(conversationSid)).rejects.toThrow('Update failed');
+      expect(logger.error).toHaveBeenCalledWith('Error marking messages as read', { conversationSid, error: mockError });
+    });
+  });
+
+  describe('addParticipant', () => {
+    const conversationSid = 'C1234567890';
+    const phoneNumber = '+1234567890';
+
+    it('should add a participant to the conversation', async () => {
+      const mockParticipant = { sid: 'PA1' };
+      const mockCreate = jest.fn().mockResolvedValue(mockParticipant);
+      
+      client.conversations.v1.conversations = jest.fn().mockReturnValue({
+        participants: {
+          create: mockCreate,
+        },
+      });
+
+      const result = await conversationsModule.addParticipant(conversationSid, phoneNumber);
+
+      expect(mockCreate).toHaveBeenCalledWith({
+        'messagingBinding.address': phoneNumber,
+        'messagingBinding.proxyAddress': process.env.TWILIO_PHONE_NUMBER,
+        'messagingBinding.type': 'sms',
+      });
+      expect(result).toBe(mockParticipant);
+      expect(logger.info).toHaveBeenCalledWith(`Added participant ${phoneNumber} to conversation ${conversationSid}`);
+    });
+
+    it('should handle errors when adding a participant', async () => {
+      const mockError = new Error('Add participant failed');
+      const mockCreate = jest.fn().mockRejectedValue(mockError);
+      
+      client.conversations.v1.conversations = jest.fn().mockReturnValue({
+        participants: {
+          create: mockCreate,
+        },
+      });
+
+      await expect(conversationsModule.addParticipant(conversationSid, phoneNumber)).rejects.toThrow('Add participant failed');
+      expect(logger.error).toHaveBeenCalledWith('Error adding participant to conversation', {
+        conversationSid,
+        phoneNumber,
+        error: mockError,
+      });
+    });
+  });
+
 });
