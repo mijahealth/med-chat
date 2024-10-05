@@ -396,6 +396,126 @@ describe('SMS Service Initialization', () => {
   });
 });
 
+describe('App.js Tests', () => {
+  let app;
+
+  beforeEach(() => {
+    jest.resetModules();
+    process.env.NODE_ENV = 'test';
+    app = require('../app');
+  });
+
+  describe('Environment Variable Setup', () => {
+    it('should load .env.test in test environment', () => {
+      expect(process.env.NODE_ENV).toBe('test');
+      // Add assertions for test environment variables
+    });
+
+    it('should not apply rate limiting when TEST_RATE_LIMITING is false', () => {
+      process.env.TEST_RATE_LIMITING = 'false';
+      const app = require('../app');
+      // Add assertions to verify rate limiting is not applied
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle errors in token generation', async () => {
+      const twilio = require('twilio');
+      jest.spyOn(twilio.jwt.AccessToken.prototype, 'toJwt').mockImplementationOnce(() => {
+        throw new Error('Token generation error');
+      });
+
+      const response = await request(app)
+        .get('/token')
+        .query({ identity: 'testuser' });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toHaveProperty('error', 'Internal Server Error');
+      expect(response.body).toHaveProperty('details', 'Token generation error');
+    });
+
+    it('should handle errors in voice endpoint', async () => {
+      const twilio = require('twilio');
+      jest.spyOn(twilio.twiml.VoiceResponse.prototype, 'dial').mockImplementationOnce(() => {
+        throw new Error('Voice response error');
+      });
+
+      const response = await request(app)
+        .post('/voice')
+        .send({ To: '+1234567890' });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toHaveProperty('error', 'Internal Server Error');
+      expect(response.body).toHaveProperty('details', 'Voice response error');
+    });
+  });
+
+  describe('Video Room Creation', () => {
+    it('should handle errors in video room creation', async () => {
+      const videoModule = require('../modules/video');
+      videoModule.createVideoRoom.mockRejectedValueOnce(new Error('Room creation failed'));
+
+      const response = await request(app)
+        .post('/create-room')
+        .send({ customerPhoneNumber: '+1234567890', conversationSid: 'CH123' });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toHaveProperty('error', 'Internal Server Error');
+      expect(response.body).toHaveProperty('details', 'Room creation failed');
+    });
+
+    it('should handle errors in SMS sending', async () => {
+      const mockSendSMS = jest.fn().mockRejectedValueOnce(new Error('SMS sending failed'));
+      app.setSmsService({ sendSMS: mockSendSMS });
+
+      const response = await request(app)
+        .post('/create-room')
+        .send({ customerPhoneNumber: '+1234567890', conversationSid: 'CH123' });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toHaveProperty('error', 'Internal Server Error');
+      expect(response.body).toHaveProperty('details', 'SMS sending failed');
+    });
+  });
+
+  describe('Twilio Webhook', () => {
+    it('should handle errors in conversation fetching', async () => {
+      const conversations = require('../modules/conversations');
+      conversations.fetchConversation.mockRejectedValueOnce(new Error('Conversation fetch failed'));
+
+      const response = await request(app)
+        .post('/twilio-webhook')
+        .type('form')
+        .send({
+          EventType: 'onMessageAdded',
+          ConversationSid: 'CH123',
+          Body: 'Test message',
+          Author: '+1234567890',
+          DateCreated: new Date().toISOString(),
+        });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toHaveProperty('error', 'Internal Server Error');
+      expect(response.body).toHaveProperty('details', 'Conversation fetch failed');
+    });
+
+    it('should handle unknown webhook formats', async () => {
+      const logger = require('../modules/logger');
+
+      const response = await request(app)
+        .post('/twilio-webhook')
+        .type('form')
+        .send({
+          UnknownEventType: 'someEvent',
+        });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.text).toBe('<Response></Response>');
+      expect(logger.warn).toHaveBeenCalledWith('Unknown webhook format received', expect.any(Object));
+    });
+  });
+});
+
 afterAll(() => {
   stopCacheUpdates();
 });

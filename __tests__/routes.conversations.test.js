@@ -407,3 +407,216 @@ describe('Conversations Routes', () => {
     });
   });
 });
+
+// Additional tests for conversations route
+
+describe('Conversations Routes - Additional Tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('GET /conversations', () => {
+    it('should handle empty conversation list', async () => {
+      conversations.listConversations.mockResolvedValue([]);
+
+      const response = await request(app).get('/conversations');
+
+      expect(response.status).toBe(HTTP_OK);
+      expect(response.body).toEqual([]);
+    });
+
+    it('should handle conversations with missing attributes', async () => {
+      const mockConversations = [
+        {
+          sid: 'CH123',
+          friendlyName: 'Test Conversation',
+          // Missing attributes
+          lastMessage: 'Hello!',
+          lastMessageTime: new Date().toISOString(),
+          unreadCount: 2,
+        },
+      ];
+      conversations.listConversations.mockResolvedValue(mockConversations);
+
+      const response = await request(app).get('/conversations');
+
+      expect(response.status).toBe(HTTP_OK);
+      expect(response.body[0]).toEqual(expect.objectContaining({
+        sid: 'CH123',
+        friendlyName: 'Test Conversation',
+        phoneNumber: '',
+        email: '',
+        name: '',
+      }));
+    });
+  });
+
+  describe('GET /conversations/:sid', () => {
+    it('should handle conversation with no messages', async () => {
+      const mockConversation = {
+        sid: 'CH123',
+        friendlyName: 'Empty Conversation',
+        attributes: JSON.stringify({}),
+      };
+
+      conversations.fetchConversation.mockResolvedValue(mockConversation);
+      conversations.listMessages.mockResolvedValue([]);
+
+      const response = await request(app).get('/conversations/CH123');
+
+      expect(response.status).toBe(HTTP_OK);
+      expect(response.body).toEqual(expect.objectContaining({
+        sid: 'CH123',
+        friendlyName: 'Empty Conversation',
+        lastMessage: 'No messages yet',
+        lastMessageTime: null,
+        unreadCount: 0,
+      }));
+    });
+
+    it('should handle conversation with all messages read', async () => {
+      const mockConversation = {
+        sid: 'CH123',
+        friendlyName: 'Read Conversation',
+        attributes: JSON.stringify({}),
+      };
+
+      const mockMessages = [
+        {
+          sid: 'IM123',
+          body: 'Hello',
+          author: '+0987654321',
+          dateCreated: new Date().toISOString(),
+          attributes: JSON.stringify({ read: true }),
+        },
+      ];
+
+      conversations.fetchConversation.mockResolvedValue(mockConversation);
+      conversations.listMessages.mockResolvedValue(mockMessages);
+      conversations.isMessageRead.mockReturnValue(true);
+
+      const response = await request(app).get('/conversations/CH123');
+
+      expect(response.status).toBe(HTTP_OK);
+      expect(response.body).toEqual(expect.objectContaining({
+        sid: 'CH123',
+        friendlyName: 'Read Conversation',
+        unreadCount: 0,
+      }));
+    });
+  });
+
+  describe('GET /conversations/:sid/messages', () => {
+    it('should handle pagination with limit and order', async () => {
+      const mockMessages = [
+        { sid: 'IM1', body: 'Message 1', author: '+1234567890', dateCreated: new Date().toISOString() },
+        { sid: 'IM2', body: 'Message 2', author: '+0987654321', dateCreated: new Date().toISOString() },
+      ];
+
+      conversations.listMessages.mockResolvedValue(mockMessages);
+
+      const response = await request(app).get('/conversations/CH123/messages?limit=2&order=desc');
+
+      expect(response.status).toBe(HTTP_OK);
+      expect(response.body).toHaveLength(2);
+      expect(conversations.listMessages).toHaveBeenCalledWith('CH123', { limit: 2, order: 'desc' });
+    });
+
+    it('should handle empty message list', async () => {
+      conversations.listMessages.mockResolvedValue([]);
+
+      const response = await request(app).get('/conversations/CH123/messages');
+
+      expect(response.status).toBe(HTTP_OK);
+      expect(response.body).toEqual([]);
+    });
+  });
+
+  describe('POST /conversations/:sid/messages', () => {
+    it('should use default Twilio phone number as author if not provided', async () => {
+      const mockMessage = {
+        sid: 'IM123',
+        body: 'Test message',
+        author: process.env.TWILIO_PHONE_NUMBER,
+        dateCreated: new Date().toISOString(),
+      };
+      conversations.addMessage.mockResolvedValue(mockMessage);
+
+      const response = await request(app)
+        .post('/conversations/CH123/messages')
+        .send({ message: 'Test message' });
+
+      expect(response.status).toBe(201);
+      expect(response.body.author).toBe(process.env.TWILIO_PHONE_NUMBER);
+    });
+
+    it('should broadcast new message if broadcast function is available', async () => {
+      const mockMessage = {
+        sid: 'IM123',
+        body: 'Test message',
+        author: '+0987654321',
+        dateCreated: new Date().toISOString(),
+      };
+      conversations.addMessage.mockResolvedValue(mockMessage);
+      
+      const mockBroadcast = jest.fn();
+      getBroadcast.mockReturnValue(mockBroadcast);
+
+      const response = await request(app)
+        .post('/conversations/CH123/messages')
+        .send({ message: 'Test message', author: '+0987654321' });
+
+      expect(response.status).toBe(201);
+      expect(mockBroadcast).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'newMessage',
+        conversationSid: 'CH123',
+        body: 'Test message',
+      }));
+    });
+  });
+
+  describe('DELETE /conversations/:sid', () => {
+    it('should broadcast deletion if broadcast function is available', async () => {
+      conversations.deleteConversation.mockResolvedValue();
+      
+      const mockBroadcast = jest.fn();
+      getBroadcast.mockReturnValue(mockBroadcast);
+
+      const response = await request(app)
+        .delete('/conversations/CH123')
+        .send({ confirmToken: 'CONFIRM_DELETE' });
+
+      expect(response.status).toBe(HTTP_OK);
+      expect(mockBroadcast).toHaveBeenCalledWith({
+        type: 'deleteConversation',
+        conversationSid: 'CH123',
+      });
+    });
+
+    it('should handle missing broadcast function', async () => {
+      conversations.deleteConversation.mockResolvedValue();
+      getBroadcast.mockReturnValue(null);
+
+      const response = await request(app)
+        .delete('/conversations/CH123')
+        .send({ confirmToken: 'CONFIRM_DELETE' });
+
+      expect(response.status).toBe(HTTP_OK);
+      // Ensure the deletion is successful even without broadcasting
+      expect(response.body).toHaveProperty('message', 'Conversation CH123 deleted successfully.');
+    });
+  });
+
+  describe('POST /conversations/:sid/mark-read', () => {
+  
+    it('should handle unexpected errors', async () => {
+      const error = new Error('Unexpected error');
+      conversations.markMessagesAsRead.mockRejectedValue(error);
+  
+      const response = await request(app).post('/conversations/CH123/mark-read');
+  
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty('error', 'Internal Server Error');
+    });
+  });
+});
