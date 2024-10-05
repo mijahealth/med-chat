@@ -45,26 +45,29 @@ class VoiceResponse {
   }
 }
 
+// Create a mock function for conversations.v1.conversations that can be called with a SID
+const mockConversationsFunction = jest.fn((sid) => ({
+  fetch: jest.fn(() => Promise.resolve({ sid, friendlyName: 'Test Conversation', attributes: '{}' })),
+  remove: jest.fn(() => Promise.resolve()),
+  messages: {
+    list: jest.fn(() => Promise.resolve([])),
+    create: jest.fn(() => Promise.resolve({ sid: 'IM123' })),
+  },
+  participants: {
+    create: jest.fn(() => Promise.resolve({})),
+  },
+}));
+
+// Attach 'list' and 'create' methods to the conversations mock function
+mockConversationsFunction.list = jest.fn(() => Promise.resolve([]));
+mockConversationsFunction.create = jest.fn(() => Promise.resolve({ sid: 'CH123' }));
+
 // Define the twilio mock function
 const twilio = jest.fn(() => ({
   conversations: {
     v1: {
-      conversations: {
-        list: jest.fn(() => Promise.resolve([])),
-        create: jest.fn(() => Promise.resolve({ sid: 'CH123' })),
-        remove: jest.fn(() => Promise.resolve()),
-        fetch: jest.fn(() => Promise.resolve({ sid: 'CH123', attributes: '{}' })),
-        messages: jest.fn(() => ({
-          list: jest.fn(() => Promise.resolve([])),
-          create: jest.fn(() => Promise.resolve({ sid: 'IM123' })),
-        })),
-        participants: jest.fn(() => ({
-          create: jest.fn(() => Promise.resolve({})),
-        })),
-      },
-    },
-    video: {
-      v1: {
+      conversations: mockConversationsFunction,
+      video: {
         rooms: {
           create: jest.fn(() => Promise.resolve({ sid: 'RM123', uniqueName: 'VideoRoom_123' })),
         },
