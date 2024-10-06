@@ -2,7 +2,7 @@
 /** @type {import('jest').Config} */
 module.exports = {
   displayName: 'frontend',
-  rootDir: '../', // Set rootDir to the project root
+  rootDir: '../',
   coverageDirectory: 'coverage/frontend',
   collectCoverageFrom: [
     'public/js/**/*.js',
@@ -18,11 +18,10 @@ module.exports = {
   },
   testEnvironment: 'jsdom',
   testMatch: [
-    '**/public/js/__tests__/**/*.test.js',
-    '**/public/js/**/*.spec.js',
+    '<rootDir>/public/js/__tests__/**/*.test.js',
+    '<rootDir>/public/js/**/*.spec.js',
   ],
   testPathIgnorePatterns: [
-    '<rootDir>/jest/',
     '<rootDir>/node_modules/',
   ],
   moduleFileExtensions: ['js', 'jsx', 'json', 'node'],

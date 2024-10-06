@@ -2,12 +2,16 @@
 /** @type {import('jest').Config} */
 module.exports = {
   displayName: 'backend',
-  rootDir: '../', // Set rootDir to the project root
+  rootDir: '../',
   coverageDirectory: 'coverage/backend',
   collectCoverageFrom: [
     'app.js',
     'routes/**/*.js',
     'modules/**/*.js',
+  ],
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/public/'
   ],
   coverageThreshold: {
     global: {
@@ -19,11 +23,12 @@ module.exports = {
   },
   testEnvironment: 'node',
   testMatch: [
-    '**/tests/**/*.test.js',
-    '**/__tests__/**/*.js?(x)',
+    '<rootDir>/__tests__/**/*.test.js',
+    '<rootDir>/tests/**/*.test.js'
   ],
   testPathIgnorePatterns: [
-    '<rootDir>/jest/',
-    '<rootDir>/node_modules/',
+    '<rootDir>/public/',
+    '<rootDir>/node_modules/'
   ],
+  // ... other configurations
 };
