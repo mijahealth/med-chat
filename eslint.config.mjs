@@ -38,6 +38,8 @@ export default [
       'node_modules/**',
       'eslint.config.mjs',
       '__tests__/**',
+      'public/js/__tests__/**', 
+      'jest/**',              
     ],
   },
 

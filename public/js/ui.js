@@ -13,7 +13,6 @@ import {
   loadConversations,
   incrementUnreadCount,
   handleNewConversation,
-  handleUpdateConversation,
   removeConversationFromUI,
 } from './conversations.js';
 import { setupWebSocket } from './websocket.js';
@@ -377,6 +376,5 @@ if (module['hot']) {
 export {
   incrementUnreadCount,
   handleNewConversation,
-  handleUpdateConversation,
   removeConversationFromUI,
 };

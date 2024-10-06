@@ -42,6 +42,7 @@ export async function loadConversations() {
     }
 
     state.conversationsLoaded = true;
+    state.conversations = conversations; // Add this line to update the state
     return conversations;
   } catch (error) {
     log('Error loading conversations', { error });
@@ -119,23 +120,24 @@ export function incrementUnreadCount(conversationSid) {
  * @returns {void}
  */
 export function handleNewConversation(data) {
-  const existingConversation = document.getElementById(
-    `conv-${data.conversationSid}`,
+  const existingIndex = state.conversations.findIndex(
+    (conv) => conv.sid === data.sid
   );
 
-  if (existingConversation) {
-    log('Conversation already exists, updating', {
-      conversationSid: data.conversationSid,
-    });
-    updateConversationPreview(data.conversationSid, {
-      body: data.lastMessage,
-      dateCreated: new Date().toISOString(),
-    });
-    moveConversationToTop(data.conversationSid);
-    return;
+  if (existingIndex !== -1) {
+    // Update existing conversation
+    state.conversations[existingIndex] = {
+      ...state.conversations[existingIndex],
+      ...data,
+    };
+    // Render the updated state
+    renderConversations(state.conversations, true);
+  } else {
+    // Add new conversation to state
+    state.conversations.push(data);
+    // Only call renderConversations when a new conversation is added
+    renderConversations(state.conversations, true);
   }
-
-  renderConversations([data], true);
 }
 
 /**
@@ -149,31 +151,46 @@ export function handleNewConversation(data) {
  * @returns {void}
  */
 export function handleUpdateConversation(data) {
-  const conversationDiv = document.getElementById(
-    `conv-${data.conversationSid}`,
+  const conversationIndex = state.conversations.findIndex(
+    (conv) => conv.sid === data.sid
   );
-  if (conversationDiv) {
-    // Update the friendly name
-    const nameElement = conversationDiv.querySelector('strong');
-    if (nameElement) {
-      nameElement.textContent = data.friendlyName;
-    }
 
-    // Update the last message
-    const lastMessageDiv = conversationDiv.querySelector('.last-message');
-    if (lastMessageDiv) {
-      lastMessageDiv.textContent = data.lastMessage;
-    }
+  if (conversationIndex !== -1) {
+    // Update the state directly
+    state.conversations[conversationIndex] = {
+      ...state.conversations[conversationIndex],
+      ...data,
+      lastMessage: data.lastMessage || state.conversations[conversationIndex].lastMessage,
+    };
 
-    // Update the time
-    const timeDiv = conversationDiv.querySelector('.time');
-    if (timeDiv) {
-      timeDiv.textContent = formatTime(data.lastMessageTime);
-    }
+    // Update the UI
+    const conversationDiv = document.getElementById(`conv-${data.sid}`);
+    if (conversationDiv) {
+      // Update the friendly name
+      const nameElement = conversationDiv.querySelector('strong');
+      if (nameElement) {
+        nameElement.textContent = data.friendlyName || nameElement.textContent;
+      }
 
-    // Move the conversation to the top of the list
-    moveConversationToTop(data.conversationSid);
+      // Update the last message
+      const lastMessageDiv = conversationDiv.querySelector('.last-message');
+      if (lastMessageDiv) {
+        lastMessageDiv.textContent = data.lastMessage || lastMessageDiv.textContent;
+      }
+
+      // Update the time
+      const timeDiv = conversationDiv.querySelector('.time');
+      if (timeDiv) {
+        timeDiv.textContent = data.lastMessageTime ? formatTime(data.lastMessageTime) : timeDiv.textContent;
+      }
+
+      // Move the conversation to the top of the list
+      moveConversationToTop(data.sid);
+    }
   }
+
+  // Update the UI for tests and non-DOM environments
+  renderConversations(state.conversations);
 }
 
 /**
