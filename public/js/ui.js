@@ -15,7 +15,7 @@ import {
   handleNewConversation,
   removeConversationFromUI,
 } from './conversations.js';
-import { setupWebSocket } from './websocket.js';
+import { setupClientWebSocket} from './websocket.js';
 import { state, currentConversation } from './state.js';
 import { api } from './api.js';
 import { log, formatTime } from './utils.js';
@@ -45,7 +45,7 @@ export async function initializeApp() {
     renderConversations(conversations || []);
 
     // Other initializations
-    setupWebSocket();
+    setupClientWebSocket();
     showNoConversationSelected();
   } catch (error) {
     log('Error initializing app', { error });

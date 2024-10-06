@@ -24,7 +24,7 @@ jest.mock('../events.js', () => ({
 // Mock '../websocket.js' module
 jest.mock('../websocket.js', () => ({
   __esModule: true,
-  setupWebSocket: jest.fn(),
+  setupClientWebSocket: jest.fn(),
 }));
 
 // Mock '../state.js' module
@@ -60,7 +60,7 @@ jest.mock('feather-icons', () => ({
 describe('Main Module', () => {
   let setupEventListenersMock;
   let closeModalMock;
-  let setupWebSocketMock;
+  let setupClientWebSocketMock;
   let stateMock;
   let logMock;
   let featherMock;
@@ -83,7 +83,7 @@ describe('Main Module', () => {
     // Set up spies on mocked functions
     setupEventListenersMock = jest.spyOn(eventsModule, 'setupEventListeners');
     closeModalMock = jest.spyOn(eventsModule, 'closeModal');
-    setupWebSocketMock = jest.spyOn(websocketModule, 'setupWebSocket');
+    setupClientWebSocketMock = jest.spyOn(websocketModule, 'setupClientWebSocket');
     stateMock = stateModule.state;
     logMock = jest.spyOn(utilsModule, 'log');
     // Note: Do not set up a spy on setupCallControls here
@@ -138,14 +138,14 @@ describe('Main Module', () => {
       console.log('Mock function calls:');
       console.log('initializeApp:', initializeAppMock.mock.calls);
       console.log('setupEventListeners:', setupEventListenersMock.mock.calls);
-      console.log('setupWebSocket:', setupWebSocketMock.mock.calls);
+      console.log('setupClientWebSocket:', setupClientWebSocketMock.mock.calls);
       console.log('feather.replace:', featherMock.replace.mock.calls);
 
       // Assertions to verify the initialization flow
       expect(logMock).toHaveBeenCalledWith('Initializing application...');
       expect(initializeAppMock).toHaveBeenCalledTimes(1);
       expect(setupEventListenersMock).toHaveBeenCalledTimes(1);
-      expect(setupWebSocketMock).toHaveBeenCalledTimes(1);
+      expect(setupClientWebSocketMock).toHaveBeenCalledTimes(1);
       expect(featherMock.replace).toHaveBeenCalledTimes(1);
       expect(stateMock.appInitialized).toBe(true);
       expect(logMock).toHaveBeenCalledWith('Application initialization complete');
@@ -173,7 +173,7 @@ describe('Main Module', () => {
       // Re-setup spies with the new mock
       setupEventListenersMock = jest.spyOn(eventsModule, 'setupEventListeners');
       closeModalMock = jest.spyOn(eventsModule, 'closeModal');
-      setupWebSocketMock = jest.spyOn(websocketModule, 'setupWebSocket');
+      setupClientWebSocketMock = jest.spyOn(websocketModule, 'setupClientWebSocket');
       stateMock = stateModule.state;
       logMock = jest.spyOn(utilsModule, 'log');
 
@@ -192,7 +192,7 @@ describe('Main Module', () => {
       expect(setupEventListenersMock).toHaveBeenCalledTimes(1);
       // Since setupCallControls is undefined, ensure it was not called
       // No spy exists, so we can't check calls; instead, ensure no errors occurred
-      expect(setupWebSocketMock).toHaveBeenCalledTimes(1);
+      expect(setupClientWebSocketMock).toHaveBeenCalledTimes(1);
       expect(featherMock.replace).toHaveBeenCalledTimes(1);
       expect(stateMock.appInitialized).toBe(true);
       expect(logMock).toHaveBeenCalledWith('Application initialization complete');

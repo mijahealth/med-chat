@@ -30,7 +30,7 @@ let socket;
  * 
  * @param {string} [server] The WebSocket server URL to connect to. If not provided, it will use the current window's location to create the connection.
  */
-export function setupWebSocket(server) {
+export function setupClientWebSocket(server) {
   if (
     socket &&
     (socket.readyState === WebSocket.OPEN ||
@@ -62,7 +62,7 @@ export function setupWebSocket(server) {
 
   socket.onclose = () => {
     log('WebSocket connection closed');
-    setTimeout(() => setupWebSocket(server), RECONNECT_DELAY);
+    setTimeout(() => setupClientWebSocket(server), RECONNECT_DELAY);
   };
 
   socket.onerror = (error) => {
@@ -155,9 +155,9 @@ if (module.hot) {
   });
   module.hot.accept(() => {
     log('WebSocket module updated');
-    setupWebSocket();
+    setupClientWebSocket();
   });
 }
 
 // Export the socket for potential use in other modules
-export { socket };
+export { socket,handleWebSocketMessage};

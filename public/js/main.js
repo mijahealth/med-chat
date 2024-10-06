@@ -9,7 +9,7 @@
  */
 import { initializeApp } from './ui.js';
 import { setupEventListeners, closeModal } from './events.js';
-import { setupWebSocket } from './websocket.js';
+import { setupClientWebSocket} from './websocket.js';
 import { state } from './state.js';
 import { log } from './utils.js';
 import { setupCallControls } from './call.js';
@@ -33,7 +33,7 @@ async function initializeApplication() {
     if (typeof setupCallControls === 'function') {
       setupCallControls();
     }
-    setupWebSocket();
+    setupClientWebSocket();
     feather.replace();
     state.appInitialized = true;
     log('Application initialization complete');
