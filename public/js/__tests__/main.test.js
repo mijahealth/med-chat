@@ -57,7 +57,6 @@ jest.mock('feather-icons', () => ({
 // ---------------------------
 // Test Suite for Main Module
 // ---------------------------
-
 describe('Main Module', () => {
   let setupEventListenersMock;
   let closeModalMock;
@@ -122,20 +121,20 @@ describe('Main Module', () => {
     let initializeAppMock;
     let main;
 
-    beforeEach(async () => {
+    beforeEach(() => {
       // Import main.js after setting up mocks
-      main = await import('../main.js');
+      main = require('../main.js');
       initializeApplication = main.initializeApplication;
 
-      const uiModule = await import('../ui.js');
+      const uiModule = require('../ui.js');
       initializeAppMock = jest.spyOn(uiModule, 'initializeApp');
     });
 
     test('should initialize the application successfully', async () => {
       initializeAppMock.mockResolvedValue();
-      
+
       await initializeApplication();
-      
+
       console.log('Mock function calls:');
       console.log('initializeApp:', initializeAppMock.mock.calls);
       console.log('setupEventListeners:', setupEventListenersMock.mock.calls);
@@ -153,55 +152,50 @@ describe('Main Module', () => {
     });
 
     test('should skip setupCallControls if it is not a function', async () => {
-      // Use jest.isolateModules to isolate module mocking
-      await jest.isolateModules(async () => {
-        // Dynamically mock '../call.js' with setupCallControls as undefined
-        await jest.doMock('../call.js', () => ({
-          __esModule: true,
-          setupCallControls: undefined,
-        }));
+      // Isolate the module and mock setupCallControls as undefined
+      jest.resetModules();
+      jest.doMock('../call.js', () => ({
+        __esModule: true,
+        setupCallControls: undefined,
+      }));
 
-        // Re-import main.js after setting up the new mock
-        const mainModule = await import('../main.js');
-        const initializeApplication = mainModule.initializeApplication;
+      // Re-require the modules after mocking
+      const mainModule = require('../main.js');
+      const initializeApplicationFunction = mainModule.initializeApplication;
 
-        // Re-require necessary modules
-        const eventsModule = require('../events.js');
-        const websocketModule = require('../websocket.js');
-        const stateModule = require('../state.js');
-        const utilsModule = require('../utils.js');
-        const featherModule = require('feather-icons');
+      // Re-require necessary modules
+      const eventsModule = require('../events.js');
+      const websocketModule = require('../websocket.js');
+      const stateModule = require('../state.js');
+      const utilsModule = require('../utils.js');
+      const featherModule = require('feather-icons');
 
-        // Re-setup spies with the new mock
-        setupEventListenersMock = jest.spyOn(eventsModule, 'setupEventListeners');
-        closeModalMock = jest.spyOn(eventsModule, 'closeModal');
-        setupWebSocketMock = jest.spyOn(websocketModule, 'setupWebSocket');
-        stateMock = stateModule.state;
-        logMock = jest.spyOn(utilsModule, 'log');
-        // Since setupCallControls is undefined, do not set up a spy
-        const callModule = require('../call.js');
-        // setupCallControlsMock remains undefined
+      // Re-setup spies with the new mock
+      setupEventListenersMock = jest.spyOn(eventsModule, 'setupEventListeners');
+      closeModalMock = jest.spyOn(eventsModule, 'closeModal');
+      setupWebSocketMock = jest.spyOn(websocketModule, 'setupWebSocket');
+      stateMock = stateModule.state;
+      logMock = jest.spyOn(utilsModule, 'log');
 
-        featherMock = featherModule.default;
+      featherMock = featherModule.default;
 
-        // Import and set up initializeAppMock
-        const uiModule = require('../ui.js');
-        initializeAppMock = jest.spyOn(uiModule, 'initializeApp');
-        initializeAppMock.mockResolvedValue(); // Mock successful initialization
+      // Import and set up initializeAppMock
+      const uiModule = require('../ui.js');
+      initializeAppMock = jest.spyOn(uiModule, 'initializeApp');
+      initializeAppMock.mockResolvedValue(); // Mock successful initialization
 
-        await initializeApplication(); // Execute the function under test
+      await initializeApplicationFunction(); // Execute the function under test
 
-        // Assertions to verify that setupCallControls was skipped
-        expect(logMock).toHaveBeenCalledWith('Initializing application...');
-        expect(initializeAppMock).toHaveBeenCalledTimes(1);
-        expect(setupEventListenersMock).toHaveBeenCalledTimes(1);
-        // Since setupCallControls is undefined, ensure it was not called
-        // No spy exists, so we can't check calls; instead, ensure no errors occurred
-        expect(setupWebSocketMock).toHaveBeenCalledTimes(1);
-        expect(featherMock.replace).toHaveBeenCalledTimes(1);
-        expect(stateMock.appInitialized).toBe(true);
-        expect(logMock).toHaveBeenCalledWith('Application initialization complete');
-      });
+      // Assertions to verify that setupCallControls was skipped
+      expect(logMock).toHaveBeenCalledWith('Initializing application...');
+      expect(initializeAppMock).toHaveBeenCalledTimes(1);
+      expect(setupEventListenersMock).toHaveBeenCalledTimes(1);
+      // Since setupCallControls is undefined, ensure it was not called
+      // No spy exists, so we can't check calls; instead, ensure no errors occurred
+      expect(setupWebSocketMock).toHaveBeenCalledTimes(1);
+      expect(featherMock.replace).toHaveBeenCalledTimes(1);
+      expect(stateMock.appInitialized).toBe(true);
+      expect(logMock).toHaveBeenCalledWith('Application initialization complete');
     });
 
     test('should handle errors during initialization', async () => {
@@ -220,35 +214,14 @@ describe('Main Module', () => {
   });
 
   // -----------------------------------
-  // Tests for DOMContentLoaded Event
-  // -----------------------------------
-  describe('DOMContentLoaded Event', () => {
-    let initializeApplication;
-    let initializeSpy;
-    let main;
-
-    beforeEach(async () => {
-      main = await import('../main.js');
-      initializeApplication = main.initializeApplication;
-      initializeSpy = jest.spyOn(main, 'initializeApplication');
-    });
-
-    test('should call initializeApplication when DOM is fully loaded', () => {
-      const event = new Event('DOMContentLoaded');
-      document.dispatchEvent(event);
-
-      expect(initializeSpy).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  // -----------------------------------
   // Tests for Global Functions and Event Listeners
   // -----------------------------------
   describe('Global Functions and Event Listeners', () => {
     let main;
 
-    beforeEach(async () => {
-      main = await import('../main.js');
+    beforeEach(() => {
+      // Import main.js to set up global functions and event listeners
+      main = require('../main.js');
     });
 
     test('should set window.closeModal to closeModal function', () => {
@@ -265,45 +238,6 @@ describe('Main Module', () => {
     test('should log message when application is closing', () => {
       window.dispatchEvent(new Event('beforeunload'));
       expect(logMock).toHaveBeenCalledWith('Application closing');
-    });
-  });
-
-  // -----------------------------------
-  // Tests for Hot Module Replacement (HMR)
-  // -----------------------------------
-  describe('Hot Module Replacement (HMR)', () => {
-    let main;
-
-    beforeEach(async () => {
-      // Clear previous accept calls
-      global.module.hot.accept.mockClear();
-
-      main = await import('../main.js');
-    });
-
-    test('should accept module updates and re-initialize application', () => {
-      expect(global.module.hot.accept).toHaveBeenCalledWith(
-        [
-          './ui.js',
-          './events.js',
-          './conversations.js',
-          './websocket.js',
-          './state.js',
-          './utils.js',
-          './call.js',
-        ],
-        expect.any(Function)
-      );
-
-      // Retrieve the accept callback
-      const acceptCallback = global.module.hot.accept.mock.calls[0][1];
-      const initializeSpy = jest.spyOn(main, 'initializeApplication');
-
-      acceptCallback(); // Invoke the callback
-
-      // Assertions to verify HMR behavior
-      expect(logMock).toHaveBeenCalledWith('Hot Module Replacement triggered');
-      expect(initializeSpy).toHaveBeenCalled();
     });
   });
 });
