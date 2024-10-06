@@ -1,24 +1,23 @@
 // public/js/__tests__/messages.test.js
-import { loadMessages, handleNewMessage } from '../messages';
-import { api } from '../api';
-import { renderMessages, appendMessage } from '../ui';
-import { updateConversationPreview, incrementUnreadCount } from '../conversations';
-import { currentConversation, state } from '../state';
-import { log } from '../utils';
 
-jest.mock('../api');
-jest.mock('../ui');
-jest.mock('../conversations');
-jest.mock('../utils');
+import { handleNewMessage } from '../messages';
+import { appendMessage, updateConversationPreview } from '../ui';
+import { incrementUnreadCount } from '../conversations';
+import { state } from '../state';
+
+jest.mock('../ui', () => ({
+  appendMessage: jest.fn(),
+  updateConversationPreview: jest.fn(),
+}));
+
+jest.mock('../conversations', () => ({
+  incrementUnreadCount: jest.fn(),
+}));
 
 describe('Messages Module', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    document.body.innerHTML = `
-      <div id="messages"></div>
-      <div id="call-status"></div>
-    `;
-    currentConversation.sid = 'conv1';
+    state.TWILIO_PHONE_NUMBER = '+1234567890'; // Mock the user's Twilio number
   });
 
   test('loadMessages should fetch and render messages', async () => {

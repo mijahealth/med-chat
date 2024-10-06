@@ -1,11 +1,20 @@
 // jest.config.js
-
 /** @type {import('jest').Config} */
 module.exports = {
   projects: [
     '<rootDir>/jest/jest.backend.config.js',
-    '<rootDir>/jest/jest.frontend.config.js', // Ensure this is included
-    // Future frontend config paths can be added here
-    // "<rootDir>/jest/jest.anotherFrontend.config.js"
+    {
+      displayName: 'frontend',
+      testEnvironment: 'jsdom',
+      testMatch: ['<rootDir>/public/js/__tests__/**/*.test.js'],
+      setupFilesAfterEnv: ['<rootDir>/jest/setupFrontendTests.js'],
+      moduleNameMapper: {
+        '\\.(css|less|sass|scss)$': '<rootDir>/jest/__mocks__/styleMock.js',
+        '\\.(gif|ttf|eot|svg)$': '<rootDir>/jest/__mocks__/fileMock.js'
+      },
+      transform: {
+        '^.+\\.jsx?$': 'babel-jest'
+      }
+    }
   ],
 };

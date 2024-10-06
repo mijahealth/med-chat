@@ -51,5 +51,75 @@ describe('API Module', () => {
     expect(config).toEqual(mockConfig);
   });
 
-  // Add more tests for other API methods...
+  test('getConversationDetails should fetch details of a specific conversation', async () => {
+    const mockConversationDetails = { sid: 'conv1', name: 'Test Conversation' };
+    axios.get.mockResolvedValue({ data: mockConversationDetails });
+  
+    const conversationDetails = await api.getConversationDetails('conv1');
+  
+    expect(axios.get).toHaveBeenCalledWith('/conversations/conv1');
+    expect(conversationDetails).toEqual(mockConversationDetails);
+  });
+  
+  test('getMessages should fetch messages for a specific conversation', async () => {
+    const mockMessages = [{ sid: 'msg1', body: 'Hello' }, { sid: 'msg2', body: 'Hi' }];
+    axios.get.mockResolvedValue({ data: mockMessages });
+  
+    const messages = await api.getMessages('conv1');
+  
+    expect(axios.get).toHaveBeenCalledWith('/conversations/conv1/messages', { params: {} });
+    expect(messages).toEqual(mockMessages);
+  });
+  
+  test('markMessagesAsRead should mark all messages in a conversation as read', async () => {
+    const mockResponse = { success: true };
+    axios.post.mockResolvedValue({ data: mockResponse });
+  
+    const response = await api.markMessagesAsRead('conv1');
+  
+    expect(axios.post).toHaveBeenCalledWith('/conversations/conv1/mark-read');
+    expect(response).toEqual(mockResponse);
+  });
+  
+  test('startConversation should start a new conversation', async () => {
+    const mockConversation = { sid: 'conv1', name: 'New Conversation' };
+    const newConversationData = { name: 'New Conversation', participants: ['user1', 'user2'] };
+    axios.post.mockResolvedValue({ data: mockConversation });
+  
+    const conversation = await api.startConversation(newConversationData);
+  
+    expect(axios.post).toHaveBeenCalledWith('/start-conversation', newConversationData);
+    expect(conversation).toEqual(mockConversation);
+  });
+  
+  test('searchConversations should search for conversations based on a query', async () => {
+    const mockConversations = [{ sid: 'conv1', name: 'Test Conversation' }];
+    axios.get.mockResolvedValue({ data: mockConversations });
+  
+    const conversations = await api.searchConversations('Test');
+  
+    expect(axios.get).toHaveBeenCalledWith('/search', { params: { query: 'Test' } });
+    expect(conversations).toEqual(mockConversations);
+  });
+  
+  test('getCallParams should fetch call parameters for a specific conversation', async () => {
+    const mockCallParams = { sid: 'conv1', token: 'callToken123' };
+    axios.get.mockResolvedValue({ data: mockCallParams });
+  
+    const callParams = await api.getCallParams('conv1');
+  
+    expect(axios.get).toHaveBeenCalledWith('/call-params/conv1');
+    expect(callParams).toEqual(mockCallParams);
+  });
+  
+  test('createVideoRoom should create a new video chat room', async () => {
+    const mockVideoRoom = { sid: 'room1', uniqueName: 'TestRoom' };
+    const videoRoomData = { uniqueName: 'TestRoom' };
+    axios.post.mockResolvedValue({ data: mockVideoRoom });
+  
+    const videoRoom = await api.createVideoRoom(videoRoomData);
+  
+    expect(axios.post).toHaveBeenCalledWith('/create-room', videoRoomData);
+    expect(videoRoom).toEqual(mockVideoRoom);
+  });
 });

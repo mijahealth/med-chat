@@ -1,16 +1,5 @@
 // public/js/call.js
 
-/**
- * The Phone Operator for Our Chat Playground
- * 
- * Imagine this file is like a friendly telephone operator in our chat playground.
- * It helps set up phone calls and video chats between you and your friends.
- * This operator knows how to dial numbers, mute calls, and even set up
- * special video rooms for you to talk face-to-face with your friends through
- * the computer. It's always there to make sure your calls go smoothly and
- * to tell you how long you've been talking!
- */
-
 import { currentConversation, state } from './state.js';
 import { api } from './api.js';
 import { Device } from 'twilio-client';
@@ -38,7 +27,7 @@ console.log('call.js loaded');
  *
  * @returns {void}
  */
-export function setupCallControls() {
+function setupCallControls() {
   // Initialize callStatusElement
   callStatusElement = document.getElementById('call-status');
 
@@ -350,3 +339,5 @@ async function startVideoCall() {
     alert('Failed to start video call. Please try again.');
   }
 }
+
+export { makeCall, toggleMute, endCall, setupCallControls };

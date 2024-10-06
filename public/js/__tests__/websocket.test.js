@@ -1,6 +1,5 @@
 // public/js/__tests__/websocket.test.js
-import { setupWebSocket, socket } from '../websocket';
-import { handleWebSocketMessage } from '../websocket';
+import { setupWebSocket, socket, handleWebSocketMessage} from '../websocket';
 import { handleNewMessage, handleNewConversation, handleUpdateConversation, removeConversationFromUI } from '../messages';
 import { log } from '../utils';
 
