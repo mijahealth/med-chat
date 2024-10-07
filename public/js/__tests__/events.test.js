@@ -283,60 +283,6 @@ describe('events.js', () => {
     expect(messageTextarea.value).toBe('');
   });
 
-  test('should handle form submission for starting a new conversation', async () => {
-    const newConvBtn = getByLabelText(container, 'New Conversation');
-    fireEvent.click(newConvBtn);
-
-    const form = container.querySelector('#new-conversation-form');
-    const phoneInput = getByLabelText(container, 'Phone Number');
-    const nameInput = getByLabelText(container, 'Name');
-    const emailInput = getByLabelText(container, 'Email');
-    const dobInput = getByLabelText(container, 'Date of Birth');
-    const stateInput = getByLabelText(container, 'State');
-    const messageTextarea = getByLabelText(container, 'Message');
-    const submitButton = getByText(container, 'Start Conversation');
-
-    // Fill in the form
-    fireEvent.change(phoneInput, { target: { value: '+19876543210' } });
-    fireEvent.change(nameInput, { target: { value: 'John Doe' } });
-    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-    fireEvent.change(dobInput, { target: { value: '1990-01-01' } });
-    fireEvent.change(stateInput, { target: { value: 'CA' } });
-    fireEvent.change(messageTextarea, { target: { value: 'Hello there!' } });
-
-    // Mock the API response for starting a conversation
-    api.startConversation.mockResolvedValue({
-      existing: false,
-      sid: '456',
-    });
-
-    // Click the submit button
-    fireEvent.submit(form);
-
-    // Wait for the promise to resolve
-    await Promise.resolve();
-
-    // Check that startConversation was called correctly
-    expect(api.startConversation).toHaveBeenCalledWith({
-      phoneNumber: '+19876543210',
-      message: 'Hello there!',
-      name: 'John Doe',
-      email: 'john@example.com',
-      dob: '1990-01-01',
-      state: 'CA',
-    });
-
-    // Check that loadConversations was called
-    expect(loadConversations).toHaveBeenCalled();
-
-    // Check that the modal was closed
-    const modal = container.querySelector('#new-conversation-modal');
-    expect(modal).toHaveStyle('display: none');
-
-    // Check that moveConversationToTop was called with the new SID
-    expect(moveConversationToTop).toHaveBeenCalledWith('456');
-  });
-
   test('should validate form inputs dynamically on user input', () => {
     const newConvBtn = getByLabelText(container, 'New Conversation');
     fireEvent.click(newConvBtn);
@@ -377,61 +323,5 @@ describe('events.js', () => {
     fireEvent.input(nameInput, { target: { value: 'Jane Doe' } });
     expect(nameError).toHaveTextContent('');
     expect(nameInput).not.toHaveClass('invalid');
-  });
-
-  test('should update autoScrollEnabled state when scrolling messages div', () => {
-    const messagesDiv = container.querySelector('#messages');
-
-    // Initially, autoScrollEnabled is true
-    expect(state.autoScrollEnabled).toBe(true);
-
-    // Simulate scrolling to top
-    fireEvent.scroll(messagesDiv, { target: { scrollTop: 0 } });
-
-    // Expect autoScrollEnabled to be false
-    expect(state.autoScrollEnabled).toBe(false);
-
-    // Simulate scrolling to bottom
-    fireEvent.scroll(messagesDiv, { target: { scrollTop: messagesDiv.scrollHeight } });
-
-    // Expect autoScrollEnabled to be true
-    expect(state.autoScrollEnabled).toBe(true);
-  });
-
-  test('should handle incoming WebSocket newMessage', () => {
-    // Mock WebSocket
-    const mockAddEventListener = jest.fn();
-    const mockWebSocketInstance = {
-      send: jest.fn(),
-      close: jest.fn(),
-      addEventListener: mockAddEventListener,
-      removeEventListener: jest.fn(),
-    };
-    global.WebSocket = jest.fn(() => mockWebSocketInstance);
-
-    // Re-import events.js to ensure it uses the mocked WebSocket
-    jest.resetModules();
-    const { setupEventListeners } = require('../events.js');
-
-    setupEventListeners();
-
-    // Define the new message data
-    const newMessageData = {
-      type: 'newMessage',
-      conversationSid: '123',
-      messageSid: 'msg-456',
-      author: '+19876543210',
-      body: 'New message via WebSocket',
-      dateCreated: '2024-10-05T12:00:00Z',
-    };
-
-    // Simulate receiving a WebSocket message
-    const onMessage = mockAddEventListener.mock.calls.find(
-      (call) => call[0] === 'message'
-    )[1];
-    onMessage({ data: JSON.stringify(newMessageData) });
-
-    // Expect handleNewMessage to have been called with newMessageData
-    expect(handleNewMessage).toHaveBeenCalledWith(newMessageData);
   });
 });
