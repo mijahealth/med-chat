@@ -78,7 +78,7 @@ export default [
       'prefer-template': 'error',
       'quotes': ['error', 'single', { avoidEscape: true }],
       'semi': ['error', 'always'],
-      'max-len': ['error', { code: 150, ignoreUrls: true, ignoreComments: true }],
+      'max-len': ['error', { code: 200, ignoreUrls: true, ignoreComments: true }],
       'complexity': ['error', 10],
       'prefer-destructuring': ['error', { array: true, object: true }],
       'no-param-reassign': 'error',
