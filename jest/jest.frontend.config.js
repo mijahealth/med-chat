@@ -1,12 +1,13 @@
-// jest/jest.frontend.config.js
 /** @type {import('jest').Config} */
 module.exports = {
   displayName: 'frontend',
-  rootDir: '../',
+  rootDir: '../',  // Correctly points to the project root
   coverageDirectory: 'coverage/frontend',
   collectCoverageFrom: [
     'public/js/**/*.js',
     '!public/js/**/*.test.js',
+    '!public/js/**/*.spec.js',
+    '!public/js/**/__tests__/**',
   ],
   coverageThreshold: {
     global: {
@@ -30,7 +31,12 @@ module.exports = {
   },
   setupFilesAfterEnv: ['<rootDir>/jest/setupFrontendTests.js'],
   moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(gif|ttf|eot|svg)$': '<rootDir>/jest/__mocks__/fileMock.js',
+    '\\.(css|less|scss|sass)$': '<rootDir>/public/js/__mocks__/styleMock.js',
+    '\\.(gif|ttf|eot|svg|png|jpg|jpeg)$': '<rootDir>/public/js/__mocks__/fileMock.js',
+    '^twilio-client$': '<rootDir>/public/js/__mocks__/twilio-client.js',
   },
+  moduleDirectories: ['node_modules', 'public/js'],
+  resetMocks: true,
+  clearMocks: true,
+  restoreMocks: true,
 };

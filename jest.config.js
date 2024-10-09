@@ -9,9 +9,9 @@ module.exports = {
       testMatch: ['<rootDir>/public/js/__tests__/**/*.test.js'],
       setupFilesAfterEnv: ['<rootDir>/jest/setupFrontendTests.js'],
       moduleNameMapper: {
-        '\\.(css|less|sass|scss)$': '<rootDir>/jest/__mocks__/styleMock.js',
-        '\\.(gif|ttf|eot|svg)$': '<rootDir>/jest/__mocks__/fileMock.js',
-        '^feather-icons$': '<rootDir>/jest/__mocks__/feather-icons.js', // Ensure feather-icons is mocked
+        '\\.(css|less|scss|sass)$': '<rootDir>/public/js/__mocks__/styleMock.js',
+        '\\.(gif|ttf|eot|svg|png|jpg|jpeg)$': '<rootDir>/public/js/__mocks__/fileMock.js',
+        '^twilio-client$': '<rootDir>/public/js/__mocks__/twilio-client.js',
       },
       transform: {
         '^.+\\.jsx?$': 'babel-jest',
