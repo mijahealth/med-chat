@@ -1,13 +1,9 @@
-// public/js/events.js
-
 /**
  * The Event Organizer for Our Chat Playground
  * 
- * Imagine this file is like a friendly robot that helps run our chat playground.
- * It watches for when you want to do things like send a message, start a new chat,
- * or look for a specific conversation. When you do these things, the robot knows
- * exactly what to do to make the playground work just right. It's always ready to
- * help you have fun and talk with your friends in the chat app!
+ * This module handles all event listeners and related functionalities
+ * for the chat application. It is structured to enhance testability
+ * and maintainability without splitting into separate files.
  */
 
 import { api } from './api.js';
@@ -38,88 +34,125 @@ import {
 } from './ui.js';
 import feather from 'feather-icons';
 
-let isSelecting = false;
-
 // Constants for magic numbers
 const MESSAGE_DISPLAY_DURATION = 3000;
 const SEARCH_DEBOUNCE_DELAY = 300;
 const SELECT_CONVERSATION_DEBOUNCE_DELAY = 300;
 
-/**
- * Sets up all event listeners for the application.
- * 
- * @returns {void}
- */
+let isSelecting = false;
+
+// Handler references for event listeners (useful for removal in HMR)
 let sendMessageKeyPressHandler = null;
 let sendMessageClickHandler = null;
 
-export function setupEventListeners() {
+/**
+ * Initializes all event listeners for the application.
+ * 
+ * @param {Object} dependencies - Dependencies to facilitate testing.
+ * @returns {void}
+ */
+export function setupEventListeners(dependencies = {}) {
+  const {
+    api: apiDep = api,
+    log: logDep = log,
+  } = dependencies;
+
   const newMessageInput = document.getElementById('new-message');
   const sendMessageBtn = document.getElementById('send-message-btn');
 
   if (newMessageInput && sendMessageBtn) {
     sendMessageKeyPressHandler = (e) => {
       if (e.key === 'Enter') {
-        handleSendMessage();
+        handleSendMessage({ api: apiDep, log: logDep });
       }
     };
     newMessageInput.addEventListener('keypress', sendMessageKeyPressHandler);
 
     sendMessageClickHandler = () => {
-      handleSendMessage();
+      handleSendMessage({ api: apiDep, log: logDep });
     };
     sendMessageBtn.addEventListener('click', sendMessageClickHandler);
   } else {
-    log('New message input or send button not found');
-    setupConversationListeners();
+    logDep('New message input or send button not found');
+    setupConversationListeners(dependencies);
   }
 
   // New Conversation Button
   const newConversationBtn = document.getElementById('new-conversation-btn');
   if (newConversationBtn) {
-    newConversationBtn.addEventListener('click', openNewConversationModal);
+    newConversationBtn.addEventListener('click', () => openNewConversationModal(dependencies));
   } else {
-    log('New conversation button not found');
+    logDep('New conversation button not found');
   }
 
   // Attach event listener to the new conversation form
   const newConversationForm = document.getElementById('new-conversation-form');
   if (newConversationForm) {
-    newConversationForm.addEventListener('submit', startConversation);
+    newConversationForm.addEventListener('submit', (event) => startConversation(event, dependencies));
   } else {
-    log('New conversation form not found');
+    logDep('New conversation form not found');
   }
 
   // Attach event listeners for call controls
-  setupCallControls();
+  setupCallControls(dependencies);
 
   // Setup Search
-  setupSearch();
+  setupSearch(dependencies);
 
   // Scroll Event for Auto-Scroll
   const messagesDiv = document.getElementById('messages');
   if (messagesDiv) {
     messagesDiv.addEventListener('scroll', checkScrollPosition);
   } else {
-    log('Messages div not found');
+    logDep('Messages div not found');
   }
 
   // Setup form validation
-  setupFormValidation();
+  setupFormValidation(dependencies);
+
+  /**
+   * Hot module replacement logic
+   */
+  if (module.hot) {
+    module.hot.dispose(() => {
+      // Remove event listeners to prevent duplication
+      const newMessageInput = document.getElementById('new-message');
+      const sendMessageBtn = document.getElementById('send-message-btn');
+
+      if (newMessageInput && sendMessageKeyPressHandler) {
+        newMessageInput.removeEventListener('keypress', sendMessageKeyPressHandler);
+      }
+
+      if (sendMessageBtn && sendMessageClickHandler) {
+        sendMessageBtn.removeEventListener('click', sendMessageClickHandler);
+      }
+
+      // Remove other event listeners as necessary
+      logDep('Removed event listeners for HMR');
+    });
+
+    module.hot.accept(() => {
+      logDep('Events module updated');
+      setupEventListeners(dependencies);
+    });
+  }
 }
 
 /**
  * Sets up form validation for the new conversation form.
  * 
+ * @param {Object} dependencies - Dependencies for validation.
  * @returns {void}
  */
-function setupFormValidation() {
+function setupFormValidation(dependencies) {
   const form = document.getElementById('new-conversation-form');
+  if (!form) { return; }
+
   const inputs = form.querySelectorAll('[data-validate]');
 
   inputs.forEach((input) => {
-    input.addEventListener('input', validateInput);
-    input.addEventListener('blur', validateInput);
+    input.addEventListener('input', (event) => validateInput(event, dependencies));
+    input.addEventListener('blur', (event) => validateInput(event, dependencies));
   });
 }
 
@@ -127,9 +160,19 @@ function setupFormValidation() {
  * Validates a single input field.
  * 
  * @param {Event} event - The input event.
+ * @param {Object} dependencies - Dependencies for validation.
  * @returns {boolean} True if the input is valid, false otherwise.
  */
-function validateInput(event) {
+export function validateInput(event, dependencies = {}) {
+  const {
+    isValidPhoneNumber: isValidPhoneNumberDep = isValidPhoneNumber,
+    isValidName: isValidNameDep = isValidName,
+    isValidEmail: isValidEmailDep = isValidEmail,
+    isValidDate: isValidDateDep = isValidDate,
+    isValidState: isValidStateDep = isValidState,
+    isValidMessage: isValidMessageDep = isValidMessage,
+  } = dependencies;
+
   const input = event.target;
   const value = input.value.trim();
   const validationType = input.dataset.validate;
@@ -138,41 +181,43 @@ function validateInput(event) {
 
   switch (validationType) {
     case 'phone':
-      isValid = isValidPhoneNumber(value);
-      errorMessage =
-        'Please enter a valid phone number in the format +XXXXXXXXXXX';
+      isValid = isValidPhoneNumberDep(value);
+      errorMessage = 'Please enter a valid phone number in the format +XXXXXXXXXXX';
       break;
     case 'name':
-      isValid = isValidName(value);
+      isValid = isValidNameDep(value);
       errorMessage = 'Name is required';
       break;
     case 'email':
-      isValid = isValidEmail(value);
+      isValid = isValidEmailDep(value);
       errorMessage = 'Please enter a valid email address';
       break;
     case 'dob':
-      isValid = isValidDate(value);
+      isValid = isValidDateDep(value);
       errorMessage = 'Please enter a valid date of birth';
       break;
     case 'state':
-      isValid = isValidState(value);
+      isValid = isValidStateDep(value);
       errorMessage = 'State is required';
       break;
     case 'message':
-      isValid = isValidMessage(value);
+      isValid = isValidMessageDep(value);
       errorMessage = 'Message is required';
       break;
+    default:
+      isValid = true;
+      errorMessage = '';
   }
 
-  const errorElement = document.querySelector(
-    `.error-message[data-for="${input.name}"]`,
-  );
-  if (!isValid) {
-    errorElement.textContent = errorMessage;
-    input.classList.add('invalid');
-  } else {
-    errorElement.textContent = '';
-    input.classList.remove('invalid');
+  const errorElement = document.querySelector(`.error-message[data-for="${input.name}"]`);
+  if (errorElement) {
+    if (!isValid) {
+      errorElement.textContent = errorMessage;
+      input.classList.add('invalid');
+    } else {
+      errorElement.textContent = '';
+      input.classList.remove('invalid');
+    }
   }
 
   return isValid;
@@ -182,14 +227,15 @@ function validateInput(event) {
  * Validates the entire form.
  * 
  * @param {HTMLFormElement} form - The form to validate.
+ * @param {Object} dependencies - Dependencies for validation.
  * @returns {boolean} True if the form is valid, false otherwise.
  */
-function validateForm(form) {
+export function validateForm(form, dependencies = {}) {
   const inputs = form.querySelectorAll('[data-validate]');
   let isValid = true;
 
   inputs.forEach((input) => {
-    if (!validateInput({ target: input })) {
+    if (!validateInput({ target: input }, dependencies)) {
       isValid = false;
     }
   });
@@ -200,10 +246,17 @@ function validateForm(form) {
 /**
  * Handles sending a new message.
  * 
+ * @param {Object} dependencies - Dependencies for sending messages.
  * @returns {void}
  */
-export function handleSendMessage() {
+export function handleSendMessage(dependencies = {}) {
+  const { api: apiDep = api, log: logDep = log } = dependencies;
+
   const inputField = document.getElementById('new-message');
+  if (!inputField) {
+    logDep('Message input field not found');
+    return;
+  }
   const message = inputField.value.trim();
 
   if (message === '') {
@@ -215,7 +268,7 @@ export function handleSendMessage() {
     return;
   }
 
-  api
+  apiDep
     .sendMessage(currentConversation.sid, message)
     .then(() => {
       inputField.value = ''; // Clear the input field after sending the message
@@ -230,7 +283,7 @@ export function handleSendMessage() {
         }, MESSAGE_DISPLAY_DURATION); // Hide after 3 seconds
       }
 
-      // Optionally, you can update the conversation preview here
+      // Optionally, update the conversation preview here
       updateLatestMessagePreview(currentConversation.sid, {
         body: message,
         author: state.TWILIO_PHONE_NUMBER,
@@ -260,11 +313,18 @@ export function handleSendMessage() {
 /**
  * Opens the new conversation modal.
  * 
+ * @param {Object} dependencies - Dependencies for modal operations.
  * @returns {void}
  */
-export function openNewConversationModal() {
+export function openNewConversationModal(dependencies = {}) {
+  const { log: logDep = log } = dependencies;
   clearNewConversationForm();
-  document.getElementById('new-conversation-modal').style.display = 'flex';
+  const modal = document.getElementById('new-conversation-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+  } else {
+    logDep('New conversation modal not found');
+  }
 }
 
 /**
@@ -273,7 +333,10 @@ export function openNewConversationModal() {
  * @returns {void}
  */
 export function closeModal() {
-  document.getElementById('new-conversation-modal').style.display = 'none';
+  const modal = document.getElementById('new-conversation-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
 }
 
 /**
@@ -285,46 +348,53 @@ function clearNewConversationForm() {
   const form = document.querySelector('#new-conversation-modal form');
   if (form) {
     form.reset();
-    form
-      .querySelectorAll('.error-message')
-      .forEach((el) => (el.textContent = ''));
-    form
-      .querySelectorAll('.invalid')
-      .forEach((el) => el.classList.remove('invalid'));
+    form.querySelectorAll('.error-message').forEach((el) => (el.textContent = ''));
+    form.querySelectorAll('.invalid').forEach((el) => el.classList.remove('invalid'));
   }
 }
 
 /**
  * Sets up the search functionality.
  * 
+ * @param {Object} dependencies - Dependencies for search operations.
  * @returns {void}
  */
-function setupSearch() {
+function setupSearch(dependencies = {}) {
+  const { api: apiDep = api, log: logDep = log } = dependencies;
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
-    searchInput.addEventListener('input', debounce(performSearch, SEARCH_DEBOUNCE_DELAY));
+    searchInput.addEventListener('input', debounce(() => performSearch(apiDep, logDep), SEARCH_DEBOUNCE_DELAY));
   } else {
-    log('Search input not found');
+    logDep('Search input not found');
   }
 }
 
 /**
  * Performs a search based on the current input.
  * 
+ * @param {Object} apiDep - API dependency for search.
+ * @param {Function} logDep - Logging function.
  * @returns {Promise<void>}
  */
-export async function performSearch() {
-  const query = document.getElementById('search-input').value.trim();
+export async function performSearch(apiDep = api, logDep = log) {
+  const searchInput = document.getElementById('search-input');
+  if (!searchInput) {
+    logDep('Search input not found');
+    return;
+  }
+
+  const query = searchInput.value.trim();
   if (query === '') {
-    await loadConversations(); // Reset to show all conversations
+    await loadConversations();
     return;
   }
 
   try {
-    const results = await api.searchConversations(query);
+    const results = await apiDep.searchConversations(query);
     renderConversations(results);
   } catch (error) {
     console.error('Error performing search:', error);
+    logDep('Error performing search:', error);
   }
 }
 
@@ -335,6 +405,11 @@ export async function performSearch() {
  */
 export function checkScrollPosition() {
   const messagesDiv = document.getElementById('messages');
+  if (!messagesDiv) {
+    log('Messages div not found');
+    return;
+  }
+
   if (
     messagesDiv.scrollTop + messagesDiv.clientHeight >=
     messagesDiv.scrollHeight - 10
@@ -351,11 +426,17 @@ export function checkScrollPosition() {
  * @returns {void}
  */
 function updateUIForConversationSelection() {
-  document.getElementById('loading-spinner').style.display = 'block';
-  document.getElementById('messages').style.display = 'none';
-  document.getElementById('message-input').style.display = 'none';
-  document.getElementById('messages-title').style.display = 'flex';
-  document.getElementById('no-conversation').style.display = 'none';
+  const loadingSpinner = document.getElementById('loading-spinner');
+  const messages = document.getElementById('messages');
+  const messageInput = document.getElementById('message-input');
+  const messagesTitle = document.getElementById('messages-title');
+  const noConversation = document.getElementById('no-conversation');
+
+  if (loadingSpinner) { loadingSpinner.style.display = 'block'; }
+  if (messages) { messages.style.display = 'none'; }
+  if (messageInput) { messageInput.style.display = 'none'; }
+  if (messagesTitle) { messagesTitle.style.display = 'flex'; }
+  if (noConversation) { noConversation.style.display = 'none'; }
 }
 
 /**
@@ -392,9 +473,9 @@ function updateConversationDetails(sid, conversation) {
   const email = attributes.email || '';
   const phoneNumber = attributes.phoneNumber || '';
   const dob = attributes.dob || '';
-  const state = attributes.state || '';
+  const stateField = attributes.state || '';
 
-  updateConversationHeader(sid, name, email, phoneNumber, dob, state);
+  updateConversationHeader(sid, name, email, phoneNumber, dob, stateField);
   setupCallControls();
 }
 
@@ -405,12 +486,19 @@ function updateConversationDetails(sid, conversation) {
  * @returns {Promise<void>}
  */
 async function fetchAndRenderMessages(sid) {
-  const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
-  renderMessages(messages);
-  document.getElementById('messages').style.display = 'block';
-  showMessageInput();
-  const messagesDiv = document.getElementById('messages');
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  try {
+    const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
+    renderMessages(messages);
+    const messagesDiv = document.getElementById('messages');
+    if (messagesDiv) {
+      messagesDiv.style.display = 'block';
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    showMessageInput();
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    log('Error fetching messages:', error);
+  }
 }
 
 /**
@@ -434,14 +522,23 @@ function handleConversationError(error) {
  * Selects a conversation and updates the UI accordingly.
  * 
  * @param {string} sid - The SID of the conversation to select.
+ * @param {Object} dependencies - Dependencies for selection.
  * @returns {Promise<void>}
  */
-export const selectConversation = debounce(async (sid) => {
-  if (isSelecting || sid === currentConversation.sid) {return;}
-  
+export const selectConversation = debounce(async (sid, dependencies = {}) => {
+  const {
+    api: apiDep = api,
+    log: logDep = log,
+    setUserInteracted: setUserInteractedDep = setUserInteracted,
+  } = dependencies;
+
+  if (isSelecting || sid === currentConversation.sid) {
+    return;
+  }
+
   isSelecting = true;
   console.log(`selectConversation called with SID: ${sid}`);
-  
+
   if (!state.conversationsLoaded) {
     console.log('Conversations not loaded yet');
     alert('Please wait until conversations are fully loaded.');
@@ -449,7 +546,7 @@ export const selectConversation = debounce(async (sid) => {
     return;
   }
 
-  setUserInteracted();
+  setUserInteractedDep();
   currentConversation.sid = sid;
   console.log(`Current conversation SID set to: ${currentConversation.sid}`);
 
@@ -457,15 +554,15 @@ export const selectConversation = debounce(async (sid) => {
 
   try {
     console.log('Attempting to fetch conversation details');
-    const conversation = await api.getConversationDetails(sid);
+    const conversation = await apiDep.getConversationDetails(sid);
     console.log('Conversation details fetched:', conversation);
 
-    updateConversationSelection(sid, conversation);
+    updateConversationSelection(sid);
     updateConversationDetails(sid, conversation);
 
     if (conversation.unreadCount > 0) {
-      api.markMessagesAsRead(sid).catch((error) => {
-        log('Error marking messages as read', { error });
+      await apiDep.markMessagesAsRead(sid).catch((error) => {
+        logDep('Error marking messages as read', { error });
       });
     }
 
@@ -473,7 +570,8 @@ export const selectConversation = debounce(async (sid) => {
   } catch (error) {
     handleConversationError(error);
   } finally {
-    document.getElementById('loading-spinner').style.display = 'none';
+    const loadingSpinner = document.getElementById('loading-spinner');
+    if (loadingSpinner) { loadingSpinner.style.display = 'none'; }
     isSelecting = false;
   }
 }, SELECT_CONVERSATION_DEBOUNCE_DELAY);
@@ -486,11 +584,25 @@ export const selectConversation = debounce(async (sid) => {
 export function closeConversation() {
   const lastConversationSid = currentConversation.sid;
   currentConversation.sid = null;
-  document.getElementById('messages-title').innerHTML = '';
-  document.getElementById('messages-title').style.display = 'none';
-  document.getElementById('messages').innerHTML = '';
-  document.getElementById('message-input').style.display = 'none';
-  document.getElementById('no-conversation').style.display = 'flex';
+  const messagesTitle = document.getElementById('messages-title');
+  const messages = document.getElementById('messages');
+  const messageInput = document.getElementById('message-input');
+  const noConversation = document.getElementById('no-conversation');
+
+  if (messagesTitle) {
+    messagesTitle.innerHTML = '';
+    messagesTitle.style.display = 'none';
+  }
+  if (messages) {
+    messages.innerHTML = '';
+    messages.style.display = 'none';
+  }
+  if (messageInput) {
+    messageInput.style.display = 'none';
+  }
+  if (noConversation) {
+    noConversation.style.display = 'flex';
+  }
 
   // Deselect conversations
   document.querySelectorAll('.conversation').forEach((conv) => {
@@ -510,25 +622,25 @@ export function closeConversation() {
  * Handles the deletion of a conversation.
  * 
  * @param {string} sid - The SID of the conversation to delete.
+ * @param {Object} dependencies - Dependencies for deletion.
  * @returns {Promise<void>}
  */
-async function handleDeleteConversation(sid) {
+export async function handleDeleteConversation(sid, dependencies = {}) {
+  const { log: logDep = log } = dependencies;
   const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
   if (deleteButton) {
     deleteButton.disabled = true;
-    deleteButton.innerHTML =
-      '<i data-feather="trash-2" aria-hidden="true"></i> Deleting...';
+    deleteButton.innerHTML = '<i data-feather="trash-2" aria-hidden="true"></i> Deleting...';
     feather.replace();
 
     try {
       await deleteConversation(sid);
-      log('Conversation deleted successfully', { sid });
+      logDep('Conversation deleted successfully', { sid });
     } catch (error) {
-      log('Error deleting conversation', { sid, error });
+      logDep('Error deleting conversation', { sid, error });
       alert('Failed to delete conversation. Please try again.');
       deleteButton.disabled = false;
-      deleteButton.innerHTML =
-        '<i data-feather="trash-2" aria-hidden="true"></i>';
+      deleteButton.innerHTML = '<i data-feather="trash-2" aria-hidden="true"></i>';
       feather.replace();
     }
   }
@@ -537,9 +649,11 @@ async function handleDeleteConversation(sid) {
 /**
  * Sets up event listeners for conversation interactions.
  * 
+ * @param {Object} dependencies - Dependencies for conversation listeners.
  * @returns {void}
  */
-export function setupConversationListeners() {
+export function setupConversationListeners(dependencies = {}) {
+  const { handleDeleteConversation: handleDeleteConversationDep = handleDeleteConversation, log: logDep = log } = dependencies;
   const conversationsContainer = document.getElementById('conversations');
   if (conversationsContainer) {
     conversationsContainer.addEventListener('click', (event) => {
@@ -547,23 +661,23 @@ export function setupConversationListeners() {
       if (deleteButton) {
         event.preventDefault();
         event.stopPropagation();
-        const {sid} = deleteButton.dataset;
+        const { sid } = deleteButton.dataset;
         if (sid) {
-          handleDeleteConversation(sid);
+          handleDeleteConversationDep(sid, dependencies);
         }
       } else {
         const conversationElement = event.target.closest('.conversation');
         if (conversationElement) {
-          const {sid} = conversationElement.dataset;
+          const { sid } = conversationElement.dataset;
           if (sid) {
-            selectConversation(sid);
+            selectConversation(sid, dependencies);
           }
         }
       }
     });
-    log('Conversation container click listener added');
+    logDep('Conversation container click listener added');
   } else {
-    log('Conversations container not found');
+    logDep('Conversations container not found');
   }
 }
 
@@ -571,13 +685,22 @@ export function setupConversationListeners() {
  * Starts a new conversation or opens an existing one.
  * 
  * @param {Event} event - The form submission event.
+ * @param {Object} dependencies - Dependencies for starting conversation.
  * @returns {void}
  */
-export function startConversation(event) {
+export function startConversation(event, dependencies = {}) {
+  const {
+    api: apiDep = api,
+    loadConversations: loadConversationsDep = loadConversations,
+    closeModal: closeModalDep = closeModal,
+    selectConversation: selectConversationDep = selectConversation,
+    clearNewConversationForm: clearNewConversationFormDep = clearNewConversationForm,
+  } = dependencies;
+
   event.preventDefault();
   const form = event.target;
 
-  if (validateForm(form)) {
+  if (validateForm(form, dependencies)) {
     const phoneNumber = form.phoneNumber.value.trim();
     const message = form.message.value.trim();
     const name = form.name.value.trim();
@@ -585,7 +708,7 @@ export function startConversation(event) {
     const dob = form.dob.value.trim();
     const stateField = form.state.value.trim();
 
-    api
+    apiDep
       .startConversation({
         phoneNumber,
         message,
@@ -600,16 +723,16 @@ export function startConversation(event) {
             'This conversation already exists. Would you like to open it?',
           );
           if (userConfirmed) {
-            closeModal();
-            selectConversation(response.sid);
+            closeModalDep();
+            selectConversationDep(response.sid, dependencies);
           }
         } else {
-          await loadConversations();
-          closeModal();
-          selectConversation(response.sid);
+          await loadConversationsDep();
+          closeModalDep();
+          selectConversationDep(response.sid, dependencies);
         }
         // Clear the form regardless of whether a new conversation was created or not
-        clearNewConversationForm();
+        clearNewConversationFormDep();
       })
       .catch((error) => {
         console.error('Error starting conversation:', error);
@@ -618,7 +741,9 @@ export function startConversation(event) {
   }
 }
 
-// Hot module replacement logic
+/**
+ * Hot module replacement logic
+ */
 if (module.hot) {
   module.hot.dispose(() => {
     // Remove event listeners to prevent duplication
@@ -634,11 +759,14 @@ if (module.hot) {
     }
 
     // Remove other event listeners as necessary
-    log('Removed event listeners for HMR');
+    // Since logDep is destructured in setupEventListeners, we need to ensure it's used here
+    // If not, remove it from destructuring
+    log('Removed event listeners for HMR'); // Changed from logDep to log to avoid unused variable
   });
 
   module.hot.accept(() => {
-    log('Events module updated');
+    // Similarly, ensure logDep is used or not based on destructuring
+    log('Events module updated'); // Changed from logDep to log to avoid unused variable
     setupEventListeners();
   });
 }

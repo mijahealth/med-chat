@@ -5,7 +5,7 @@
  */
 
 import { fireEvent, getByText, getByPlaceholderText, getByLabelText } from '@testing-library/dom';
-import { setupEventListeners } from '../events.js';
+import { setupEventListeners, selectConversation, closeConversation, handleSendMessage } from '../events.js'; // Ensure these functions are exported
 
 // Mock dependencies
 jest.mock('../api.js', () => ({
@@ -16,6 +16,7 @@ jest.mock('../api.js', () => ({
     searchConversations: jest.fn(),
     getMessages: jest.fn(),
     markMessagesAsRead: jest.fn(),
+    deleteConversation: jest.fn(), // Added deleteConversation
   },
 }));
 
@@ -176,8 +177,17 @@ describe('events.js', () => {
 
     container = document.body;
 
+    // Mock form.reset
+    const form = container.querySelector('#new-conversation-form');
+    form.reset = jest.fn();
+
     // Initialize event listeners
     setupEventListeners();
+
+    // Mock exported functions using jest.spyOn
+    jest.spyOn(require('../events.js'), 'selectConversation').mockResolvedValue();
+    jest.spyOn(require('../events.js'), 'closeConversation').mockImplementation(jest.fn());
+    jest.spyOn(require('../events.js'), 'handleSendMessage').mockImplementation(jest.fn());
   });
 
   afterEach(() => {
@@ -185,6 +195,8 @@ describe('events.js', () => {
     jest.useRealTimers();
     document.body.innerHTML = ''; // Clean up the DOM
   });
+
+  // Passing Tests
 
   test('should send a message when Enter key is pressed', async () => {
     const messageInput = getByPlaceholderText(container, 'Message...');
@@ -323,5 +335,239 @@ describe('events.js', () => {
     fireEvent.input(nameInput, { target: { value: 'Jane Doe' } });
     expect(nameError).toHaveTextContent('');
     expect(nameInput).not.toHaveClass('invalid');
+  });
+
+  // 1. Testing Conversation Selection
+
+  describe('selectConversation', () => {
+    beforeEach(() => {
+      // Reset mocks
+      jest.clearAllMocks();
+    });
+
+    test('should not select the same conversation again', async () => {
+      const sid = '123';
+      currentConversation.sid = '123';
+
+      // Simulate clicking on the same conversation
+      const conversationElement = container.querySelector('.conversation[data-sid="123"]');
+      fireEvent.click(conversationElement);
+
+      // Wait for promises to resolve
+      await Promise.resolve();
+
+      // Assertions
+      expect(api.getConversationDetails).not.toHaveBeenCalled();
+      expect(api.markMessagesAsRead).not.toHaveBeenCalled();
+      expect(api.getMessages).not.toHaveBeenCalled();
+      expect(renderMessages).not.toHaveBeenCalled();
+      expect(moveConversationToTop).not.toHaveBeenCalled();
+    });
+  });
+
+  // 3. Testing Search Functionality
+
+  describe('performSearch', () => {
+    beforeEach(() => {
+      // Reset mocks
+      jest.clearAllMocks();
+    });
+
+    test('should perform search and render results', async () => {
+      const searchInput = getByPlaceholderText(container, 'Search conversations...');
+      fireEvent.input(searchInput, { target: { value: 'Test' } });
+
+      const searchResults = [{ sid: '123', name: 'Test Conversation' }];
+
+      // Mock API response
+      api.searchConversations.mockResolvedValue(searchResults);
+
+      // Simulate input event
+      fireEvent.input(searchInput, { target: { value: 'Test' } });
+
+      // Wait for promises to resolve
+      await Promise.resolve();
+
+      // Assertions
+      expect(api.searchConversations).toHaveBeenCalledWith('Test');
+      expect(renderConversations).toHaveBeenCalledWith(searchResults);
+      expect(loadConversations).not.toHaveBeenCalled();
+    });
+
+    test('should reset conversations when search input is empty', async () => {
+      const searchInput = getByPlaceholderText(container, 'Search conversations...');
+      fireEvent.input(searchInput, { target: { value: '' } });
+
+      // Simulate input event
+      fireEvent.input(searchInput, { target: { value: '' } });
+
+      // Wait for promises to resolve
+      await Promise.resolve();
+
+      // Assertions
+      expect(api.searchConversations).not.toHaveBeenCalled();
+      expect(loadConversations).toHaveBeenCalled();
+      expect(renderConversations).not.toHaveBeenCalled();
+    });
+  });
+
+  // 4. Testing Scroll Behavior
+
+  describe('checkScrollPosition', () => {
+    beforeEach(() => {
+      // Reset mocks
+      jest.clearAllMocks();
+    });
+
+    test('should enable auto-scroll when scrolled to bottom', () => {
+      const messagesDiv = container.querySelector('#messages');
+
+      // Mock clientHeight and scrollHeight
+      Object.defineProperty(messagesDiv, 'clientHeight', { value: 200, writable: true });
+      Object.defineProperty(messagesDiv, 'scrollHeight', { value: 500, writable: true });
+
+      // Simulate scroll position at bottom
+      messagesDiv.scrollTop = 300;
+
+      // Trigger scroll event
+      fireEvent.scroll(messagesDiv);
+
+      // Assertions
+      expect(state.autoScrollEnabled).toBe(true);
+    });
+
+    test('should disable auto-scroll when not at bottom', () => {
+      const messagesDiv = container.querySelector('#messages');
+
+      // Mock clientHeight and scrollHeight
+      Object.defineProperty(messagesDiv, 'clientHeight', { value: 200, writable: true });
+      Object.defineProperty(messagesDiv, 'scrollHeight', { value: 500, writable: true });
+
+      // Simulate scroll position not at bottom
+      messagesDiv.scrollTop = 100;
+
+      // Trigger scroll event
+      fireEvent.scroll(messagesDiv);
+
+      // Assertions
+      expect(state.autoScrollEnabled).toBe(false);
+    });
+  });
+
+  // 5. Testing Scrolling and Auto-Scroll
+
+  describe('scroll event', () => {
+    beforeEach(() => {
+      // Reset mocks
+      jest.clearAllMocks();
+    });
+
+    test('should set autoScrollEnabled based on scroll position', () => {
+      const messagesDiv = container.querySelector('#messages');
+
+      // Mock clientHeight and scrollHeight
+      Object.defineProperty(messagesDiv, 'clientHeight', { value: 200, writable: true });
+      Object.defineProperty(messagesDiv, 'scrollHeight', { value: 500, writable: true });
+
+      // Simulate scrolling to bottom
+      messagesDiv.scrollTop = 300;
+      fireEvent.scroll(messagesDiv);
+      expect(state.autoScrollEnabled).toBe(true);
+
+      // Simulate scrolling up
+      messagesDiv.scrollTop = 100;
+      fireEvent.scroll(messagesDiv);
+      expect(state.autoScrollEnabled).toBe(false);
+    });
+  });
+
+  // 6. Testing Message Sent Indicator Timeout
+
+  describe('message sent indicator timeout', () => {
+    beforeEach(() => {
+      // Reset mocks
+      jest.clearAllMocks();
+    });
+
+    test('should hide message sent indicator after timeout', () => {
+      const sendMessageBtn = getByLabelText(container, 'Send Message');
+      const messageInput = getByPlaceholderText(container, 'Message...');
+      const indicator = container.querySelector('#message-sent-indicator');
+
+      // Set up the current conversation
+      currentConversation.sid = '123';
+
+      // Enter a message
+      messageInput.value = 'Test message';
+
+      // Mock sendMessage to return a resolved promise
+      api.sendMessage.mockResolvedValue({ success: true });
+
+      // Click the send button
+      fireEvent.click(sendMessageBtn);
+
+      // Wait for promises to resolve
+      return Promise.resolve().then(() => {
+        // Initially, the indicator should be visible
+        expect(indicator).toHaveClass('show');
+
+        // Fast-forward time
+        jest.advanceTimersByTime(3000);
+
+        // The indicator should be hidden
+        expect(indicator).not.toHaveClass('show');
+      });
+    });
+  });
+
+  // 7. Testing Error Logging
+
+  describe('error logging', () => {
+    beforeEach(() => {
+      // Reset mocks
+      jest.clearAllMocks();
+    });
+
+    test('should log error when new message input or send button is not found', () => {
+      // Remove message input and send button from DOM
+      container.innerHTML = `
+        <!-- Other elements without message input and send button -->
+      `;
+
+      // Re-initialize event listeners
+      setupEventListeners();
+
+      // Assertions
+      const { log } = require('../utils.js');
+      expect(log).toHaveBeenCalledWith('New message input or send button not found');
+    });
+
+    test('should log error when new conversation button is not found', () => {
+      // Remove new conversation button from DOM
+      container.innerHTML = `
+        <!-- Other elements without new conversation button -->
+      `;
+
+      // Re-initialize event listeners
+      setupEventListeners();
+
+      // Assertions
+      const { log } = require('../utils.js');
+      expect(log).toHaveBeenCalledWith('New conversation button not found');
+    });
+
+    test('should log error when new conversation form is not found', () => {
+      // Remove new conversation form from DOM
+      container.innerHTML = `
+        <!-- Other elements without new conversation form -->
+      `;
+
+      // Re-initialize event listeners
+      setupEventListeners();
+
+      // Assertions
+      const { log } = require('../utils.js');
+      expect(log).toHaveBeenCalledWith('New conversation form not found');
+    });
   });
 });
