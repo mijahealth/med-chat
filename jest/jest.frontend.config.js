@@ -1,7 +1,8 @@
+// jest.config.js
 /** @type {import('jest').Config} */
 module.exports = {
   displayName: 'frontend',
-  rootDir: '../',  // Correctly points to the project root
+  rootDir: '../', // Correctly points to the project root
   coverageDirectory: 'coverage/frontend',
   collectCoverageFrom: [
     'public/js/**/*.js',
@@ -31,9 +32,12 @@ module.exports = {
   },
   setupFilesAfterEnv: ['<rootDir>/jest/setupFrontendTests.js'],
   moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': '<rootDir>/public/js/__mocks__/styleMock.js',
-    '\\.(gif|ttf|eot|svg|png|jpg|jpeg)$': '<rootDir>/public/js/__mocks__/fileMock.js',
-    '^twilio-client$': '<rootDir>/public/js/__mocks__/twilio-client.js',
+    // '^./api.js$': '<rootDir>/public/js/__mocks__/api.js',
+    // '^./state.js$': '<rootDir>/public/js/__mocks__/state.js',
+    // '^./conversations.js$': '<rootDir>/public/js/__mocks__/conversations.js',
+    // '^./ui.js$': '<rootDir>/public/js/__mocks__/ui.js',
+    // '^./utils.js$': '<rootDir>/public/js/__mocks__/utils.js',
+    // Add other module mappings as needed, excluding the ones being mocked
   },
   moduleDirectories: ['node_modules', 'public/js'],
   resetMocks: true,

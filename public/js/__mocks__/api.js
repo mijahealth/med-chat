@@ -1,9 +1,5 @@
 // public/js/__mocks__/api.js
 
-/**
- * Mock implementation of the api module for testing purposes.
- */
-
 export const api = {
   getConfig: jest.fn(() =>
     Promise.resolve({
@@ -11,10 +7,8 @@ export const api = {
       NGROK_URL: 'http://localhost:3000',
     })
   ),
-
   getConversations: jest.fn(() =>
     Promise.resolve([
-      // Return a list of mock conversations
       {
         sid: 'CH1234567890',
         friendlyName: 'Test Conversation',
@@ -31,7 +25,6 @@ export const api = {
       },
     ])
   ),
-
   getConversationDetails: jest.fn((sid) =>
     Promise.resolve({
       sid,
@@ -45,10 +38,8 @@ export const api = {
       },
     })
   ),
-
   getMessages: jest.fn((sid, params) =>
     Promise.resolve([
-      // Return a list of mock messages
       {
         sid: 'IM1234567890',
         author: '+1234567890',
@@ -57,7 +48,6 @@ export const api = {
       },
     ])
   ),
-
   sendMessage: jest.fn((sid, message) =>
     Promise.resolve({
       sid: 'IM0987654321',
@@ -66,31 +56,25 @@ export const api = {
       dateCreated: new Date().toISOString(),
     })
   ),
-
   deleteConversation: jest.fn((sid) =>
     Promise.resolve({ success: true })
   ),
-
   markMessagesAsRead: jest.fn((sid) =>
     Promise.resolve({ success: true })
   ),
-
   startConversation: jest.fn((data) =>
     Promise.resolve({
       sid: 'CH0987654321',
       existing: false,
     })
   ),
-
   searchConversations: jest.fn((query) => Promise.resolve([])),
-
   getCallParams: jest.fn((sid) =>
     Promise.resolve({
       To: '+19876543210',
       From: '+1234567890',
     })
   ),
-
   createVideoRoom: jest.fn((data) =>
     Promise.resolve({
       link: '/video-room/test-room',
