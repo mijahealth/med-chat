@@ -1,5 +1,7 @@
 // conversations.test.js
 
+// conversations.test.js
+
 // Import necessary modules and functions
 import * as Conversations from '../conversations';
 import { api } from '../api';
@@ -7,16 +9,11 @@ import { renderConversations, moveConversationToTop } from '../ui';
 import { formatTime, log } from '../utils';
 import { state } from '../state';
 
-// Mock modules to prevent actual API calls and DOM manipulations
+// Mock modules to use manual mocks from __mocks__
 jest.mock('../api');
-jest.mock('../ui', () => ({
-  renderConversations: jest.fn(),
-  moveConversationToTop: jest.fn(),
-}));
-jest.mock('../utils', () => ({
-  formatTime: jest.fn((date) => 'Formatted Time'), // Return a fixed string
-  log: jest.fn(),
-}));
+jest.mock('../ui');
+jest.mock('../utils');
+jest.mock('../state');
 
 // Helper function to set up DOM elements
 function setupDOM() {
