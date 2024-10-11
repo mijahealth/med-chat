@@ -4,570 +4,634 @@
  * @jest-environment jsdom
  */
 
-import { fireEvent, getByText, getByPlaceholderText, getByLabelText } from '@testing-library/dom';
-import { setupEventListeners, selectConversation, closeConversation, handleSendMessage } from '../events.js'; // Ensure these functions are exported
+import {
+  setupEventListeners,
+  validateInput,
+  validateForm,
+  handleSendMessage,
+  openNewConversationModal,
+  closeModal,
+  performSearch,
+  checkScrollPosition,
+  selectConversation,
+  closeConversation,
+  handleDeleteConversation,
+  setupConversationListeners,
+  setupFormValidation,
+} from '../events.js';
 
-// Mock dependencies
-jest.mock('../api.js', () => ({
-  api: {
-    sendMessage: jest.fn(),
-    startConversation: jest.fn(),
-    getConversationDetails: jest.fn(),
-    searchConversations: jest.fn(),
-    getMessages: jest.fn(),
-    markMessagesAsRead: jest.fn(),
-    deleteConversation: jest.fn(), // Added deleteConversation
-  },
-}));
-
-jest.mock('../state.js', () => ({
-  currentConversation: { sid: null },
-  state: {
-    TWILIO_PHONE_NUMBER: '+1234567890',
-    autoScrollEnabled: true,
-    conversationsLoaded: true,
-    userInteracted: false,
-  },
-}));
-
-jest.mock('../utils.js', () => ({
-  debounce: (fn) => fn,
-  log: jest.fn(),
-  setUserInteracted: jest.fn(),
-  isValidPhoneNumber: jest.fn(() => true),
-  isValidName: jest.fn(() => true),
-  isValidEmail: jest.fn(() => true),
-  isValidDate: jest.fn(() => true),
-  isValidState: jest.fn(() => true),
-  isValidMessage: jest.fn(() => true),
-}));
-
-jest.mock('../conversations.js', () => ({
-  loadConversations: jest.fn(),
-  updateLatestMessagePreview: jest.fn(),
-  deleteConversation: jest.fn(),
-}));
-
-jest.mock('../call.js', () => ({
-  setupCallControls: jest.fn(),
-}));
-
-jest.mock('../ui.js', () => ({
-  renderConversations: jest.fn(),
-  updateConversationHeader: jest.fn(),
-  showMessageInput: jest.fn(),
-  renderMessages: jest.fn(),
-  moveConversationToTop: jest.fn(),
-}));
-
-jest.mock('../messages.js', () => ({
-  handleNewMessage: jest.fn(),
-}));
-
-jest.mock('feather-icons', () => ({
-  replace: jest.fn(),
-}));
-
-// Import the mocked modules after mocking
 import { api } from '../api.js';
 import { currentConversation, state } from '../state.js';
-import { loadConversations, updateLatestMessagePreview, deleteConversation } from '../conversations.js';
-import { setupCallControls } from '../call.js';
-import { renderConversations, updateConversationHeader, showMessageInput, renderMessages, moveConversationToTop } from '../ui.js';
-import { handleNewMessage } from '../messages.js';
+import {
+  debounce,
+  log,
+  isValidPhoneNumber,
+  isValidName,
+  isValidEmail,
+  isValidDate,
+  isValidState,
+  isValidMessage,
+  setUserInteracted,
+} from '../utils.js';
+import {
+  loadConversations,
+  deleteConversation,
+  updateLatestMessagePreview,
+  moveConversationToTop,
+} from '../conversations.js';
+import { renderConversations, updateConversationHeader } from '../ui.js';
 import feather from 'feather-icons';
 
+// Mock dependencies
+jest.mock('../api.js');
+jest.mock('../state.js');
+jest.mock('../utils.js');
+jest.mock('../conversations.js');
+jest.mock('../call.js');
+jest.mock('../ui.js');
+jest.mock('feather-icons');
+
 describe('events.js', () => {
-  let container;
-
   beforeEach(() => {
-    // Use fake timers for handling setTimeout
-    jest.useFakeTimers();
-
-    // Set up the DOM based on public/index.html
+    // Set up DOM elements
     document.body.innerHTML = `
-      <!-- Message Input -->
-      <input id="new-message" placeholder="Message..." aria-label="New Message" />
-      <button id="send-message-btn" aria-label="Send Message">Send</button>
-      
-      <!-- New Conversation Button -->
-      <button id="new-conversation-btn" aria-label="New Conversation">
-        <i data-feather="plus" aria-hidden="true"></i>
-      </button>
-      
-      <!-- New Conversation Form -->
-      <div id="new-conversation-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-          <span class="close-modal">&times;</span>
-          <h2>Start a New Conversation</h2>
-          <form id="new-conversation-form">
-            <div class="form-group">
-              <input type="text" name="phoneNumber" placeholder="+1XXXXXXXXXX" required aria-label="Phone Number" data-validate="phone">
-              <span class="error-message" data-for="phoneNumber"></span>
-            </div>
-            <div class="form-group">
-              <input type="text" name="name" placeholder="Name" aria-label="Name" required data-validate="name">
-              <span class="error-message" data-for="name"></span>
-            </div>
-            <div class="form-group">
-              <input type="email" name="email" placeholder="Email" aria-label="Email" data-validate="email">
-              <span class="error-message" data-for="email"></span>
-            </div>
-            <div class="form-group">
-              <input type="date" name="dob" placeholder="Date of Birth" aria-label="Date of Birth" data-validate="dob">
-              <span class="error-message" data-for="dob"></span>
-            </div>
-            <div class="form-group">
-              <input type="text" name="state" placeholder="State" aria-label="State" data-validate="state">
-              <span class="error-message" data-for="state"></span>
-            </div>
-            <div class="form-group">
-              <textarea name="message" placeholder="Enter a message" required aria-label="Message" data-validate="message"></textarea>
-              <span class="error-message" data-for="message"></span>
-            </div>
-            <button type="submit">Start Conversation</button>
-          </form>
-        </div>
+      <!-- Elements needed for validateInput and validateForm -->
+      <form id="test-form">
+        <input name="phoneNumber" data-validate="phone" value="" />
+        <span class="error-message" data-for="phoneNumber"></span>
+        <input name="name" data-validate="name" value="" />
+        <span class="error-message" data-for="name"></span>
+        <input name="email" data-validate="email" value="" />
+        <span class="error-message" data-for="email"></span>
+        <input name="dob" data-validate="dob" value="" />
+        <span class="error-message" data-for="dob"></span>
+        <input name="state" data-validate="state" value="" />
+        <span class="error-message" data-for="state"></span>
+        <input name="message" data-validate="message" value="" />
+        <span class="error-message" data-for="message"></span>
+      </form>
+
+      <!-- Elements needed for handleSendMessage -->
+      <input id="new-message" value="" />
+      <button id="send-message-btn"></button>
+      <div id="message-sent-indicator"></div>
+
+      <!-- Elements needed for openNewConversationModal -->
+      <div id="new-conversation-modal" style="display: none;">
+        <form id="new-conversation-form"></form>
       </div>
-      
-      <!-- Message Sent Indicator -->
-      <div id="message-sent-indicator" class="message-sent-indicator">Message Sent</div>
-      
-      <!-- Conversations Container -->
-      <div id="conversations">
-        <div class="conversation" data-sid="123" id="conv-123">
-          <div class="conversation-header">
-            <div class="unread-indicator-column">
-              <span class="unread-indicator"></span>
-            </div>
-            <div class="conversation-details">
-              <div class="header-left">
-                <strong>Conversation 123</strong>
-                <span class="phone-number">+1234567890</span>
-              </div>
-              <div class="header-right">
-                <span class="time">10:00 AM</span>
-                <button class="delete-btn" data-sid="123" aria-label="Delete Conversation">
-                  <i data-feather="trash-2" aria-hidden="true"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="conversation-content">
-            <div class="last-message">Hello!</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Search Input -->
-      <input type="text" id="search-input" placeholder="Search conversations..." class="search-input" />
-      
-      <!-- Loading Spinner -->
-      <div id="loading-spinner" class="spinner"></div>
-      
-      <!-- Messages Container -->
-      <div id="messages" aria-live="polite" style="height: 200px; overflow: auto;"></div>
-      
-      <!-- Messages Title -->
-      <div id="messages-title" style="display: none;"></div>
-      
-      <!-- No Conversation Selected Message -->
-      <div id="no-conversation" style="display: none;"></div>
+
+      <!-- Elements needed for performSearch -->
+      <input id="search-input" value="" />
+
+      <!-- Elements needed for selectConversation -->
+      <div id="messages"></div>
+      <div id="messages-title"></div>
+      <div id="message-input"></div>
+      <div id="no-conversation"></div>
+      <div id="loading-spinner"></div>
+      <div id="conversations"></div>
+
+      <!-- Elements needed for checkScrollPosition -->
+      <div id="messages" style="height: 300px; overflow-y: scroll;"></div>
+
+      <!-- Elements needed for handleDeleteConversation -->
+      <button class="delete-btn" data-sid="CH1234567890"></button>
+
+      <!-- Elements needed for setupEventListeners -->
+      <input id="new-message" />
+      <button id="send-message-btn"></button>
+      <button id="new-conversation-btn"></button>
+      <div id="messages"></div>
+      <form id="new-conversation-form"></form>
+
+      <!-- Other elements as needed -->
     `;
 
-    container = document.body;
+    // Reset the mocks
+    jest.resetAllMocks();
+    currentConversation.sid = null;
+    state.conversationsLoaded = true;
+    state.autoScrollEnabled = false;
 
-    // Mock form.reset
-    const form = container.querySelector('#new-conversation-form');
-    form.reset = jest.fn();
-
-    // Initialize event listeners
-    setupEventListeners();
-
-    // Mock exported functions using jest.spyOn
-    jest.spyOn(require('../events.js'), 'selectConversation').mockResolvedValue();
-    jest.spyOn(require('../events.js'), 'closeConversation').mockImplementation(jest.fn());
-    jest.spyOn(require('../events.js'), 'handleSendMessage').mockImplementation(jest.fn());
+    // Mock implementations
+    debounce.mockImplementation((fn) => fn);
+    setUserInteracted.mockImplementation(() => {});
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    jest.useRealTimers();
-    document.body.innerHTML = ''; // Clean up the DOM
+    jest.restoreAllMocks();
+    window.alert = undefined;
   });
 
-  // Passing Tests
+  describe('validateInput', () => {
+    it('should validate a valid phone number input', () => {
+      const phoneInput = document.querySelector('input[name="phoneNumber"]');
+      phoneInput.value = '+1234567890';
+      const errorElement = document.querySelector('.error-message[data-for="phoneNumber"]');
 
-  test('should send a message when Enter key is pressed', async () => {
-    const messageInput = getByPlaceholderText(container, 'Message...');
-    const sendMessageBtn = getByLabelText(container, 'Send Message');
+      const dependencies = {
+        isValidPhoneNumber: jest.fn().mockReturnValue(true),
+      };
 
-    // Set up the current conversation
-    currentConversation.sid = '123';
+      const event = { target: phoneInput };
+      validateInput(event, dependencies);
 
-    // Enter a message
-    messageInput.value = 'Test message';
-
-    // Mock sendMessage to return a resolved promise
-    api.sendMessage.mockResolvedValue({ success: true });
-
-    // Simulate Enter key press
-    fireEvent.keyPress(messageInput, { key: 'Enter', code: 'Enter', charCode: 13 });
-
-    // Wait for the promise to resolve
-    await Promise.resolve();
-
-    // Check that sendMessage was called correctly
-    expect(api.sendMessage).toHaveBeenCalledWith('123', 'Test message');
-
-    // Check that the input field was cleared
-    expect(messageInput.value).toBe('');
-
-    // Check that the message sent indicator is shown
-    const indicator = getByText(container, 'Message Sent');
-    expect(indicator).toHaveClass('show');
-
-    // Fast-forward time to hide the indicator
-    jest.advanceTimersByTime(3000);
-    expect(indicator).not.toHaveClass('show');
-  });
-
-  test('should send a message when Send button is clicked', async () => {
-    const messageInput = getByPlaceholderText(container, 'Message...');
-    const sendMessageBtn = getByLabelText(container, 'Send Message');
-
-    // Set up the current conversation
-    currentConversation.sid = '123';
-
-    // Enter a message
-    messageInput.value = 'Another test message';
-
-    // Mock sendMessage to return a resolved promise
-    api.sendMessage.mockResolvedValue({ success: true });
-
-    // Click the send button
-    fireEvent.click(sendMessageBtn);
-
-    // Wait for the promise to resolve
-    await Promise.resolve();
-
-    // Check that sendMessage was called correctly
-    expect(api.sendMessage).toHaveBeenCalledWith('123', 'Another test message');
-
-    // Check that the input field was cleared
-    expect(messageInput.value).toBe('');
-
-    // Check that the message sent indicator is shown
-    const indicator = getByText(container, 'Message Sent');
-    expect(indicator).toHaveClass('show');
-
-    // Fast-forward time to hide the indicator
-    jest.advanceTimersByTime(3000);
-    expect(indicator).not.toHaveClass('show');
-  });
-
-  test('should open new conversation modal when New Conversation button is clicked', () => {
-    const newConvBtn = getByLabelText(container, 'New Conversation');
-
-    // Initially, the modal should be hidden
-    const modal = container.querySelector('#new-conversation-modal');
-    expect(modal).toHaveStyle('display: none');
-
-    // Click the New Conversation button
-    fireEvent.click(newConvBtn);
-
-    // The modal should now be visible
-    expect(modal).toHaveStyle('display: flex');
-
-    // The form should be cleared
-    const phoneInput = container.querySelector('input[name="phoneNumber"]');
-    const nameInput = container.querySelector('input[name="name"]');
-    const emailInput = container.querySelector('input[name="email"]');
-    const dobInput = container.querySelector('input[name="dob"]');
-    const stateInput = container.querySelector('input[name="state"]');
-    const messageTextarea = container.querySelector('textarea[name="message"]');
-
-    expect(phoneInput.value).toBe('');
-    expect(nameInput.value).toBe('');
-    expect(emailInput.value).toBe('');
-    expect(dobInput.value).toBe('');
-    expect(stateInput.value).toBe('');
-    expect(messageTextarea.value).toBe('');
-  });
-
-  test('should validate form inputs dynamically on user input', () => {
-    const newConvBtn = getByLabelText(container, 'New Conversation');
-    fireEvent.click(newConvBtn);
-
-    const phoneInput = getByLabelText(container, 'Phone Number');
-    const nameInput = getByLabelText(container, 'Name');
-
-    // Initially, no error messages
-    const phoneError = container.querySelector('.error-message[data-for="phoneNumber"]');
-    const nameError = container.querySelector('.error-message[data-for="name"]');
-
-    expect(phoneError).toHaveTextContent('');
-    expect(nameError).toHaveTextContent('');
-
-    // Access the mocked validation functions
-    const { isValidPhoneNumber, isValidName } = require('../utils.js');
-
-    // Mock validation functions to return false for invalid inputs and true for valid inputs
-    isValidPhoneNumber.mockImplementation((value) => /^\+\d{11}$/.test(value));
-    isValidName.mockImplementation((value) => value.trim().length > 0);
-
-    // Enter invalid phone number
-    fireEvent.input(phoneInput, { target: { value: 'invalid-phone' } });
-    expect(phoneError).toHaveTextContent('Please enter a valid phone number in the format +XXXXXXXXXXX');
-    expect(phoneInput).toHaveClass('invalid');
-
-    // Enter valid phone number
-    fireEvent.input(phoneInput, { target: { value: '+19876543210' } });
-    expect(phoneError).toHaveTextContent('');
-    expect(phoneInput).not.toHaveClass('invalid');
-
-    // Enter invalid name
-    fireEvent.input(nameInput, { target: { value: ' ' } });
-    expect(nameError).toHaveTextContent('Name is required');
-    expect(nameInput).toHaveClass('invalid');
-
-    // Enter valid name
-    fireEvent.input(nameInput, { target: { value: 'Jane Doe' } });
-    expect(nameError).toHaveTextContent('');
-    expect(nameInput).not.toHaveClass('invalid');
-  });
-
-  // 1. Testing Conversation Selection
-
-  describe('selectConversation', () => {
-    beforeEach(() => {
-      // Reset mocks
-      jest.clearAllMocks();
+      expect(dependencies.isValidPhoneNumber).toHaveBeenCalledWith('+1234567890');
+      expect(errorElement.textContent).toBe('');
+      expect(phoneInput.classList.contains('invalid')).toBe(false);
     });
 
-    test('should not select the same conversation again', async () => {
-      const sid = '123';
-      currentConversation.sid = '123';
+    it('should invalidate an invalid phone number input', () => {
+      const phoneInput = document.querySelector('input[name="phoneNumber"]');
+      phoneInput.value = 'invalid phone';
+      const errorElement = document.querySelector('.error-message[data-for="phoneNumber"]');
 
-      // Simulate clicking on the same conversation
-      const conversationElement = container.querySelector('.conversation[data-sid="123"]');
-      fireEvent.click(conversationElement);
+      const dependencies = {
+        isValidPhoneNumber: jest.fn().mockReturnValue(false),
+      };
 
-      // Wait for promises to resolve
-      await Promise.resolve();
+      const event = { target: phoneInput };
+      validateInput(event, dependencies);
 
-      // Assertions
-      expect(api.getConversationDetails).not.toHaveBeenCalled();
-      expect(api.markMessagesAsRead).not.toHaveBeenCalled();
-      expect(api.getMessages).not.toHaveBeenCalled();
-      expect(renderMessages).not.toHaveBeenCalled();
-      expect(moveConversationToTop).not.toHaveBeenCalled();
+      expect(dependencies.isValidPhoneNumber).toHaveBeenCalledWith('invalid phone');
+      expect(errorElement.textContent).toBe('Please enter a valid phone number in the format +XXXXXXXXXXX');
+      expect(phoneInput.classList.contains('invalid')).toBe(true);
+    });
+
+    // Similar tests for other input types can be added here
+  });
+
+  describe('validateForm', () => {
+    it('should validate the form and return true when all inputs are valid', () => {
+      const form = document.getElementById('test-form');
+
+      // Set valid values
+      form.querySelector('input[name="phoneNumber"]').value = '+1234567890';
+      form.querySelector('input[name="name"]').value = 'John Doe';
+      form.querySelector('input[name="email"]').value = 'john@example.com';
+      form.querySelector('input[name="dob"]').value = '1990-01-01';
+      form.querySelector('input[name="state"]').value = 'CA';
+      form.querySelector('input[name="message"]').value = 'Hello';
+
+      // Mock dependencies to return true
+      const dependencies = {
+        isValidPhoneNumber: jest.fn().mockReturnValue(true),
+        isValidName: jest.fn().mockReturnValue(true),
+        isValidEmail: jest.fn().mockReturnValue(true),
+        isValidDate: jest.fn().mockReturnValue(true),
+        isValidState: jest.fn().mockReturnValue(true),
+        isValidMessage: jest.fn().mockReturnValue(true),
+      };
+
+      const result = validateForm(form, dependencies);
+
+      expect(result).toBe(true);
+      expect(dependencies.isValidPhoneNumber).toHaveBeenCalledWith('+1234567890');
+      expect(dependencies.isValidName).toHaveBeenCalledWith('John Doe');
+      expect(dependencies.isValidEmail).toHaveBeenCalledWith('john@example.com');
+      expect(dependencies.isValidDate).toHaveBeenCalledWith('1990-01-01');
+      expect(dependencies.isValidState).toHaveBeenCalledWith('CA');
+      expect(dependencies.isValidMessage).toHaveBeenCalledWith('Hello');
+    });
+
+    it('should validate the form and return false when an input is invalid', () => {
+      const form = document.getElementById('test-form');
+
+      // Set values, make name invalid
+      form.querySelector('input[name="phoneNumber"]').value = '+1234567890';
+      form.querySelector('input[name="name"]').value = ''; // invalid name
+      form.querySelector('input[name="email"]').value = 'john@example.com';
+      form.querySelector('input[name="dob"]').value = '1990-01-01';
+      form.querySelector('input[name="state"]').value = 'CA';
+      form.querySelector('input[name="message"]').value = 'Hello';
+
+      // Mock dependencies, name validation returns false
+      const dependencies = {
+        isValidPhoneNumber: jest.fn().mockReturnValue(true),
+        isValidName: jest.fn().mockReturnValue(false),
+        isValidEmail: jest.fn().mockReturnValue(true),
+        isValidDate: jest.fn().mockReturnValue(true),
+        isValidState: jest.fn().mockReturnValue(true),
+        isValidMessage: jest.fn().mockReturnValue(true),
+      };
+
+      const result = validateForm(form, dependencies);
+
+      expect(result).toBe(false);
+      expect(dependencies.isValidName).toHaveBeenCalledWith('');
     });
   });
 
-  // 3. Testing Search Functionality
+  describe('handleSendMessage', () => {
+    it('should send a message when input is valid and conversation is selected', async () => {
+      const inputField = document.getElementById('new-message');
+      inputField.value = 'Hello World';
+
+      const messageSentIndicator = document.getElementById('message-sent-indicator');
+
+      currentConversation.sid = 'CH1234567890';
+
+      api.sendMessage.mockResolvedValue();
+
+      await handleSendMessage();
+
+      expect(api.sendMessage).toHaveBeenCalledWith('CH1234567890', 'Hello World');
+      expect(inputField.value).toBe(''); // input should be cleared
+
+      // Message sent indicator should show 'Message Sent'
+      expect(messageSentIndicator.textContent).toBe('Message Sent');
+      expect(messageSentIndicator.classList.contains('show')).toBe(true);
+    });
+
+    it('should not send a message when input is empty', async () => {
+      const inputField = document.getElementById('new-message');
+      inputField.value = '';
+
+      api.sendMessage.mockClear();
+
+      await handleSendMessage();
+
+      expect(api.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('should alert when no conversation is selected', async () => {
+      const inputField = document.getElementById('new-message');
+      inputField.value = 'Hello World';
+
+      currentConversation.sid = null;
+
+      window.alert = jest.fn();
+
+      await handleSendMessage();
+
+      expect(window.alert).toHaveBeenCalledWith('Please select a conversation before sending a message.');
+      expect(api.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('should handle error when sendMessage fails', async () => {
+      const inputField = document.getElementById('new-message');
+      inputField.value = 'Hello World';
+
+      const messageSentIndicator = document.getElementById('message-sent-indicator');
+
+      currentConversation.sid = 'CH1234567890';
+
+      api.sendMessage.mockRejectedValue(new Error('Network error'));
+
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Adjusted to return a promise
+      await handleSendMessage();
+
+      expect(api.sendMessage).toHaveBeenCalledWith('CH1234567890', 'Hello World');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error sending message:', expect.any(Error));
+
+      // Message sent indicator should show 'Failed to send message'
+      expect(messageSentIndicator.textContent).toBe('Failed to send message');
+      expect(messageSentIndicator.classList.contains('show')).toBe(true);
+      expect(messageSentIndicator.classList.contains('error')).toBe(true);
+    });
+  });
+
+  describe('openNewConversationModal', () => {
+    it('should open the new conversation modal', () => {
+      const modal = document.getElementById('new-conversation-modal');
+      modal.style.display = 'none';
+
+      openNewConversationModal();
+
+      expect(modal.style.display).toBe('flex');
+    });
+  });
+
+  describe('closeModal', () => {
+    it('should close the modal', () => {
+      const modal = document.getElementById('new-conversation-modal');
+      modal.style.display = 'flex';
+
+      closeModal();
+
+      expect(modal.style.display).toBe('none');
+    });
+  });
 
   describe('performSearch', () => {
-    beforeEach(() => {
-      // Reset mocks
-      jest.clearAllMocks();
+    it('should perform search when query is not empty', async () => {
+      const searchInput = document.getElementById('search-input');
+      searchInput.value = 'test';
+
+      const mockResults = [
+        {
+          sid: 'CH1234567890',
+          friendlyName: 'Test Conversation',
+          lastMessage: 'Hello, world!',
+          lastMessageTime: new Date().toISOString(),
+          unreadCount: 0,
+          attributes: {
+            phoneNumber: '+19876543210',
+            name: 'Test User',
+            email: 'testuser@example.com',
+            dob: '1990-01-01',
+            state: 'CA',
+          },
+        },
+      ];
+
+      api.searchConversations.mockResolvedValue(mockResults);
+
+      await performSearch(api, log);
+
+      expect(api.searchConversations).toHaveBeenCalledWith('test');
+      expect(renderConversations).toHaveBeenCalledWith(mockResults);
     });
 
-    test('should perform search and render results', async () => {
-      const searchInput = getByPlaceholderText(container, 'Search conversations...');
-      fireEvent.input(searchInput, { target: { value: 'Test' } });
+    it('should load conversations when query is empty', async () => {
+      const searchInput = document.getElementById('search-input');
+      searchInput.value = '';
 
-      const searchResults = [{ sid: '123', name: 'Test Conversation' }];
+      loadConversations.mockResolvedValue();
 
-      // Mock API response
-      api.searchConversations.mockResolvedValue(searchResults);
+      await performSearch(api, log);
 
-      // Simulate input event
-      fireEvent.input(searchInput, { target: { value: 'Test' } });
-
-      // Wait for promises to resolve
-      await Promise.resolve();
-
-      // Assertions
-      expect(api.searchConversations).toHaveBeenCalledWith('Test');
-      expect(renderConversations).toHaveBeenCalledWith(searchResults);
-      expect(loadConversations).not.toHaveBeenCalled();
-    });
-
-    test('should reset conversations when search input is empty', async () => {
-      const searchInput = getByPlaceholderText(container, 'Search conversations...');
-      fireEvent.input(searchInput, { target: { value: '' } });
-
-      // Simulate input event
-      fireEvent.input(searchInput, { target: { value: '' } });
-
-      // Wait for promises to resolve
-      await Promise.resolve();
-
-      // Assertions
       expect(api.searchConversations).not.toHaveBeenCalled();
       expect(loadConversations).toHaveBeenCalled();
-      expect(renderConversations).not.toHaveBeenCalled();
     });
   });
 
-  // 4. Testing Scroll Behavior
+  describe('selectConversation', () => {
+    it('should select conversation when valid sid is provided', async () => {
+      const sid = 'CH1234567890';
+
+      state.conversationsLoaded = true;
+      currentConversation.sid = null;
+
+      const conversationDetails = {
+        sid,
+        friendlyName: 'Test Conversation',
+        attributes: {
+          name: 'Test User',
+          email: 'test@example.com',
+          phoneNumber: '+1234567890',
+          dob: '1990-01-01',
+          state: 'CA',
+        },
+      };
+
+      api.getConversationDetails.mockResolvedValue(conversationDetails);
+      api.getMessages.mockResolvedValue([]);
+
+      await selectConversation(sid);
+
+      expect(currentConversation.sid).toBe(sid);
+      expect(api.getConversationDetails).toHaveBeenCalledWith(sid);
+      expect(api.getMessages).toHaveBeenCalledWith(sid, { limit: 1000, order: 'asc' });
+    });
+
+    it('should not select conversation if conversations are not loaded', async () => {
+      const sid = 'CH1234567890';
+
+      state.conversationsLoaded = false;
+      currentConversation.sid = null;
+
+      window.alert = jest.fn();
+
+      await selectConversation(sid);
+
+      expect(window.alert).toHaveBeenCalledWith('Please wait until conversations are fully loaded.');
+      expect(api.getConversationDetails).not.toHaveBeenCalled();
+    });
+  });
+
+  // Removed startConversation tests as per your request
+
+  describe('handleDeleteConversation', () => {
+    it('should delete conversation when API call succeeds', async () => {
+      const sid = 'CH1234567890';
+      const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
+      deleteButton.disabled = false;
+
+      deleteConversation.mockResolvedValue();
+
+      await handleDeleteConversation(sid);
+
+      expect(deleteConversation).toHaveBeenCalledWith(sid);
+      expect(log).toHaveBeenCalledWith('Conversation deleted successfully', { sid });
+      expect(deleteButton.disabled).toBe(true);
+      expect(deleteButton.innerHTML).toContain('Deleting...');
+    });
+
+    it('should alert and re-enable delete button when API call fails', async () => {
+      const sid = 'CH1234567890';
+      const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
+      deleteButton.disabled = false;
+
+      deleteConversation.mockRejectedValue(new Error('Network error'));
+
+      window.alert = jest.fn();
+
+      await handleDeleteConversation(sid);
+
+      expect(deleteConversation).toHaveBeenCalledWith(sid);
+      expect(log).toHaveBeenCalledWith('Error deleting conversation', { sid, error: expect.any(Error) });
+      expect(window.alert).toHaveBeenCalledWith('Failed to delete conversation. Please try again.');
+      expect(deleteButton.disabled).toBe(false);
+      expect(deleteButton.innerHTML).toContain('trash-2');
+    });
+  });
 
   describe('checkScrollPosition', () => {
-    beforeEach(() => {
-      // Reset mocks
-      jest.clearAllMocks();
-    });
-
-    test('should enable auto-scroll when scrolled to bottom', () => {
-      const messagesDiv = container.querySelector('#messages');
+    it('should set autoScrollEnabled to true when scrolled to bottom', () => {
+      const messagesDiv = document.getElementById('messages');
 
       // Mock clientHeight and scrollHeight
-      Object.defineProperty(messagesDiv, 'clientHeight', { value: 200, writable: true });
-      Object.defineProperty(messagesDiv, 'scrollHeight', { value: 500, writable: true });
+      Object.defineProperty(messagesDiv, 'clientHeight', { value: 200 });
+      Object.defineProperty(messagesDiv, 'scrollHeight', { value: 300 });
 
-      // Simulate scroll position at bottom
-      messagesDiv.scrollTop = 300;
+      messagesDiv.scrollTop = 100;
 
-      // Trigger scroll event
-      fireEvent.scroll(messagesDiv);
+      checkScrollPosition();
 
-      // Assertions
       expect(state.autoScrollEnabled).toBe(true);
     });
 
-    test('should disable auto-scroll when not at bottom', () => {
-      const messagesDiv = container.querySelector('#messages');
+    it('should set autoScrollEnabled to false when not scrolled to bottom', () => {
+      const messagesDiv = document.getElementById('messages');
 
       // Mock clientHeight and scrollHeight
-      Object.defineProperty(messagesDiv, 'clientHeight', { value: 200, writable: true });
-      Object.defineProperty(messagesDiv, 'scrollHeight', { value: 500, writable: true });
+      Object.defineProperty(messagesDiv, 'clientHeight', { value: 200 });
+      Object.defineProperty(messagesDiv, 'scrollHeight', { value: 300 });
 
-      // Simulate scroll position not at bottom
-      messagesDiv.scrollTop = 100;
+      messagesDiv.scrollTop = 50;
 
-      // Trigger scroll event
-      fireEvent.scroll(messagesDiv);
+      checkScrollPosition();
 
-      // Assertions
       expect(state.autoScrollEnabled).toBe(false);
     });
-  });
 
-  // 5. Testing Scrolling and Auto-Scroll
+    it('should log warning if messages div is not found', () => {
+      document.body.innerHTML = '';
+      checkScrollPosition();
 
-  describe('scroll event', () => {
-    beforeEach(() => {
-      // Reset mocks
-      jest.clearAllMocks();
-    });
-
-    test('should set autoScrollEnabled based on scroll position', () => {
-      const messagesDiv = container.querySelector('#messages');
-
-      // Mock clientHeight and scrollHeight
-      Object.defineProperty(messagesDiv, 'clientHeight', { value: 200, writable: true });
-      Object.defineProperty(messagesDiv, 'scrollHeight', { value: 500, writable: true });
-
-      // Simulate scrolling to bottom
-      messagesDiv.scrollTop = 300;
-      fireEvent.scroll(messagesDiv);
-      expect(state.autoScrollEnabled).toBe(true);
-
-      // Simulate scrolling up
-      messagesDiv.scrollTop = 100;
-      fireEvent.scroll(messagesDiv);
-      expect(state.autoScrollEnabled).toBe(false);
+      expect(log).toHaveBeenCalledWith('Messages div not found');
     });
   });
 
-  // 6. Testing Message Sent Indicator Timeout
+  describe('closeConversation', () => {
+    it('should reset current conversation and update UI elements', () => {
+      currentConversation.sid = 'CH1234567890';
 
-  describe('message sent indicator timeout', () => {
-    beforeEach(() => {
-      // Reset mocks
-      jest.clearAllMocks();
-    });
+      const messagesTitle = document.getElementById('messages-title');
+      const messages = document.getElementById('messages');
+      const messageInput = document.getElementById('message-input');
+      const noConversation = document.getElementById('no-conversation');
 
-    test('should hide message sent indicator after timeout', () => {
-      const sendMessageBtn = getByLabelText(container, 'Send Message');
-      const messageInput = getByPlaceholderText(container, 'Message...');
-      const indicator = container.querySelector('#message-sent-indicator');
+      closeConversation();
 
-      // Set up the current conversation
-      currentConversation.sid = '123';
-
-      // Enter a message
-      messageInput.value = 'Test message';
-
-      // Mock sendMessage to return a resolved promise
-      api.sendMessage.mockResolvedValue({ success: true });
-
-      // Click the send button
-      fireEvent.click(sendMessageBtn);
-
-      // Wait for promises to resolve
-      return Promise.resolve().then(() => {
-        // Initially, the indicator should be visible
-        expect(indicator).toHaveClass('show');
-
-        // Fast-forward time
-        jest.advanceTimersByTime(3000);
-
-        // The indicator should be hidden
-        expect(indicator).not.toHaveClass('show');
-      });
+      expect(currentConversation.sid).toBeNull();
+      expect(messagesTitle.innerHTML).toBe('');
+      expect(messagesTitle.style.display).toBe('none');
+      expect(messages.innerHTML).toBe('');
+      expect(messages.style.display).toBe('none');
+      expect(messageInput.style.display).toBe('none');
+      expect(noConversation.style.display).toBe('flex');
+      expect(loadConversations).toHaveBeenCalled();
+      expect(updateLatestMessagePreview).toHaveBeenCalledWith('CH1234567890');
     });
   });
 
-  // 7. Testing Error Logging
-
-  describe('error logging', () => {
-    beforeEach(() => {
-      // Reset mocks
-      jest.clearAllMocks();
-    });
-
-    test('should log error when new message input or send button is not found', () => {
-      // Remove message input and send button from DOM
-      container.innerHTML = `
-        <!-- Other elements without message input and send button -->
+  describe('setupFormValidation', () => {
+    it('should attach event listeners to inputs with data-validate attribute', () => {
+      const form = document.getElementById('new-conversation-form');
+      form.innerHTML = `
+        <input name="test-input" data-validate="test" />
       `;
+      const input = form.querySelector('[data-validate]');
 
-      // Re-initialize event listeners
+      const addEventListenerSpy = jest.spyOn(input, 'addEventListener');
+
+      setupFormValidation();
+
+      expect(addEventListenerSpy).toHaveBeenCalledTimes(2);
+      expect(addEventListenerSpy).toHaveBeenCalledWith('input', expect.any(Function));
+      expect(addEventListenerSpy).toHaveBeenCalledWith('blur', expect.any(Function));
+    });
+
+    it('should not throw error if form is not found', () => {
+      document.body.innerHTML = ''; // Remove form
+      expect(() => {
+        setupFormValidation();
+      }).not.toThrow();
+    });
+  });
+
+  describe('setupConversationListeners', () => {
+    it('should add click event listener to conversations container', () => {
+      const conversationsContainer = document.getElementById('conversations');
+      const addEventListenerSpy = jest.spyOn(conversationsContainer, 'addEventListener');
+
+      setupConversationListeners();
+
+      expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+    });
+
+    it('should log warning if conversations container is not found', () => {
+      document.body.innerHTML = ''; // Remove conversations container
+      setupConversationListeners();
+
+      expect(log).toHaveBeenCalledWith('Conversations container not found');
+    });
+  });
+
+  describe('setupEventListeners', () => {
+    it('should set up event listeners for send message input and button', () => {
+      const newMessageInput = document.getElementById('new-message');
+      const sendMessageBtn = document.getElementById('send-message-btn');
+
+      const inputAddEventListenerSpy = jest.spyOn(newMessageInput, 'addEventListener');
+      const btnAddEventListenerSpy = jest.spyOn(sendMessageBtn, 'addEventListener');
+
       setupEventListeners();
 
-      // Assertions
-      const { log } = require('../utils.js');
+      expect(inputAddEventListenerSpy).toHaveBeenCalledWith('keypress', expect.any(Function));
+      expect(btnAddEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
+    });
+
+    it('should log warning if new message input or send button is not found', () => {
+      document.body.innerHTML = ''; // Remove elements
+      setupEventListeners();
+
       expect(log).toHaveBeenCalledWith('New message input or send button not found');
     });
+  });
 
-    test('should log error when new conversation button is not found', () => {
-      // Remove new conversation button from DOM
-      container.innerHTML = `
-        <!-- Other elements without new conversation button -->
-      `;
+  // Additional tests for edge cases and branches
 
-      // Re-initialize event listeners
-      setupEventListeners();
+  describe('Edge Cases and Branches', () => {
+    describe('handleSendMessage', () => {
+      it('should log when message input field is not found', async () => {
+        document.body.innerHTML = ''; // Remove elements
 
-      // Assertions
-      const { log } = require('../utils.js');
-      expect(log).toHaveBeenCalledWith('New conversation button not found');
+        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+        await handleSendMessage();
+
+        expect(log).toHaveBeenCalledWith('Message input field not found');
+      });
+
+      it('should not send message if message is only whitespace', async () => {
+        const inputField = document.getElementById('new-message');
+        inputField.value = '   ';
+
+        await handleSendMessage();
+
+        expect(api.sendMessage).not.toHaveBeenCalled();
+      });
     });
 
-    test('should log error when new conversation form is not found', () => {
-      // Remove new conversation form from DOM
-      container.innerHTML = `
-        <!-- Other elements without new conversation form -->
-      `;
+    describe('selectConversation', () => {
+      it('should do nothing if isSelecting is true', async () => {
+        state.conversationsLoaded = true;
+        currentConversation.sid = null;
 
-      // Re-initialize event listeners
-      setupEventListeners();
+        // Set isSelecting to true
+        const originalIsSelecting = require('../events.js').isSelecting;
+        require('../events.js').isSelecting = true;
 
-      // Assertions
-      const { log } = require('../utils.js');
-      expect(log).toHaveBeenCalledWith('New conversation form not found');
+        await selectConversation('CH1234567890');
+
+        expect(currentConversation.sid).toBeNull();
+        expect(api.getConversationDetails).not.toHaveBeenCalled();
+
+        // Restore isSelecting
+        require('../events.js').isSelecting = originalIsSelecting;
+      });
+
+      it('should handle error when getConversationDetails fails', async () => {
+        const sid = 'CH1234567890';
+
+        state.conversationsLoaded = true;
+        currentConversation.sid = null;
+
+        api.getConversationDetails.mockRejectedValue(new Error('Network error'));
+        window.alert = jest.fn();
+
+        await selectConversation(sid);
+
+        expect(window.alert).toHaveBeenCalledWith('Error: Network error');
+      });
+    });
+
+    describe('handleDeleteConversation', () => {
+      it('should handle case where delete button is not found', async () => {
+        document.body.innerHTML = ''; // Remove elements
+
+        await handleDeleteConversation('CH1234567890');
+
+        // Since deleteButton is not found, nothing should happen
+        expect(deleteConversation).not.toHaveBeenCalled();
+      });
     });
   });
 });

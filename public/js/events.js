@@ -268,7 +268,7 @@ export function handleSendMessage(dependencies = {}) {
     return;
   }
 
-  apiDep
+  return apiDep
     .sendMessage(currentConversation.sid, message)
     .then(() => {
       inputField.value = ''; // Clear the input field after sending the message
