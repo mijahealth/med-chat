@@ -41,6 +41,9 @@ const SELECT_CONVERSATION_DEBOUNCE_DELAY = 300;
 
 let isSelecting = false;
 
+export function setIsSelecting(value) {
+  isSelecting = value;
+}
 // Handler references for event listeners (useful for removal in HMR)
 let sendMessageKeyPressHandler = null;
 let sendMessageClickHandler = null;
@@ -508,14 +511,15 @@ async function fetchAndRenderMessages(sid) {
  * @returns {void}
  */
 function handleConversationError(error) {
-  console.error('Error in selectConversation:', error);
-  if (error.response) {
-    log('Error loading conversation', { error: error.response.data });
-    alert(`Error: ${error.response.data.error || 'Unknown error occurred.'}`);
-  } else {
-    log('Error loading conversation', { error: error.message });
-    alert(`Error: ${error.message}`);
+  let errorMessage = 'Error: Unknown error occurred.';
+
+  if (error.response && error.response.data && error.response.data.error) {
+    errorMessage = `Error: ${error.response.data.error}`;
+  } else if (error.message) {
+    errorMessage = `Error: ${error.message}`;
   }
+
+  alert(errorMessage);
 }
 
 /**
@@ -532,9 +536,11 @@ export const selectConversation = debounce(async (sid, dependencies = {}) => {
     setUserInteracted: setUserInteractedDep = setUserInteracted,
   } = dependencies;
 
-  if (isSelecting || sid === currentConversation.sid) {
+  if (isSelecting) {
+    logDep('Already selecting a conversation.');
     return;
   }
+
 
   isSelecting = true;
   console.log(`selectConversation called with SID: ${sid}`);
@@ -770,3 +776,12 @@ if (module.hot) {
     setupEventListeners();
   });
 }
+
+export {
+  setupFormValidation,
+  clearNewConversationForm,
+  updateUIForConversationSelection,
+  updateConversationSelection,
+  fetchAndRenderMessages,
+  handleConversationError,
+};

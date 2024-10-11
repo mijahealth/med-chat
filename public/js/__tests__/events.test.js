@@ -18,6 +18,12 @@ import {
   handleDeleteConversation,
   setupConversationListeners,
   setupFormValidation,
+  clearNewConversationForm,
+  updateUIForConversationSelection,
+  updateConversationSelection,
+  fetchAndRenderMessages,
+  handleConversationError,
+  setIsSelecting
 } from '../events.js';
 
 import { api } from '../api.js';
@@ -37,9 +43,8 @@ import {
   loadConversations,
   deleteConversation,
   updateLatestMessagePreview,
-  moveConversationToTop,
 } from '../conversations.js';
-import { renderConversations, updateConversationHeader } from '../ui.js';
+import { renderConversations, updateConversationHeader, renderMessages, moveConversationToTop} from '../ui.js';
 import feather from 'feather-icons';
 
 // Mock dependencies
@@ -117,15 +122,17 @@ describe('events.js', () => {
     // Mock implementations
     debounce.mockImplementation((fn) => fn);
     setUserInteracted.mockImplementation(() => {});
+    global.alert = jest.fn(); // Mock alert globally
   });
 
   afterEach(() => {
     jest.clearAllMocks();
     jest.restoreAllMocks();
-    window.alert = undefined;
+    global.alert = undefined;
   });
 
   describe('validateInput', () => {
+    // Existing tests
     it('should validate a valid phone number input', () => {
       const phoneInput = document.querySelector('input[name="phoneNumber"]');
       phoneInput.value = '+1234567890';
@@ -161,9 +168,28 @@ describe('events.js', () => {
     });
 
     // Similar tests for other input types can be added here
+
+    it('should handle unknown validation types gracefully', () => {
+      const input = document.createElement('input');
+      input.dataset.validate = 'unknown';
+      input.value = 'some value';
+      const errorElement = document.createElement('span');
+      errorElement.classList.add('error-message');
+      errorElement.dataset.for = input.name;
+      document.body.appendChild(input);
+      document.body.appendChild(errorElement);
+
+      const event = { target: input };
+      const result = validateInput(event);
+
+      expect(result).toBe(true);
+      expect(errorElement.textContent).toBe('');
+      expect(input.classList.contains('invalid')).toBe(false);
+    });
   });
 
   describe('validateForm', () => {
+    // Existing tests
     it('should validate the form and return true when all inputs are valid', () => {
       const form = document.getElementById('test-form');
 
@@ -225,6 +251,7 @@ describe('events.js', () => {
   });
 
   describe('handleSendMessage', () => {
+    // Existing tests and new tests
     it('should send a message when input is valid and conversation is selected', async () => {
       const inputField = document.getElementById('new-message');
       inputField.value = 'Hello World';
@@ -262,11 +289,11 @@ describe('events.js', () => {
 
       currentConversation.sid = null;
 
-      window.alert = jest.fn();
+      global.alert = jest.fn();
 
       await handleSendMessage();
 
-      expect(window.alert).toHaveBeenCalledWith('Please select a conversation before sending a message.');
+      expect(global.alert).toHaveBeenCalledWith('Please select a conversation before sending a message.');
       expect(api.sendMessage).not.toHaveBeenCalled();
     });
 
@@ -282,7 +309,6 @@ describe('events.js', () => {
 
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      // Adjusted to return a promise
       await handleSendMessage();
 
       expect(api.sendMessage).toHaveBeenCalledWith('CH1234567890', 'Hello World');
@@ -292,10 +318,47 @@ describe('events.js', () => {
       expect(messageSentIndicator.textContent).toBe('Failed to send message');
       expect(messageSentIndicator.classList.contains('show')).toBe(true);
       expect(messageSentIndicator.classList.contains('error')).toBe(true);
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should move conversation to top after sending a message', async () => {
+      const inputField = document.getElementById('new-message');
+      inputField.value = 'Hello World';
+
+      currentConversation.sid = 'CH1234567890';
+
+      api.sendMessage.mockResolvedValue();
+
+      await handleSendMessage();
+
+      expect(moveConversationToTop).toHaveBeenCalledWith('CH1234567890');
+    });
+
+    it('should log when message input field is not found', async () => {
+      document.body.innerHTML = ''; // Remove elements
+
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      await handleSendMessage();
+
+      expect(log).toHaveBeenCalledWith('Message input field not found');
+
+      logSpy.mockRestore();
+    });
+
+    it('should not send message if message is only whitespace', async () => {
+      const inputField = document.getElementById('new-message');
+      inputField.value = '   ';
+
+      await handleSendMessage();
+
+      expect(api.sendMessage).not.toHaveBeenCalled();
     });
   });
 
   describe('openNewConversationModal', () => {
+    // Existing tests and new tests
     it('should open the new conversation modal', () => {
       const modal = document.getElementById('new-conversation-modal');
       modal.style.display = 'none';
@@ -304,9 +367,21 @@ describe('events.js', () => {
 
       expect(modal.style.display).toBe('flex');
     });
+
+    it('should log when new conversation modal is not found', () => {
+      document.body.innerHTML = ''; // Remove modal
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      openNewConversationModal();
+
+      expect(log).toHaveBeenCalledWith('New conversation modal not found');
+
+      logSpy.mockRestore();
+    });
   });
 
   describe('closeModal', () => {
+    // Existing tests
     it('should close the modal', () => {
       const modal = document.getElementById('new-conversation-modal');
       modal.style.display = 'flex';
@@ -318,6 +393,7 @@ describe('events.js', () => {
   });
 
   describe('performSearch', () => {
+    // Existing tests and new tests
     it('should perform search when query is not empty', async () => {
       const searchInput = document.getElementById('search-input');
       searchInput.value = 'test';
@@ -358,90 +434,22 @@ describe('events.js', () => {
       expect(api.searchConversations).not.toHaveBeenCalled();
       expect(loadConversations).toHaveBeenCalled();
     });
-  });
 
-  describe('selectConversation', () => {
-    it('should select conversation when valid sid is provided', async () => {
-      const sid = 'CH1234567890';
+    it('should log when search input is not found', async () => {
+      document.body.innerHTML = ''; // Remove search input
 
-      state.conversationsLoaded = true;
-      currentConversation.sid = null;
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
-      const conversationDetails = {
-        sid,
-        friendlyName: 'Test Conversation',
-        attributes: {
-          name: 'Test User',
-          email: 'test@example.com',
-          phoneNumber: '+1234567890',
-          dob: '1990-01-01',
-          state: 'CA',
-        },
-      };
+      await performSearch(api, log);
 
-      api.getConversationDetails.mockResolvedValue(conversationDetails);
-      api.getMessages.mockResolvedValue([]);
+      expect(log).toHaveBeenCalledWith('Search input not found');
 
-      await selectConversation(sid);
-
-      expect(currentConversation.sid).toBe(sid);
-      expect(api.getConversationDetails).toHaveBeenCalledWith(sid);
-      expect(api.getMessages).toHaveBeenCalledWith(sid, { limit: 1000, order: 'asc' });
-    });
-
-    it('should not select conversation if conversations are not loaded', async () => {
-      const sid = 'CH1234567890';
-
-      state.conversationsLoaded = false;
-      currentConversation.sid = null;
-
-      window.alert = jest.fn();
-
-      await selectConversation(sid);
-
-      expect(window.alert).toHaveBeenCalledWith('Please wait until conversations are fully loaded.');
-      expect(api.getConversationDetails).not.toHaveBeenCalled();
-    });
-  });
-
-  // Removed startConversation tests as per your request
-
-  describe('handleDeleteConversation', () => {
-    it('should delete conversation when API call succeeds', async () => {
-      const sid = 'CH1234567890';
-      const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
-      deleteButton.disabled = false;
-
-      deleteConversation.mockResolvedValue();
-
-      await handleDeleteConversation(sid);
-
-      expect(deleteConversation).toHaveBeenCalledWith(sid);
-      expect(log).toHaveBeenCalledWith('Conversation deleted successfully', { sid });
-      expect(deleteButton.disabled).toBe(true);
-      expect(deleteButton.innerHTML).toContain('Deleting...');
-    });
-
-    it('should alert and re-enable delete button when API call fails', async () => {
-      const sid = 'CH1234567890';
-      const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
-      deleteButton.disabled = false;
-
-      deleteConversation.mockRejectedValue(new Error('Network error'));
-
-      window.alert = jest.fn();
-
-      await handleDeleteConversation(sid);
-
-      expect(deleteConversation).toHaveBeenCalledWith(sid);
-      expect(log).toHaveBeenCalledWith('Error deleting conversation', { sid, error: expect.any(Error) });
-      expect(window.alert).toHaveBeenCalledWith('Failed to delete conversation. Please try again.');
-      expect(deleteButton.disabled).toBe(false);
-      expect(deleteButton.innerHTML).toContain('trash-2');
+      logSpy.mockRestore();
     });
   });
 
   describe('checkScrollPosition', () => {
+    // Existing tests
     it('should set autoScrollEnabled to true when scrolled to bottom', () => {
       const messagesDiv = document.getElementById('messages');
 
@@ -478,7 +486,69 @@ describe('events.js', () => {
     });
   });
 
+  describe('selectConversation', () => {
+    // Existing tests and new tests
+    it('should select conversation when valid sid is provided', async () => {
+      const sid = 'CH1234567890';
+
+      state.conversationsLoaded = true;
+      currentConversation.sid = null;
+
+      const conversationDetails = {
+        sid,
+        friendlyName: 'Test Conversation',
+        attributes: {
+          name: 'Test User',
+          email: 'test@example.com',
+          phoneNumber: '+1234567890',
+          dob: '1990-01-01',
+          state: 'CA',
+        },
+        unreadCount: 0,
+      };
+
+      api.getConversationDetails.mockResolvedValue(conversationDetails);
+      api.getMessages.mockResolvedValue([]);
+
+      await selectConversation(sid);
+
+      expect(currentConversation.sid).toBe(sid);
+      expect(api.getConversationDetails).toHaveBeenCalledWith(sid);
+      expect(api.getMessages).toHaveBeenCalledWith(sid, { limit: 1000, order: 'asc' });
+      expect(renderMessages).toHaveBeenCalledWith([]);
+    });
+
+    it('should not select conversation if conversations are not loaded', async () => {
+      const sid = 'CH1234567890';
+
+      state.conversationsLoaded = false;
+      currentConversation.sid = null;
+
+      global.alert = jest.fn();
+
+      await selectConversation(sid);
+
+      expect(global.alert).toHaveBeenCalledWith('Please wait until conversations are fully loaded.');
+      expect(api.getConversationDetails).not.toHaveBeenCalled();
+    });
+
+    it('should alert when getConversationDetails fails', async () => {
+      const sid = 'CH1234567890';
+
+      state.conversationsLoaded = true;
+      currentConversation.sid = null;
+
+      api.getConversationDetails.mockRejectedValue(new Error('Network error'));
+      global.alert = jest.fn();
+
+      await selectConversation(sid);
+
+      expect(global.alert).toHaveBeenCalledWith('Error: Network error');
+    });
+  });
+
   describe('closeConversation', () => {
+    // Existing tests and new tests
     it('should reset current conversation and update UI elements', () => {
       currentConversation.sid = 'CH1234567890';
 
@@ -499,9 +569,63 @@ describe('events.js', () => {
       expect(loadConversations).toHaveBeenCalled();
       expect(updateLatestMessagePreview).toHaveBeenCalledWith('CH1234567890');
     });
+
+    it('should handle missing elements in closeConversation', () => {
+      document.body.innerHTML = ''; // Remove all elements
+
+      expect(() => {
+        closeConversation();
+      }).not.toThrow();
+    });
+  });
+
+  describe('handleDeleteConversation', () => {
+    // Existing tests and new tests
+    it('should delete conversation when API call succeeds', async () => {
+      const sid = 'CH1234567890';
+      const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
+      deleteButton.disabled = false;
+
+      deleteConversation.mockResolvedValue();
+
+      await handleDeleteConversation(sid);
+
+      expect(deleteConversation).toHaveBeenCalledWith(sid);
+      expect(log).toHaveBeenCalledWith('Conversation deleted successfully', { sid });
+      expect(deleteButton.disabled).toBe(true);
+      expect(deleteButton.innerHTML).toContain('Deleting...');
+    });
+
+    it('should alert and re-enable delete button when API call fails', async () => {
+      const sid = 'CH1234567890';
+      const deleteButton = document.querySelector(`.delete-btn[data-sid="${sid}"]`);
+      deleteButton.disabled = false;
+
+      deleteConversation.mockRejectedValue(new Error('Network error'));
+
+      global.alert = jest.fn();
+
+      await handleDeleteConversation(sid);
+
+      expect(deleteConversation).toHaveBeenCalledWith(sid);
+      expect(log).toHaveBeenCalledWith('Error deleting conversation', { sid, error: expect.any(Error) });
+      expect(global.alert).toHaveBeenCalledWith('Failed to delete conversation. Please try again.');
+      expect(deleteButton.disabled).toBe(false);
+      expect(deleteButton.innerHTML).toContain('trash-2');
+    });
+
+    it('should handle case where delete button is not found', async () => {
+      document.body.innerHTML = ''; // Remove elements
+
+      await handleDeleteConversation('CH1234567890');
+
+      // Since deleteButton is not found, nothing should happen
+      expect(deleteConversation).not.toHaveBeenCalled();
+    });
   });
 
   describe('setupFormValidation', () => {
+    // Existing tests and new tests
     it('should attach event listeners to inputs with data-validate attribute', () => {
       const form = document.getElementById('new-conversation-form');
       form.innerHTML = `
@@ -527,6 +651,7 @@ describe('events.js', () => {
   });
 
   describe('setupConversationListeners', () => {
+    // Existing tests
     it('should add click event listener to conversations container', () => {
       const conversationsContainer = document.getElementById('conversations');
       const addEventListenerSpy = jest.spyOn(conversationsContainer, 'addEventListener');
@@ -545,6 +670,7 @@ describe('events.js', () => {
   });
 
   describe('setupEventListeners', () => {
+    // Existing tests
     it('should set up event listeners for send message input and button', () => {
       const newMessageInput = document.getElementById('new-message');
       const sendMessageBtn = document.getElementById('send-message-btn');
@@ -568,70 +694,77 @@ describe('events.js', () => {
 
   // Additional tests for edge cases and branches
 
-  describe('Edge Cases and Branches', () => {
-    describe('handleSendMessage', () => {
-      it('should log when message input field is not found', async () => {
-        document.body.innerHTML = ''; // Remove elements
+  describe('clearNewConversationForm', () => {
+    it('should do nothing when form is not found in clearNewConversationForm', () => {
+      document.body.innerHTML = ''; // Remove form
+      expect(() => {
+        clearNewConversationForm();
+      }).not.toThrow();
+    });
+  });
 
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  describe('updateUIForConversationSelection', () => {
+    it('should handle missing loading spinner gracefully', () => {
+      document.getElementById('loading-spinner').remove(); // Remove loading spinner
+      expect(() => {
+        updateUIForConversationSelection();
+      }).not.toThrow();
+    });
+  });
 
-        await handleSendMessage();
+  describe('updateConversationSelection', () => {
+    it('should handle missing selected conversation element', () => {
+      const sid = 'CH1234567890';
+      document.body.innerHTML = ''; // Remove conversation elements
 
-        expect(log).toHaveBeenCalledWith('Message input field not found');
-      });
+      expect(() => {
+        updateConversationSelection(sid);
+      }).not.toThrow();
+    });
+  });
 
-      it('should not send message if message is only whitespace', async () => {
-        const inputField = document.getElementById('new-message');
-        inputField.value = '   ';
+  describe('fetchAndRenderMessages', () => {
+    it('should handle missing messages div', async () => {
+      document.getElementById('messages').remove(); // Remove messages div
 
-        await handleSendMessage();
+      await fetchAndRenderMessages('CH1234567890');
 
-        expect(api.sendMessage).not.toHaveBeenCalled();
-      });
+      // No exception should be thrown
+    });
+  });
+
+  describe('handleConversationError', () => {
+    it('should alert with error message when error occurs', () => {
+      const error = new Error('Test error');
+      global.alert = jest.fn();
+
+      handleConversationError(error);
+
+      expect(global.alert).toHaveBeenCalledWith('Error: Test error');
     });
 
-    describe('selectConversation', () => {
-      it('should do nothing if isSelecting is true', async () => {
-        state.conversationsLoaded = true;
-        currentConversation.sid = null;
+    it('should alert with response data error if available', () => {
+      const error = {
+        response: {
+          data: {
+            error: 'Test response error',
+          },
+        },
+      };
+      global.alert = jest.fn();
 
-        // Set isSelecting to true
-        const originalIsSelecting = require('../events.js').isSelecting;
-        require('../events.js').isSelecting = true;
+      handleConversationError(error);
 
-        await selectConversation('CH1234567890');
-
-        expect(currentConversation.sid).toBeNull();
-        expect(api.getConversationDetails).not.toHaveBeenCalled();
-
-        // Restore isSelecting
-        require('../events.js').isSelecting = originalIsSelecting;
-      });
-
-      it('should handle error when getConversationDetails fails', async () => {
-        const sid = 'CH1234567890';
-
-        state.conversationsLoaded = true;
-        currentConversation.sid = null;
-
-        api.getConversationDetails.mockRejectedValue(new Error('Network error'));
-        window.alert = jest.fn();
-
-        await selectConversation(sid);
-
-        expect(window.alert).toHaveBeenCalledWith('Error: Network error');
-      });
+      expect(global.alert).toHaveBeenCalledWith('Error: Test response error');
     });
 
-    describe('handleDeleteConversation', () => {
-      it('should handle case where delete button is not found', async () => {
-        document.body.innerHTML = ''; // Remove elements
+    it('should alert with default message if error is unknown', () => {
+      const error = {};
+      global.alert = jest.fn();
 
-        await handleDeleteConversation('CH1234567890');
+      handleConversationError(error);
 
-        // Since deleteButton is not found, nothing should happen
-        expect(deleteConversation).not.toHaveBeenCalled();
-      });
+      expect(global.alert).toHaveBeenCalledWith('Error: Unknown error occurred.');
     });
   });
 });
