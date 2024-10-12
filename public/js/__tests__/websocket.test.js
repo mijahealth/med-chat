@@ -1,27 +1,10 @@
 // public/js/__tests__/websocket.test.js
 
 // Mock the dependent modules first
-jest.mock('../state', () => ({
-    currentConversation: { sid: null },
-    state: {
-      TWILIO_PHONE_NUMBER: '+1234567890',
-    },
-  }));
-  
-  jest.mock('../utils', () => ({
-    playNotificationSound: jest.fn(),
-    log: jest.fn(),
-  }));
-  
-  jest.mock('../messages', () => ({
-    handleNewMessage: jest.fn(),
-  }));
-  
-  jest.mock('../conversations', () => ({
-    handleNewConversation: jest.fn(),
-    handleUpdateConversation: jest.fn(),
-    removeConversationFromUI: jest.fn(),
-  }));
+jest.mock('../state');
+jest.mock('../utils');
+jest.mock('../messages');
+jest.mock('../conversations');
   
   // Define a MockWebSocket class to simulate WebSocket behavior
   class MockWebSocket {
