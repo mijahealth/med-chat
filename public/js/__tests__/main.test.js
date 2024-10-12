@@ -4,55 +4,14 @@
 
 import { jest } from '@jest/globals';
 
-// ---------------------------
-// Mocking External Modules
-// ---------------------------
-
-// Mock '../ui.js' module
-jest.mock('../ui.js', () => ({
-  __esModule: true,
-  initializeApp: jest.fn(),
-}));
-
-// Mock '../events.js' module
-jest.mock('../events.js', () => ({
-  __esModule: true,
-  setupEventListeners: jest.fn(),
-  closeModal: jest.fn(),
-}));
-
-// Mock '../websocket.js' module
-jest.mock('../websocket.js', () => ({
-  __esModule: true,
-  setupClientWebSocket: jest.fn(),
-}));
-
-// Mock '../state.js' module
-jest.mock('../state.js', () => ({
-  __esModule: true,
-  state: { appInitialized: false },
-}));
-
-// Mock '../utils.js' module
-jest.mock('../utils.js', () => ({
-  __esModule: true,
-  log: jest.fn(),
-}));
-
-// Mock '../call.js' module
-jest.mock('../call.js', () => ({
-  __esModule: true,
-  setupCallControls: jest.fn(),
-}));
-
-// Mock 'feather-icons' module
-const mockReplace = jest.fn();
-jest.mock('feather-icons', () => ({
-  __esModule: true,
-  default: {
-    replace: mockReplace,
-  },
-}));
+// Point to the mock files
+jest.mock('../ui');
+jest.mock('../events');
+jest.mock('../websocket');
+jest.mock('../state');
+jest.mock('../utils');
+jest.mock('../call');
+jest.mock('feather-icons');
 
 // ---------------------------
 // Test Suite for Main Module

@@ -11,4 +11,5 @@ export const state = {
   autoScrollEnabled: true,
   conversationsLoaded: false,
   currentTheme: 'light',
+  appInitialized: false, // Added this line
 };
