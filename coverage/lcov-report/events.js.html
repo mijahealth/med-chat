@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">63.88% </span>
+                <span class="strong">64.08% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>115/180</span>
+                <span class='fraction'>116/181</span>
             </div>
         
             
@@ -849,7 +849,11 @@
 <a name='L784'></a><a href='#L784'>784</a>
 <a name='L785'></a><a href='#L785'>785</a>
 <a name='L786'></a><a href='#L786'>786</a>
-<a name='L787'></a><a href='#L787'>787</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L787'></a><a href='#L787'>787</a>
+<a name='L788'></a><a href='#L788'>788</a>
+<a name='L789'></a><a href='#L789'>789</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -891,9 +895,15 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -1392,7 +1402,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1616,8 +1625,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1632,10 +1639,9 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// public/js/events.js
+&nbsp;
+/**
  * The Event Organizer for Our Chat Playground
  * 
  * This module handles all event listeners and related functionalities
@@ -1678,9 +1684,15 @@ const SELECT_CONVERSATION_DEBOUNCE_DELAY = 300;
 &nbsp;
 let isSelecting = false;
 &nbsp;
+/**
+ * Sets the selecting state.
+ * 
+ * @param {boolean} value - The new selecting state.
+ */
 export function <span class="fstat-no" title="function not covered" >setIsSelecting(</span>value) {
 <span class="cstat-no" title="statement not covered" >  isSelecting = value;</span>
 }
+&nbsp;
 // Handler references for event listeners (useful for removal in HMR)
 let sendMessageKeyPressHandler = null;
 let sendMessageClickHandler = null;
@@ -1784,7 +1796,7 @@ export function setupEventListeners(dependencies = {}) {
  * @param {Object} dependencies - Dependencies for validation.
  * @returns {void}
  */
-function setupFormValidation(dependencies) {
+function setupFormValidation(dependencies = {}) {
   const form = document.getElementById('new-conversation-form');
   if (!form) { return; }
 &nbsp;
@@ -1887,7 +1899,7 @@ export function validateForm(form, dependencies = <span class="branch-0 cbranch-
  * Handles sending a new message.
  * 
  * @param {Object} dependencies - Dependencies for sending messages.
- * @returns {void}
+ * @returns {Promise&lt;void&gt;}
  */
 export function handleSendMessage(dependencies = {}) {
   const { api: apiDep = api, log: logDep = log } = dependencies;
@@ -1984,7 +1996,7 @@ export function closeModal() {
  * 
  * @returns {void}
  */
-function clearNewConversationForm() {
+export function clearNewConversationForm() {
   const form = document.querySelector('#new-conversation-modal form');
   if (form) {
     form.reset();
@@ -2085,7 +2097,7 @@ function updateUIForConversationSelection() {
  * @param {string} sid - The SID of the selected conversation.
  * @returns {void}
  */
-function updateConversationSelection(sid) {
+export function updateConversationSelection(sid) {
   document.querySelectorAll('.conversation').forEach(<span class="fstat-no" title="function not covered" >(c</span>onv) =&gt; {
 <span class="cstat-no" title="statement not covered" >    conv.classList.remove('selected');</span>
   });
@@ -2125,7 +2137,7 @@ function updateConversationDetails(sid, conversation) {
  * @param {string} sid - The SID of the conversation.
  * @returns {Promise&lt;void&gt;}
  */
-async function fetchAndRenderMessages(sid) {
+export async function fetchAndRenderMessages(sid) {
   try {
     const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
     renderMessages(messages);
@@ -2178,12 +2190,11 @@ export const selectConversation = debounce(async (sid, dependencies = {}) =&gt; 
 <span class="cstat-no" title="statement not covered" >    return;</span>
   }
 &nbsp;
-&nbsp;
   isSelecting = true;
-  console.log(`selectConversation called with SID: ${sid}`);
+  logDep(`selectConversation called with SID: ${sid}`);
 &nbsp;
   if (!state.conversationsLoaded) {
-    console.log('Conversations not loaded yet');
+    logDep('Conversations not loaded yet');
     alert('Please wait until conversations are fully loaded.');
     isSelecting = false;
     return;
@@ -2191,14 +2202,14 @@ export const selectConversation = debounce(async (sid, dependencies = {}) =&gt; 
 &nbsp;
   setUserInteractedDep();
   currentConversation.sid = sid;
-  console.log(`Current conversation SID set to: ${currentConversation.sid}`);
+  logDep(`Current conversation SID set to: ${currentConversation.sid}`);
 &nbsp;
   updateUIForConversationSelection();
 &nbsp;
   try {
-    console.log('Attempting to fetch conversation details');
+    logDep('Attempting to fetch conversation details');
     const conversation = await apiDep.getConversationDetails(sid);
-    console.log('Conversation details fetched:', conversation);
+    logDep('Conversation details fetched:', conversation);
 &nbsp;
     updateConversationSelection(sid);
     updateConversationDetails(sid, conversation);
@@ -2402,24 +2413,19 @@ export function <span class="fstat-no" title="function not covered" >startConver
     }
 &nbsp;
     // Remove other event listeners as necessary
-    // Since logDep is destructured in setupEventListeners, we need to ensure it's used here
-    // If not, remove it from destructuring
-<span class="cstat-no" title="statement not covered" >    log('Removed event listeners for HMR'); </span>// Changed from logDep to log to avoid unused variable
+<span class="cstat-no" title="statement not covered" >    log('Removed event listeners for HMR');</span>
   });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  module.hot.accept(<span class="fstat-no" title="function not covered" >()</span> =&gt; {</span>
     // Similarly, ensure logDep is used or not based on destructuring
-<span class="cstat-no" title="statement not covered" >    log('Events module updated'); </span>// Changed from logDep to log to avoid unused variable
+<span class="cstat-no" title="statement not covered" >    log('Events module updated');</span>
 <span class="cstat-no" title="statement not covered" >    setupEventListeners();</span>
   });
 }
 &nbsp;
 export {
   setupFormValidation,
-  clearNewConversationForm,
   updateUIForConversationSelection,
-  updateConversationSelection,
-  fetchAndRenderMessages,
   handleConversationError,
 };</pre></td></tr></table></pre>
 
@@ -2428,7 +2434,7 @@ export {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-10-12T04:29:23.801Z
+                at 2024-10-12T04:52:24.303Z
             </div>
         <script src="prettify.js"></script>
         <script>

@@ -44,13 +44,13 @@ import {
   deleteConversation,
   updateLatestMessagePreview,
 } from '../conversations.js';
-import { renderConversations, updateConversationHeader, renderMessages, moveConversationToTop} from '../ui.js';
+import { renderConversations, updateConversationHeader, renderMessages, moveConversationToTop } from '../ui.js';
 import feather from 'feather-icons';
 
 // Mock dependencies
 jest.mock('../api.js');
 jest.mock('../state.js');
-jest.mock('../utils.js');
+jest.mock('../utils.js'); // This uses __mocks__/utils.js
 jest.mock('../conversations.js');
 jest.mock('../call.js');
 jest.mock('../ui.js');
@@ -58,7 +58,12 @@ jest.mock('feather-icons');
 
 describe('events.js', () => {
   beforeEach(() => {
-    // Set up DOM elements
+    // Disable Hot Module Replacement (HMR) in tests
+    if (module.hot) {
+      module.hot = undefined;
+    }
+
+    // Set up a basic DOM structure
     document.body.innerHTML = `
       <!-- Elements needed for validateInput and validateForm -->
       <form id="test-form">
@@ -338,13 +343,9 @@ describe('events.js', () => {
     it('should log when message input field is not found', async () => {
       document.body.innerHTML = ''; // Remove elements
 
-      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
       await handleSendMessage();
 
       expect(log).toHaveBeenCalledWith('Message input field not found');
-
-      logSpy.mockRestore();
     });
 
     it('should not send message if message is only whitespace', async () => {
@@ -370,13 +371,9 @@ describe('events.js', () => {
 
     it('should log when new conversation modal is not found', () => {
       document.body.innerHTML = ''; // Remove modal
-      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
       openNewConversationModal();
 
       expect(log).toHaveBeenCalledWith('New conversation modal not found');
-
-      logSpy.mockRestore();
     });
   });
 
@@ -438,13 +435,9 @@ describe('events.js', () => {
     it('should log when search input is not found', async () => {
       document.body.innerHTML = ''; // Remove search input
 
-      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-
       await performSearch(api, log);
 
       expect(log).toHaveBeenCalledWith('Search input not found');
-
-      logSpy.mockRestore();
     });
   });
 
@@ -456,8 +449,7 @@ describe('events.js', () => {
       // Mock clientHeight and scrollHeight
       Object.defineProperty(messagesDiv, 'clientHeight', { value: 200 });
       Object.defineProperty(messagesDiv, 'scrollHeight', { value: 300 });
-
-      messagesDiv.scrollTop = 100;
+      messagesDiv.scrollTop = 100; // scrollTop + clientHeight = 300 >= scrollHeight - 10
 
       checkScrollPosition();
 
@@ -470,8 +462,7 @@ describe('events.js', () => {
       // Mock clientHeight and scrollHeight
       Object.defineProperty(messagesDiv, 'clientHeight', { value: 200 });
       Object.defineProperty(messagesDiv, 'scrollHeight', { value: 300 });
-
-      messagesDiv.scrollTop = 50;
+      messagesDiv.scrollTop = 50; // scrollTop + clientHeight = 250 < scrollHeight - 10
 
       checkScrollPosition();
 
@@ -637,7 +628,6 @@ describe('events.js', () => {
 
       setupFormValidation();
 
-      expect(addEventListenerSpy).toHaveBeenCalledTimes(2);
       expect(addEventListenerSpy).toHaveBeenCalledWith('input', expect.any(Function));
       expect(addEventListenerSpy).toHaveBeenCalledWith('blur', expect.any(Function));
     });

@@ -1,3 +1,5 @@
+// public/js/events.js
+
 /**
  * The Event Organizer for Our Chat Playground
  * 
@@ -41,9 +43,15 @@ const SELECT_CONVERSATION_DEBOUNCE_DELAY = 300;
 
 let isSelecting = false;
 
+/**
+ * Sets the selecting state.
+ * 
+ * @param {boolean} value - The new selecting state.
+ */
 export function setIsSelecting(value) {
   isSelecting = value;
 }
+
 // Handler references for event listeners (useful for removal in HMR)
 let sendMessageKeyPressHandler = null;
 let sendMessageClickHandler = null;
@@ -147,7 +155,7 @@ export function setupEventListeners(dependencies = {}) {
  * @param {Object} dependencies - Dependencies for validation.
  * @returns {void}
  */
-function setupFormValidation(dependencies) {
+function setupFormValidation(dependencies = {}) {
   const form = document.getElementById('new-conversation-form');
   if (!form) { return; }
 
@@ -250,7 +258,7 @@ export function validateForm(form, dependencies = {}) {
  * Handles sending a new message.
  * 
  * @param {Object} dependencies - Dependencies for sending messages.
- * @returns {void}
+ * @returns {Promise<void>}
  */
 export function handleSendMessage(dependencies = {}) {
   const { api: apiDep = api, log: logDep = log } = dependencies;
@@ -347,7 +355,7 @@ export function closeModal() {
  * 
  * @returns {void}
  */
-function clearNewConversationForm() {
+export function clearNewConversationForm() {
   const form = document.querySelector('#new-conversation-modal form');
   if (form) {
     form.reset();
@@ -448,7 +456,7 @@ function updateUIForConversationSelection() {
  * @param {string} sid - The SID of the selected conversation.
  * @returns {void}
  */
-function updateConversationSelection(sid) {
+export function updateConversationSelection(sid) {
   document.querySelectorAll('.conversation').forEach((conv) => {
     conv.classList.remove('selected');
   });
@@ -488,7 +496,7 @@ function updateConversationDetails(sid, conversation) {
  * @param {string} sid - The SID of the conversation.
  * @returns {Promise<void>}
  */
-async function fetchAndRenderMessages(sid) {
+export async function fetchAndRenderMessages(sid) {
   try {
     const messages = await api.getMessages(sid, { limit: 1000, order: 'asc' });
     renderMessages(messages);
@@ -541,12 +549,11 @@ export const selectConversation = debounce(async (sid, dependencies = {}) => {
     return;
   }
 
-
   isSelecting = true;
-  console.log(`selectConversation called with SID: ${sid}`);
+  logDep(`selectConversation called with SID: ${sid}`);
 
   if (!state.conversationsLoaded) {
-    console.log('Conversations not loaded yet');
+    logDep('Conversations not loaded yet');
     alert('Please wait until conversations are fully loaded.');
     isSelecting = false;
     return;
@@ -554,14 +561,14 @@ export const selectConversation = debounce(async (sid, dependencies = {}) => {
 
   setUserInteractedDep();
   currentConversation.sid = sid;
-  console.log(`Current conversation SID set to: ${currentConversation.sid}`);
+  logDep(`Current conversation SID set to: ${currentConversation.sid}`);
 
   updateUIForConversationSelection();
 
   try {
-    console.log('Attempting to fetch conversation details');
+    logDep('Attempting to fetch conversation details');
     const conversation = await apiDep.getConversationDetails(sid);
-    console.log('Conversation details fetched:', conversation);
+    logDep('Conversation details fetched:', conversation);
 
     updateConversationSelection(sid);
     updateConversationDetails(sid, conversation);
@@ -765,23 +772,18 @@ if (module.hot) {
     }
 
     // Remove other event listeners as necessary
-    // Since logDep is destructured in setupEventListeners, we need to ensure it's used here
-    // If not, remove it from destructuring
-    log('Removed event listeners for HMR'); // Changed from logDep to log to avoid unused variable
+    log('Removed event listeners for HMR');
   });
 
   module.hot.accept(() => {
     // Similarly, ensure logDep is used or not based on destructuring
-    log('Events module updated'); // Changed from logDep to log to avoid unused variable
+    log('Events module updated');
     setupEventListeners();
   });
 }
 
 export {
   setupFormValidation,
-  clearNewConversationForm,
   updateUIForConversationSelection,
-  updateConversationSelection,
-  fetchAndRenderMessages,
   handleConversationError,
 };
