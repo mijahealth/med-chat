@@ -8,14 +8,13 @@
  * together, so you can have fun chatting with your friends!
  */
 
-
 import {
   loadConversations,
   incrementUnreadCount,
   handleNewConversation,
   removeConversationFromUI,
 } from './conversations.js';
-import { setupClientWebSocket} from './websocket.js';
+import { setupClientWebSocket } from './websocket.js';
 import { state, currentConversation } from './state.js';
 import { api } from './api.js';
 import { log, formatTime } from './utils.js';
@@ -24,7 +23,7 @@ import { closeConversation, setupConversationListeners } from './events.js';
 
 /**
  * Starts the app by setting up all the necessary parts.
- * 
+ *
  * Imagine you're setting up a big playroom. This function gets all the toys
  * ready, puts them in the right places, and makes sure everything is working
  * before you start playing.
@@ -55,7 +54,7 @@ export async function initializeApp() {
 
 /**
  * Shows a message when no conversation is selected.
- * 
+ *
  * It's like when you open your toy box but haven't picked out a toy to play with yet.
  * This function shows a message saying "Pick a toy to play with!"
  */
@@ -68,7 +67,7 @@ export function showNoConversationSelected() {
 
 /**
  * Displays all the conversations in a list on the screen.
- * 
+ *
  * Think of this like arranging all your coloring books on a shelf. Each book
  * (conversation) is put in a neat row so you can see all of them at once.
  *
@@ -78,17 +77,17 @@ export function renderConversations(conversations) {
   const conversationsDiv = document.getElementById('conversations');
   conversationsDiv.innerHTML = ''; // Clear existing conversations
 
-  console.log('Rendering conversations:', conversations);
+  log('Rendering conversations:', conversations);
 
   if (Array.isArray(conversations)) {
     conversations.forEach((conversation) => {
-      console.log('Processing conversation:', conversation);
+      log('Processing conversation:', conversation);
 
       // Ensure conversation.attributes exists
       conversation.attributes = conversation.attributes || {};
 
       const lastMessageText = conversation.lastMessage || 'No messages yet';
-      console.log('Last message text:', lastMessageText);
+      log('Last message text:', lastMessageText);
 
       const conversationHtml = createConversationHtml({
         ...conversation,
@@ -114,7 +113,7 @@ export function renderConversations(conversations) {
 
 /**
  * Creates the HTML for a single conversation.
- * 
+ *
  * This is like drawing a picture of a friend. You include their name,
  * when you last talked, and what you talked about. This function does
  * that, but for a conversation on the computer.
@@ -164,7 +163,7 @@ function createConversationHtml(conversation) {
 
 /**
  * Moves a conversation to the top of the list.
- * 
+ *
  * Imagine you have a stack of papers, and you find one that's really important.
  * This function is like taking that important paper and putting it on top of the stack.
  *
@@ -180,7 +179,7 @@ export function moveConversationToTop(conversationSid) {
 
 /**
  * Shows all the messages in the current conversation.
- * 
+ *
  * This is like opening a book and seeing all the words on the pages.
  * Each message is like a sentence in the book, and this function
  * puts all those sentences on the screen for you to read.
@@ -201,7 +200,7 @@ export function renderMessages(messages) {
 
 /**
  * Adds a new message to the screen.
- * 
+ *
  * Think of this like adding a new sticker to your sticker book.
  * Each message is a sticker, and this function puts the new sticker
  * in just the right spot in your book.
@@ -229,7 +228,7 @@ export function appendMessage(message) {
 
 /**
  * Makes the message input area visible.
- * 
+ *
  * It's like opening your toy box so you can get your toys out to play.
  * This function opens up the area where you can type new messages.
  */
@@ -239,7 +238,7 @@ export function showMessageInput() {
 
 /**
  * Updates the information at the top of the chat.
- * 
+ *
  * Imagine you're playing with a friend and you put their name tag on.
  * This function is like putting the name tag on the chat, so you know
  * who you're talking to and some fun facts about them.
@@ -333,20 +332,20 @@ export function updateConversationHeader(
 
 /**
  * Sets up hot module replacement (HMR) for this module.
- * 
+ *
  * Imagine you're building with Lego, and you can change one piece without
  * knocking down the whole thing. That's what this does for our app!
- * 
+ *
  * When the app is running in development mode:
  * 1. It cleans up the old version of this module when it's about to be replaced.
  * 2. It accepts updates to this module and re-initializes the UI.
- * 
+ *
  * This helps developers see their changes quickly without refreshing the whole page.
- * 
+ *
  * @remarks
  * This code only runs in development mode when HMR is enabled.
  * In production, this entire block is ignored.
- * 
+ *
  * @example
  * // This code is typically at the end of a module file
  * if (module['hot']) {

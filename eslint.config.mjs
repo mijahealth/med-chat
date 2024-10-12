@@ -91,7 +91,7 @@ export default [
 
   // 5. Jest-specific configuration for test and mock files
   {
-    files: ['__tests__/**/*.js', '__mocks__/**/*.js'],
+    files: ['**/__tests__/**/*.js', '**/__mocks__/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -101,6 +101,7 @@ export default [
     },
     rules: {
       'no-undef': 'off', // Jest defines globals like `describe`, `it`, `expect`, `jest`
+      'no-unused-vars': 'off', 
     },
   },
 
