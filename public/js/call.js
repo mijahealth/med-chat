@@ -4,7 +4,7 @@ import axios from 'axios';
 import { api } from './api.js';
 import { currentConversation, state } from './state.js';
 import feather from 'feather-icons';
-import { isValidPhoneNumber } from './utils.js';
+import { isValidPhoneNumber, log } from './utils.js';
 
 // Import Twilio Device for voice calls
 import { Device } from 'twilio-client';
@@ -48,11 +48,11 @@ export const callModule = {
 
         // Attach event listeners
         this.device.on('ready', () => {
-          console.log('Twilio.Device Ready to make and receive calls!');
+          log('Twilio.Device Ready to make and receive calls!');
         });
 
         this.device.on('error', (error) => {
-          console.error('Twilio.Device Error:', error);
+          log('Twilio.Device Error:', error);
         });
 
         this.device.on('connect', (conn) => {
@@ -83,8 +83,8 @@ export const callModule = {
       // Update UI
       this.updateCallStatus('Calling...');
     } catch (error) {
-      console.error('Error making call:', error);
-      alert('Failed to initiate call. Please check the console for more details.');
+      log('Error making call:', error);
+      alert('Failed to initiate call. Please check the logs for more details.');
     }
   },
 
@@ -101,12 +101,12 @@ export const callModule = {
         muteButtonIcon.setAttribute('data-feather', this.isMuted ? 'mic-off' : 'mic');
         feather.replace();
       } else {
-        console.warn('Mute button icon element not found');
+        log('Mute button icon element not found');
       }
 
-      console.log(`Microphone is now ${this.isMuted ? 'muted' : 'unmuted'}.`);
+      log(`Microphone is now ${this.isMuted ? 'muted' : 'unmuted'}.`);
     } else {
-      console.warn('toggleMute called but no active call found');
+      log('toggleMute called but no active call found');
     }
   },
 
@@ -118,7 +118,7 @@ export const callModule = {
       this.call.disconnect();
       this.call = null;
     } else {
-      console.warn('endCall called but no active call found');
+      log('endCall called but no active call found');
     }
   },
 
@@ -146,7 +146,7 @@ export const callModule = {
    * @param {Error} error
    */
   handleCallError(error) {
-    console.error('Call encountered an error:', error);
+    log('Call encountered an error:', error);
     this.updateCallStatus('Call error');
     this.stopCallDurationTimer();
     this.updateCallControls(false);
@@ -172,7 +172,7 @@ export const callModule = {
         callStatusElement.classList.add('call-status');
       }
     } else {
-      console.warn('Call status element not found');
+      log('Call status element not found');
     }
   },
 
@@ -243,7 +243,7 @@ export const callModule = {
 
       window.open(response.link, '_blank');
     } catch (error) {
-      console.error('Error starting video call:', error);
+      log('Error starting video call:', error);
       alert('Failed to start video call. Please try again.');
     }
   },

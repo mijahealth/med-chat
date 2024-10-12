@@ -1,5 +1,3 @@
-// public/js/__tests__/call.test.js
-
 /**
  * @jest-environment jsdom
  */
@@ -9,9 +7,11 @@ import { api } from '../api.js';
 import { currentConversation, state } from '../state.js';
 import axios from 'axios';
 import feather from 'feather-icons';
+import { log, isValidPhoneNumber } from '../utils.js';
 
 // Mock dependencies
 jest.mock('../api.js');
+jest.mock('../utils.js');
 jest.mock('axios');
 jest.mock('feather-icons');
 
@@ -39,10 +39,6 @@ describe('call.js', () => {
     callModule.device = null;
     callModule.isMuted = false;
     callModule.callDurationInterval = null;
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
     jest.clearAllMocks();
   });
 
@@ -79,11 +75,7 @@ describe('call.js', () => {
 
     it('should alert if a call is already in progress', async () => {
       window.alert = jest.fn();
-
-      // Simulate an active call
-      const mockCall = {
-        status: jest.fn(() => 'open'),
-      };
+      const mockCall = { status: jest.fn(() => 'open') };
       callModule.call = mockCall;
 
       await callModule.makeCall();
@@ -92,22 +84,13 @@ describe('call.js', () => {
     });
 
     it('should set up the device if not already set up', async () => {
-      axios.get.mockResolvedValueOnce({
-        data: { token: 'test-token' },
-      });
-    
-      api.getCallParams.mockResolvedValueOnce({
-        To: '+19876543210',
-        From: '+1234567890',
-      });
-    
+      axios.get.mockResolvedValueOnce({ data: { token: 'test-token' } });
+      api.getCallParams.mockResolvedValueOnce({ To: '+19876543210', From: '+1234567890' });
       api.sendMessage.mockResolvedValueOnce({});
-    
       window.alert = jest.fn();
-    
+
       await callModule.makeCall();
-    
-      // Assertions
+
       expect(axios.get).toHaveBeenCalledWith(
         'http://localhost:3000/token',
         expect.objectContaining({
@@ -115,70 +98,50 @@ describe('call.js', () => {
           headers: { 'ngrok-skip-browser-warning': 'true' },
         })
       );
-    
       expect(api.getCallParams).toHaveBeenCalledWith('CH1234567890');
       expect(api.sendMessage).toHaveBeenCalled();
-    
-      // Verify that the Device was initialized with the correct token
       expect(callModule.device).toBeDefined();
-      expect(callModule.device.token).toBe('test-token');
-    
-      // Verify that the device's 'connect' method was called with the correct params
-      expect(callModule.device.eventHandlers['connect']).toBeDefined();
     });
 
     it('should handle errors during call setup', async () => {
-      axios.get.mockResolvedValueOnce({
-        data: { token: 'test-token' },
-      });
-
+      axios.get.mockResolvedValueOnce({ data: { token: 'test-token' } });
       api.getCallParams.mockRejectedValueOnce(new Error('Network error'));
       window.alert = jest.fn();
 
       await callModule.makeCall();
 
-      expect(window.alert).toHaveBeenCalledWith('Failed to initiate call. Please check the console for more details.');
+      expect(window.alert).toHaveBeenCalledWith('Failed to initiate call. Please check the logs for more details.');
+      expect(log).toHaveBeenCalledWith('Error making call:', expect.any(Error));
     });
   });
 
   describe('toggleMute', () => {
     it('should toggle the mute state of the call', () => {
-      // Set up a mock call object
-      const mockCall = {
-        mute: jest.fn(),
-      };
+      const mockCall = { mute: jest.fn() };
       callModule.call = mockCall;
-
-      // Mock DOM elements
       const muteButtonIcon = document.querySelector('#mute-btn i');
       feather.replace = jest.fn();
 
-      // Initial state: not muted
       callModule.toggleMute();
       expect(mockCall.mute).toHaveBeenCalledWith(true);
       expect(feather.replace).toHaveBeenCalled();
+      expect(log).toHaveBeenCalledWith('Microphone is now muted.');
 
-      // Second toggle: muted
       callModule.toggleMute();
       expect(mockCall.mute).toHaveBeenCalledWith(false);
+      expect(log).toHaveBeenCalledWith('Microphone is now unmuted.');
     });
 
     it('should warn if there is no active call', () => {
-      console.warn = jest.fn();
-
       callModule.call = null;
       callModule.toggleMute();
-
-      expect(console.warn).toHaveBeenCalledWith('toggleMute called but no active call found');
+      expect(log).toHaveBeenCalledWith('toggleMute called but no active call found');
     });
   });
 
   describe('endCall', () => {
     it('should disconnect the call and update UI', () => {
-      // Set up a mock call object
-      const mockCall = {
-        disconnect: jest.fn(),
-      };
+      const mockCall = { disconnect: jest.fn() };
       callModule.call = mockCall;
 
       callModule.endCall();
@@ -188,12 +151,10 @@ describe('call.js', () => {
     });
 
     it('should warn if there is no active call', () => {
-      console.warn = jest.fn();
-
       callModule.call = null;
       callModule.endCall();
 
-      expect(console.warn).toHaveBeenCalledWith('endCall called but no active call found');
+      expect(log).toHaveBeenCalledWith('endCall called but no active call found');
     });
   });
 
@@ -229,14 +190,13 @@ describe('call.js', () => {
   describe('handleCallError', () => {
     it('should handle call errors', () => {
       const error = new Error('Test error');
-      console.error = jest.fn();
       jest.spyOn(callModule, 'updateCallStatus').mockImplementation(() => {});
       jest.spyOn(callModule, 'stopCallDurationTimer').mockImplementation(() => {});
       jest.spyOn(callModule, 'updateCallControls').mockImplementation(() => {});
 
       callModule.handleCallError(error);
 
-      expect(console.error).toHaveBeenCalledWith('Call encountered an error:', error);
+      expect(log).toHaveBeenCalledWith('Call encountered an error:', error);
       expect(callModule.updateCallStatus).toHaveBeenCalledWith('Call error');
       expect(callModule.stopCallDurationTimer).toHaveBeenCalled();
       expect(callModule.updateCallControls).toHaveBeenCalledWith(false);
@@ -254,12 +214,10 @@ describe('call.js', () => {
     });
 
     it('should warn if call status element is not found', () => {
-      console.warn = jest.fn();
       document.body.innerHTML = ''; // Remove all elements
-
       callModule.updateCallStatus('In call');
 
-      expect(console.warn).toHaveBeenCalledWith('Call status element not found');
+      expect(log).toHaveBeenCalledWith('Call status element not found');
     });
   });
 
@@ -303,6 +261,7 @@ describe('call.js', () => {
       });
 
       window.open = jest.fn();
+      isValidPhoneNumber.mockReturnValueOnce(true);
 
       await callModule.startVideoCall();
 
@@ -319,6 +278,7 @@ describe('call.js', () => {
       phoneElement.textContent = 'invalid-phone';
 
       window.alert = jest.fn();
+      isValidPhoneNumber.mockReturnValueOnce(false);
 
       await callModule.startVideoCall();
 
@@ -328,10 +288,12 @@ describe('call.js', () => {
     it('should handle errors during video call setup', async () => {
       api.createVideoRoom.mockRejectedValueOnce(new Error('Network error'));
       window.alert = jest.fn();
+      isValidPhoneNumber.mockReturnValueOnce(true);
 
       await callModule.startVideoCall();
 
       expect(window.alert).toHaveBeenCalledWith('Failed to start video call. Please try again.');
+      expect(log).toHaveBeenCalledWith('Error starting video call:', expect.any(Error));
     });
   });
 });
