@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1728768315790" clover="3.2.0">
-  <project timestamp="1728768315790" name="All files">
+<coverage generated="1728768493548" clover="3.2.0">
+  <project timestamp="1728768493548" name="All files">
     <metrics statements="753" coveredstatements="609" conditionals="388" coveredconditionals="255" methods="158" coveredmethods="112" elements="1299" coveredelements="976" complexity="0" loc="753" ncloc="753" packages="1" files="10" classes="10"/>
     <file name="api.js" path="/Users/mattward/Desktop/Projects/med-chat/public/js/api.js">
       <metrics statements="15" coveredstatements="15" conditionals="1" coveredconditionals="1" methods="22" coveredmethods="22"/>

@@ -22,17 +22,7 @@ import {
   
   import { state } from '../state.js';
   
-  // Mock state.js
-  jest.mock('../state.js', () => ({
-    state: {
-      TWILIO_PHONE_NUMBER: '',
-      NGROK_URL: '',
-      userInteracted: false,
-      autoScrollEnabled: true,
-      conversationsLoaded: false,
-      currentTheme: 'light',
-    },
-  }));
+  jest.mock('../state.js');
   
   describe('utils.js', () => {
     beforeEach(() => {
