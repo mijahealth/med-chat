@@ -1,11 +1,10 @@
 // __tests__/modules.conversations.test.js
 
-const conversationsModule = require('../modules/conversations');
-const client = require('../twilioClient');
-const logger = require('../modules/logger');
-
-// Mock the logger
 jest.mock('../modules/logger');
+
+const logger = require('../modules/logger');
+const client = require('../twilioClient');
+const conversationsModule = require('../modules/conversations');
 
 describe('Conversations Module', () => {
   beforeEach(() => {
