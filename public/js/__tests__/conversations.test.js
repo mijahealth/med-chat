@@ -1,13 +1,11 @@
 // conversations.test.js
 
-// conversations.test.js
-
 // Import necessary modules and functions
 import * as Conversations from '../conversations';
 import { api } from '../api';
 import { renderConversations, moveConversationToTop } from '../ui';
 import { formatTime, log } from '../utils';
-import { state } from '../state';
+import { state, currentConversation } from '../state';
 
 // Mock modules to use manual mocks from __mocks__
 jest.mock('../api');
@@ -24,7 +22,7 @@ function setupDOM() {
       <div class="last-message">Hello</div>
       <div class="time">10:00 AM</div>
       <div class="unread-indicator-column">
-        <span class="unread-badge">1</span> <!-- Added unread-badge -->
+        <span class="unread-badge">1</span>
       </div>
     </div>
     <div id="conv-conv2" class="conversation">
@@ -45,7 +43,7 @@ describe('Conversations Module', () => {
     jest.clearAllMocks();
     state.conversations = []; // Ensure conversations are always initialized
     state.conversationsLoaded = false;
-    state.currentConversation = { sid: null }; // Initialize as an object
+    currentConversation.sid = null;
     setupDOM();
   });
 
@@ -67,7 +65,7 @@ describe('Conversations Module', () => {
       expect(renderConversations).toHaveBeenCalledWith(mockConversations);
       expect(state.conversationsLoaded).toBe(true);
       expect(state.conversations).toEqual(mockConversations);
-      expect(document.getElementById('loading-spinner').style.display).toBe('none'); // Updated expectation
+      expect(document.getElementById('loading-spinner').style.display).toBe('none');
     });
 
     it('should handle API errors gracefully', async () => {
@@ -109,7 +107,6 @@ describe('Conversations Module', () => {
 
   // Tests for updateLatestMessagePreview
   describe('updateLatestMessagePreview', () => {
-
     it('should handle no latest message gracefully', async () => {
       const conversationSid = 'conv1';
       api.getMessages.mockResolvedValue([]);
@@ -154,16 +151,8 @@ describe('Conversations Module', () => {
     it('should increment unread count when badge exists', () => {
       const conversationSid = 'conv1';
       const conversationDiv = document.getElementById(`conv-${conversationSid}`);
-      
-      // Ensure unread-badge exists
-      const unreadBadge = conversationDiv.querySelector('.unread-badge') || (() => {
-        const badge = document.createElement('span');
-        badge.classList.add('unread-badge');
-        badge.textContent = '1';
-        conversationDiv.querySelector('.unread-indicator-column').appendChild(badge);
-        return badge;
-      })();
 
+      const unreadBadge = conversationDiv.querySelector('.unread-badge');
       unreadBadge.textContent = '2';
 
       Conversations.incrementUnreadCount(conversationSid);
@@ -243,11 +232,14 @@ describe('Conversations Module', () => {
   describe('removeConversationFromUI', () => {
     it('should remove the conversation element from the DOM', () => {
       const conversationSid = 'conv1';
+      currentConversation.sid = 'conv1';
+
       Conversations.removeConversationFromUI(conversationSid);
 
       const conversationDiv = document.getElementById(`conv-${conversationSid}`);
       expect(conversationDiv).toBeNull();
       expect(log).toHaveBeenCalledWith('Conversation removed from UI', { conversationSid });
+      expect(currentConversation.sid).toBeNull();
     });
 
     it('should log if the conversation element does not exist', () => {
@@ -341,6 +333,16 @@ describe('Conversations Module', () => {
 
   // Tests for deleteConversation
   describe('deleteConversation', () => {
+    it('should delete a conversation successfully', async () => {
+      const conversationSid = 'conv1';
+
+      api.deleteConversation.mockResolvedValue();
+
+      await Conversations.deleteConversation(conversationSid);
+
+      expect(api.deleteConversation).toHaveBeenCalledWith(conversationSid);
+      expect(log).toHaveBeenCalledWith('Conversation deleted successfully', { sid: conversationSid });
+    });
 
     it('should handle errors when deleting a conversation', async () => {
       const conversationSid = 'conv1';
@@ -468,7 +470,7 @@ describe('Conversations Module', () => {
       const timeDiv = conversationDiv.querySelector('.time');
 
       expect(lastMessageDiv.textContent).toBe('');
-      expect(timeDiv.textContent).toBe('10:00 AM'); // Depending on formatTime implementation
+      expect(timeDiv.textContent).toBe('10:00 AM'); // Original time
     });
 
     it('should do nothing if conversation element does not exist', () => {
@@ -480,6 +482,4 @@ describe('Conversations Module', () => {
       expect(log).not.toHaveBeenCalled();
     });
   });
-
-  // Hot Module Replacement (HMR) tests are skipped as they are environment-specific
 });

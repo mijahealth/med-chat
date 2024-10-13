@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.87% </span>
+                <span class="strong">78.37% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>82/111</span>
+                <span class='fraction'>87/111</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.87% </span>
+                <span class="strong">78.37% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>82/111</span>
+                <span class='fraction'>87/111</span>
             </div>
         
             
@@ -314,8 +314,8 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -421,29 +421,20 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -468,10 +459,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -546,9 +546,9 @@ export async function loadConversations() {
 &nbsp;
     renderConversations(conversations);
 &nbsp;
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (currentConversation.sid) {
-      const selectedConv = document.getElementById(`conv-${currentConversation.sid}`);
-      <span class="missing-if-branch" title="if path not taken" >I</span>if (selectedConv) {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (currentConversation.sid) {
+      const selectedConv = <span class="cstat-no" title="statement not covered" >document.getElementById(`conv-${currentConversation.sid}`);</span>
+<span class="cstat-no" title="statement not covered" >      if (selectedConv) {</span>
 <span class="cstat-no" title="statement not covered" >        selectedConv.classList.add('selected');</span>
       }
     }
@@ -664,12 +664,12 @@ export function removeConversationFromUI(conversationSid) {
     log('Conversation element not found for deletion', { conversationSid });
   }
 &nbsp;
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (currentConversation.sid === conversationSid) {
-<span class="cstat-no" title="statement not covered" >    currentConversation.sid = null;</span>
-<span class="cstat-no" title="statement not covered" >    document.getElementById('messages').innerHTML = '';</span>
-<span class="cstat-no" title="statement not covered" >    document.getElementById('messages-title').innerHTML = '';</span>
-<span class="cstat-no" title="statement not covered" >    document.getElementById('message-input').style.display = 'none';</span>
-<span class="cstat-no" title="statement not covered" >    log('Cleared message pane for deleted conversation', { conversationSid });</span>
+  if (currentConversation.sid === conversationSid) {
+    currentConversation.sid = null;
+    document.getElementById('messages').innerHTML = '';
+    document.getElementById('messages-title').innerHTML = '';
+    document.getElementById('message-input').style.display = 'none';
+    log('Cleared message pane for deleted conversation', { conversationSid });
   }
 }
 &nbsp;
@@ -703,8 +703,8 @@ export async function createConversation(data) {
 export async function deleteConversation(sid) {
   try {
     await api.deleteConversation(sid);
-<span class="cstat-no" title="statement not covered" >    removeConversationFromUI(sid);</span>
-<span class="cstat-no" title="statement not covered" >    log('Conversation deleted successfully', { sid });</span>
+    removeConversationFromUI(sid);
+    log('Conversation deleted successfully', { sid });
   } catch (error) {
     log('Error deleting conversation', { sid, error });
     throw error;
@@ -769,7 +769,7 @@ export function updateConversationPreview(conversationSid, latestMessage) {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2024-10-13T04:25:42.700Z
+                at 2024-10-13T04:37:38.519Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
