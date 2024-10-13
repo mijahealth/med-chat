@@ -30,5 +30,10 @@ module.exports = {
     '<rootDir>/public/',
     '<rootDir>/node_modules/'
   ],
+  moduleNameMapper: {
+    '^modules/logger$': '<rootDir>/__mocks__/logger.js',
+    '^modules/broadcast$': '<rootDir>/__mocks__/broadcast.js',
+    '^twilioClient$': '<rootDir>/__mocks__/twilio.js',
+  },
   // ... other configurations
 };
