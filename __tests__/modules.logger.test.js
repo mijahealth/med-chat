@@ -1,5 +1,8 @@
 // __tests__/modules.logger.test.js
 
+// Ensure that Jest does not mock 'modules/logger.js' for this test
+jest.unmock('../modules/logger');
+
 const logger = require('../modules/logger');
 const winston = require('winston');
 
