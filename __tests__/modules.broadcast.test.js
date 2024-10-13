@@ -1,10 +1,11 @@
 // __tests__/modules.broadcast.test.js
-const broadcastModule = require('../modules/broadcast');
+const broadcastModule = jest.requireActual('../modules/broadcast');
 
 describe('Broadcast Module', () => {
   afterEach(() => {
     // Reset the broadcast function after each test
     broadcastModule.setBroadcast(null);
+    jest.clearAllMocks(); // Clears any mock usage data, if applicable
   });
 
   it('should set the broadcast function correctly', () => {
