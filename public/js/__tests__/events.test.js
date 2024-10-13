@@ -1,5 +1,3 @@
-// public/js/__tests__/events.test.js
-
 /**
  * @jest-environment jsdom
  */
@@ -23,7 +21,8 @@ import {
   updateConversationSelection,
   fetchAndRenderMessages,
   handleConversationError,
-  setIsSelecting
+  startConversation,
+  setIsSelecting,
 } from '../events.js';
 
 import { api } from '../api.js';
@@ -44,8 +43,15 @@ import {
   deleteConversation,
   updateLatestMessagePreview,
 } from '../conversations.js';
-import { renderConversations, updateConversationHeader, renderMessages, moveConversationToTop } from '../ui.js';
+import {
+  renderConversations,
+  updateConversationHeader,
+  renderMessages,
+  moveConversationToTop,
+  showMessageInput,
+} from '../ui.js';
 import feather from 'feather-icons';
+import { setupCallControls } from '../call.js';
 
 // Mock dependencies
 jest.mock('../api.js');
@@ -509,6 +515,33 @@ describe('events.js', () => {
       expect(renderMessages).toHaveBeenCalledWith([]);
     });
 
+    it('should mark messages as read when conversation has unread messages', async () => {
+      const sid = 'CH1234567890';
+
+      state.conversationsLoaded = true;
+      currentConversation.sid = null;
+
+      const conversationDetails = {
+        sid,
+        friendlyName: 'Test Conversation',
+        attributes: {
+          name: 'Test User',
+          email: 'test@example.com',
+          phoneNumber: '+1234567890',
+          dob: '1990-01-01',
+          state: 'CA',
+        },
+        unreadCount: 5, // Has unread messages
+      };
+
+      api.getConversationDetails.mockResolvedValue(conversationDetails);
+      api.getMessages.mockResolvedValue([]);
+
+      await selectConversation(sid);
+
+      expect(api.markMessagesAsRead).toHaveBeenCalledWith(sid);
+    });
+
     it('should not select conversation if conversations are not loaded', async () => {
       const sid = 'CH1234567890';
 
@@ -680,6 +713,14 @@ describe('events.js', () => {
 
       expect(log).toHaveBeenCalledWith('New message input or send button not found');
     });
+
+    it('should log when new conversation button is not found', () => {
+      document.getElementById('new-conversation-btn').remove(); // Remove newConversationBtn
+
+      setupEventListeners();
+
+      expect(log).toHaveBeenCalledWith('New conversation button not found');
+    });
   });
 
   // Additional tests for edge cases and branches
@@ -703,12 +744,23 @@ describe('events.js', () => {
   });
 
   describe('updateConversationSelection', () => {
+    it('should update the UI when selected conversation element is found', () => {
+      document.body.innerHTML = `
+        <div class="conversation" id="conv-CH1234567890" data-sid="CH1234567890"></div>
+      `;
+
+      const convElement = document.getElementById('conv-CH1234567890');
+
+      updateConversationSelection('CH1234567890');
+
+      expect(convElement.classList.contains('selected')).toBe(true);
+    });
+
     it('should handle missing selected conversation element', () => {
-      const sid = 'CH1234567890';
       document.body.innerHTML = ''; // Remove conversation elements
 
       expect(() => {
-        updateConversationSelection(sid);
+        updateConversationSelection('CH1234567890');
       }).not.toThrow();
     });
   });
@@ -720,6 +772,35 @@ describe('events.js', () => {
       await fetchAndRenderMessages('CH1234567890');
 
       // No exception should be thrown
+    });
+
+    it('should fetch and render messages and update messages div when messagesDiv is found', async () => {
+      const messagesDiv = document.getElementById('messages');
+
+      api.getMessages.mockResolvedValue([
+        {
+          sid: 'IM123',
+          author: '+1234567890',
+          body: 'Test message',
+          dateCreated: new Date().toISOString(),
+        },
+      ]);
+
+      await fetchAndRenderMessages('CH1234567890');
+
+      expect(api.getMessages).toHaveBeenCalledWith('CH1234567890', { limit: 1000, order: 'asc' });
+      expect(renderMessages).toHaveBeenCalledWith([
+        {
+          sid: 'IM123',
+          author: '+1234567890',
+          body: 'Test message',
+          dateCreated: expect.any(String),
+        },
+      ]);
+
+      expect(messagesDiv.style.display).toBe('block');
+      expect(messagesDiv.scrollTop).toBe(messagesDiv.scrollHeight);
+      expect(showMessageInput).toHaveBeenCalled();
     });
   });
 
