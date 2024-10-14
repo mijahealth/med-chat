@@ -33,9 +33,11 @@ module.exports = {
   moduleNameMapper: {
     '^modules/logger$': '<rootDir>/__mocks__/logger.js',
     '^modules/broadcast$': '<rootDir>/__mocks__/broadcast.js',
-    '^twilioClient$': '<rootDir>/__mocks__/twilioClient.js', 
+    '^twilioClient$': '<rootDir>/__mocks__/twilioClient.js',
     '^modules/conversations$': '<rootDir>/__mocks__/conversations.js',
     '^modules/smsService$': '<rootDir>/__mocks__/smsService.js',
+    '^modules/websocket$': '<rootDir>/__mocks__/websocket.js', 
+    '^modules/video$': '<rootDir>/__mocks__/video.js',         
   },
   // ... other configurations
 };

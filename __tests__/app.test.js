@@ -7,38 +7,20 @@ process.env.NODE_ENV = 'test';
 jest.mock('twilio');
 
 // 2. Mock other modules used directly in app.js
-jest.mock('../modules/logger', () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-}));
-
+jest.mock('../modules/logger');
 jest.mock('../modules/websocket', () => () => ({
   broadcast: jest.fn(),
 }));
 
-jest.mock('../modules/smsService', () => () => ({
-  sendSMS: jest.fn(() => Promise.resolve({ messageSid: 'SM123', success: true })),
-}));
-
-jest.mock('../modules/broadcast', () => ({
-  setBroadcast: jest.fn(),
-  getBroadcast: jest.fn(() => jest.fn()),
-}));
+jest.mock('../modules/smsService');
+jest.mock('../modules/broadcast');
 
 jest.mock('../modules/video', () => ({
   createVideoRoom: jest.fn().mockResolvedValue({ sid: 'RM123', uniqueName: 'VideoRoom_123' })
 }));
 
-jest.mock('../modules/conversations', () => ({
-  fetchConversation: jest.fn(() =>
-    Promise.resolve({
-      sid: 'CH123',
-      attributes: '{}',
-      friendlyName: 'Test Conversation',
-    })
-  ),
-}));
+jest.mock('../modules/conversations');
+
 
 // 3. Now import the app after all mocks
 const request = require('supertest');
