@@ -4,8 +4,8 @@
 process.env.NODE_ENV = 'test';
 
 // Mock necessary modules
-jest.mock('../twilioClient'); // Automatically uses __mocks__/twilioClient.js
-jest.mock('../modules/logger'); // Ensure you have __mocks__/modules/logger.js
+jest.mock('../twilioClient'); 
+jest.mock('../modules/logger'); 
 
 // Import modules
 const searchModule = require('../modules/search');

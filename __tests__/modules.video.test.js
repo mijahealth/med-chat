@@ -1,20 +1,13 @@
 // __tests__/modules.video.test.js
 
+// Mock the entire twilioClient module
+jest.mock('../twilioClient'); 
+jest.mock('../modules/logger');
+
 const { createVideoRoom } = require('../modules/video');
 const logger = require('../modules/logger');
 
-// Mock the entire twilioClient module
-jest.mock('../twilioClient', () => ({
-  video: {
-    v1: {
-      rooms: {
-        create: jest.fn(),
-      },
-    },
-  },
-}));
 
-jest.mock('../modules/logger');
 
 describe('Video Module', () => {
   describe('createVideoRoom', () => {

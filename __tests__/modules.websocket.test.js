@@ -1,4 +1,6 @@
-// __tests__/websocket.test.js
+// Mock dependencies
+jest.mock('../modules/logger');
+jest.mock('../modules/broadcast');
 
 const WebSocket = require('ws');
 const http = require('http');
@@ -6,30 +8,34 @@ const setupWebSocket = require('../modules/websocket');
 const logger = require('../modules/logger');
 const broadcastModule = require('../modules/broadcast');
 
-// Mock dependencies
-jest.mock('ws');
-jest.mock('../modules/logger');
-jest.mock('../modules/broadcast');
-
 describe('WebSocket Module', () => {
   let mockServer;
   let originalEnv;
+  let mockWss;
 
   beforeEach(() => {
     mockServer = new http.Server();
     originalEnv = process.env.NODE_ENV;
     jest.resetAllMocks();
+
+    // Mock the WebSocket.Server functionality only
+    mockWss = {
+      on: jest.fn(),
+      clients: new Set(),
+    };
+    jest.spyOn(WebSocket, 'Server').mockImplementation(() => mockWss); // Partial mock
   });
 
   afterEach(() => {
     process.env.NODE_ENV = originalEnv;
+    jest.restoreAllMocks();  // Restore original behavior after each test
   });
 
   it('should not set up WebSocket server in test environment', () => {
     process.env.NODE_ENV = 'test';
     const result = setupWebSocket(mockServer);
     
-    expect(WebSocket.Server).not.toHaveBeenCalled();
+    expect(WebSocket.Server).not.toHaveBeenCalled(); // WebSocket.Server is mocked, so this will check if it was called
     expect(logger.info).toHaveBeenCalledWith('WebSocket server not initialized in test environment');
     expect(result.broadcast).toBeInstanceOf(Function);
     expect(result.broadcast()).toBeUndefined();
@@ -37,11 +43,6 @@ describe('WebSocket Module', () => {
 
   it('should set up WebSocket server in non-test environment', () => {
     process.env.NODE_ENV = 'development';
-    const mockWss = {
-      on: jest.fn(),
-      clients: new Set(),
-    };
-    WebSocket.Server.mockImplementation(() => mockWss);
 
     setupWebSocket(mockServer);
 
@@ -55,11 +56,6 @@ describe('WebSocket Module', () => {
     const mockWs = {
       on: jest.fn(),
     };
-    const mockWss = {
-      on: jest.fn(),
-      clients: new Set(),
-    };
-    WebSocket.Server.mockImplementation(() => mockWss);
 
     setupWebSocket(mockServer);
 
@@ -74,15 +70,11 @@ describe('WebSocket Module', () => {
 
   it('should broadcast messages to all connected clients', () => {
     process.env.NODE_ENV = 'development';
-    const mockWss = {
-      on: jest.fn(),
-      clients: new Set([
-        { readyState: WebSocket.OPEN, send: jest.fn() },
-        { readyState: WebSocket.CLOSED, send: jest.fn() },
-        { readyState: WebSocket.OPEN, send: jest.fn() },
-      ]),
-    };
-    WebSocket.Server.mockImplementation(() => mockWss);
+    mockWss.clients = new Set([
+      { readyState: WebSocket.OPEN, send: jest.fn() },
+      { readyState: WebSocket.CLOSED, send: jest.fn() },
+      { readyState: WebSocket.OPEN, send: jest.fn() },
+    ]);
 
     setupWebSocket(mockServer);
 

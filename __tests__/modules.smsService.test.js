@@ -8,40 +8,8 @@ process.env.TWILIO_PHONE_NUMBER = '+1234567890';
 process.env.NGROK_URL = 'http://localhost:3000';
 
 // Mock necessary modules
-jest.mock('../twilioClient', () => {
-  const messagesCreateMock = jest.fn();
-  const conversationsFetchMock = jest.fn();
-  const conversationsMock = jest.fn((sid) => ({
-    messages: {
-      create: messagesCreateMock,
-    },
-    fetch: conversationsFetchMock,
-  }));
-
-  const clientMock = {
-    conversations: {
-      v1: {
-        conversations: conversationsMock,
-      },
-    },
-    messages: {
-      create: jest.fn(),
-    },
-  };
-
-  // Expose the mocks to be accessible in tests
-  clientMock.__messagesCreateMock = messagesCreateMock;
-  clientMock.__conversationsFetchMock = conversationsFetchMock;
-  clientMock.__conversationsMock = conversationsMock;
-
-  return clientMock;
-});
-
-jest.mock('../modules/logger', () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-}));
+jest.mock('../twilioClient'); 
+jest.mock('../modules/logger'); 
 
 // Import modules
 const smsServiceFactory = require('../modules/smsService');

@@ -1,14 +1,15 @@
 // __tests__/routes.callParams.test.js
 
+jest.mock('../modules/conversations');
+jest.mock('../modules/logger');
+
+
 const request = require('supertest');
 const express = require('express');
 const callParamsRouter = require('../routes/callParams');
 const conversations = require('../modules/conversations');
 const logger = require('../modules/logger');
 
-// Mock the dependencies
-jest.mock('../modules/conversations');
-jest.mock('../modules/logger');
 
 describe('GET /call-params/:sid', () => {
   let app;
