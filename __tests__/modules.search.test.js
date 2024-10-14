@@ -4,47 +4,9 @@
 process.env.NODE_ENV = 'test';
 
 // Mock necessary modules
-jest.mock('../twilioClient', () => {
-  const conversationsListMock = jest.fn();
-  const participantsListMock = jest.fn();
-  const messagesListMock = jest.fn();
+jest.mock('../twilioClient'); // Automatically uses __mocks__/twilioClient.js
 
-  // Mock conversation instance
-  const conversationInstanceMock = jest.fn((sid) => ({
-    participants: {
-      list: participantsListMock,
-    },
-    messages: {
-      list: messagesListMock,
-    },
-  }));
-
-  // Make conversationsMock a jest mock function
-  const conversationsMock = jest.fn((sid) => conversationInstanceMock(sid));
-  conversationsMock.list = conversationsListMock;
-
-  const clientMock = {
-    conversations: {
-      v1: {
-        conversations: conversationsMock,
-      },
-    },
-  };
-
-  // Expose mocks for testing
-  clientMock.__conversationsListMock = conversationsListMock;
-  clientMock.__participantsListMock = participantsListMock;
-  clientMock.__messagesListMock = messagesListMock;
-  clientMock.__conversationInstanceMock = conversationInstanceMock;
-
-  return clientMock;
-});
-
-jest.mock('../modules/logger', () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-}));
+jest.mock('../modules/logger'); // Ensure you have __mocks__/modules/logger.js
 
 // Import modules
 const searchModule = require('../modules/search');
