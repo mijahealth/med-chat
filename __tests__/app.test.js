@@ -3,15 +3,13 @@
 // 0. Set NODE_ENV to 'test' before importing any modules
 process.env.NODE_ENV = 'test';
 
+
 // 1. Mock Twilio before importing any modules that use it
 jest.mock('twilio');
 
 // 2. Mock other modules used directly in app.js
 jest.mock('../modules/logger');
-jest.mock('../modules/websocket', () => () => ({
-  broadcast: jest.fn(),
-}));
-
+jest.mock('../modules/websocket');
 jest.mock('../modules/smsService');
 jest.mock('../modules/broadcast');
 
@@ -189,32 +187,50 @@ describe('App.js Routes', () => {
 
 describe('Environment Variable Setup', () => {
   let originalEnv;
+  let mockSetupWebSocket;
 
   beforeAll(() => {
-    originalEnv = process.env.NODE_ENV;
+    originalEnv = { ...process.env };
+    mockSetupWebSocket = jest.fn(() => ({ broadcast: jest.fn() }));
+    jest.doMock('../modules/websocket', () => mockSetupWebSocket);
   });
 
   afterAll(() => {
-    process.env.NODE_ENV = originalEnv;
+    process.env = originalEnv;
     stopCacheUpdates();
+    jest.resetModules();
+  });
+
+  beforeEach(() => {
+    jest.resetModules();
   });
 
   it('should load .env.test when NODE_ENV is test', () => {
     process.env.NODE_ENV = 'test';
-    jest.resetModules();
     const app = require('../app');
     expect(process.env.NODE_ENV).toBe('test');
-    // Add any assertions related to .env.test variables if needed
+    expect(mockSetupWebSocket).not.toHaveBeenCalled();
   });
 
   it('should load .env when NODE_ENV is not test', () => {
     process.env.NODE_ENV = 'production';
-    jest.resetModules();
     const app = require('../app');
     expect(process.env.NODE_ENV).toBe('production');
-    // Add any assertions related to .env variables if needed
-    // After setting to production, stop cache updates
-    stopCacheUpdates();
+    expect(mockSetupWebSocket).toHaveBeenCalled();
+  });
+
+  it('should not apply rate limiting when TEST_RATE_LIMITING is false', () => {
+    process.env.NODE_ENV = 'test';
+    process.env.TEST_RATE_LIMITING = 'false';
+    const app = require('../app');
+    // Add assertions to verify rate limiting is not applied
+  });
+
+  it('should apply rate limiting when TEST_RATE_LIMITING is true', () => {
+    process.env.NODE_ENV = 'test';
+    process.env.TEST_RATE_LIMITING = 'true';
+    const app = require('../app');
+    // Add assertions to verify rate limiting is applied
   });
 });
 
@@ -383,19 +399,6 @@ describe('App.js Tests', () => {
     jest.resetModules();
     process.env.NODE_ENV = 'test';
     app = require('../app');
-  });
-
-  describe('Environment Variable Setup', () => {
-    it('should load .env.test in test environment', () => {
-      expect(process.env.NODE_ENV).toBe('test');
-      // Add assertions for test environment variables
-    });
-
-    it('should not apply rate limiting when TEST_RATE_LIMITING is false', () => {
-      process.env.TEST_RATE_LIMITING = 'false';
-      const app = require('../app');
-      // Add assertions to verify rate limiting is not applied
-    });
   });
 
   describe('Error Handling', () => {
