@@ -5,25 +5,10 @@ process.env.NODE_ENV = 'test';
 process.env.TWILIO_PHONE_NUMBER = '+1234567890';
 
 // Mock necessary modules
-jest.mock('../modules/logger', () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-}));
+jest.mock('../modules/logger');
+jest.mock('../modules/conversations');
+jest.mock('../modules/broadcast');
 
-jest.mock('../modules/conversations', () => ({
-  fetchConversation: jest.fn(),
-  listConversations: jest.fn(),
-  addMessage: jest.fn(),
-  listMessages: jest.fn(),
-  deleteConversation: jest.fn(),
-  markMessagesAsRead: jest.fn(),
-  isMessageRead: jest.fn(),
-}));
-
-jest.mock('../modules/broadcast', () => ({
-  getBroadcast: jest.fn(),
-}));
 
 // Import modules
 const request = require('supertest');

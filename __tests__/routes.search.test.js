@@ -1,14 +1,16 @@
 // __tests__/routes.search.test.js
 
+// Mock the searchModule and logger
+jest.mock('../modules/search');
+jest.mock('../modules/logger');
+
 const express = require('express');
 const request = require('supertest');
 const searchRouter = require('../routes/search');
 const searchModule = require('../modules/search');
 const logger = require('../modules/logger');
 
-// Mock the searchModule and logger
-jest.mock('../modules/search');
-jest.mock('../modules/logger');
+
 
 describe('Search Routes', () => {
   let app;

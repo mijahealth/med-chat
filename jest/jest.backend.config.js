@@ -34,6 +34,8 @@ module.exports = {
     '^modules/logger$': '<rootDir>/__mocks__/logger.js',
     '^modules/broadcast$': '<rootDir>/__mocks__/broadcast.js',
     '^twilioClient$': '<rootDir>/__mocks__/twilioClient.js', 
+    '^modules/conversations$': '<rootDir>/__mocks__/conversations.js',
+    '^modules/smsService$': '<rootDir>/__mocks__/smsService.js',
   },
   // ... other configurations
 };

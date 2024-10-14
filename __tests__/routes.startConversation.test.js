@@ -5,31 +5,10 @@ process.env.NODE_ENV = 'test';
 process.env.TWILIO_PHONE_NUMBER = '+10987654321'; // Set a mock Twilio phone number
 
 // Mock necessary modules before importing the route
-jest.mock('../modules/logger', () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-}));
-
-jest.mock('../modules/conversations', () => ({
-  createConversation: jest.fn(),
-  addParticipant: jest.fn(),
-  listMessages: jest.fn(),
-}));
-
-jest.mock('../modules/broadcast', () => ({
-  setBroadcast: jest.fn(),
-  getBroadcast: jest.fn(() => jest.fn()),
-}));
-
-// Correctly mock smsService to return a function that returns an object with sendSMS
-jest.mock('../modules/smsService', () =>
-  jest.fn(() => ({
-    sendSMS: jest.fn(() =>
-      Promise.resolve({ messageSid: 'SM123', success: true })
-    ),
-  }))
-);
+jest.mock('../modules/logger');
+jest.mock('../modules/conversations');
+jest.mock('../modules/broadcast');
+jest.mock('../modules/smsService');
 
 const request = require('supertest');
 const express = require('express');
