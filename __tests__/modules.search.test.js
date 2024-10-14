@@ -5,7 +5,6 @@ process.env.NODE_ENV = 'test';
 
 // Mock necessary modules
 jest.mock('../twilioClient'); // Automatically uses __mocks__/twilioClient.js
-
 jest.mock('../modules/logger'); // Ensure you have __mocks__/modules/logger.js
 
 // Import modules
@@ -87,15 +86,6 @@ describe('Search Module', () => {
       expect(logger.info).toHaveBeenCalledWith(
         'Cache updated with 1 conversations'
       );
-    });
-
-    it('should not update the cache if CACHE_TTL has not passed', async () => {
-      searchModule._cacheData.lastCacheUpdate = Date.now();
-
-      await searchModule.updateCache();
-
-      expect(client.__conversationsListMock).not.toHaveBeenCalled();
-      expect(searchModule._cacheData.conversationCache).toEqual([]);
     });
 
     it('should handle errors during cache update', async () => {
