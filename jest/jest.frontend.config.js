@@ -1,4 +1,3 @@
-// jest.config.js
 /** @type {import('jest').Config} */
 module.exports = {
   displayName: 'frontend',
@@ -31,16 +30,14 @@ module.exports = {
     '^.+\\.jsx?$': 'babel-jest',
   },
   setupFilesAfterEnv: ['<rootDir>/jest/setupFrontendTests.js'],
-  moduleNameMapper: {
-    // '^./api.js$': '<rootDir>/public/js/__mocks__/api.js',
-    // '^./state.js$': '<rootDir>/public/js/__mocks__/state.js',
-    // '^./conversations.js$': '<rootDir>/public/js/__mocks__/conversations.js',
-    // '^./ui.js$': '<rootDir>/public/js/__mocks__/ui.js',
-    // '^./utils.js$': '<rootDir>/public/js/__mocks__/utils.js',
-    // Add other module mappings as needed, excluding the ones being mocked
-  },
   moduleDirectories: ['node_modules', 'public/js'],
   resetMocks: true,
   clearMocks: true,
   restoreMocks: true,
+  modulePathIgnorePatterns: [
+    '<rootDir>/__mocks__',    // Ignore backend mocks
+    '<rootDir>/__tests__',    // Ignore backend tests
+    '<rootDir>/modules/',     // Optionally ignore backend modules
+    '<rootDir>/routes/',      // Optionally ignore backend routes
+  ],
 };
