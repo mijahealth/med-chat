@@ -157,7 +157,35 @@ jest.mock('../conversations');
         handleWebSocketMessage(messageData);
         expect(handleNewMessage).toHaveBeenCalledWith(messageData);
       });
-  
+
+      it('should not play notification sound for messages from our own number', () => {
+        const messageData = {
+          type: 'newMessage',
+          author: '+1234567890', // Same as state.TWILIO_PHONE_NUMBER
+          conversationSid: 'conv123',
+        };
+        handleWebSocketMessage(messageData);
+        expect(playNotificationSound).not.toHaveBeenCalled();
+      });
+
+      it('should play notification sound for new messages when author is undefined', () => {
+        const messageData = {
+          type: 'newMessage',
+          conversationSid: 'conv123',
+        };
+        handleWebSocketMessage(messageData);
+        expect(playNotificationSound).toHaveBeenCalled();
+      });
+
+      it('should log unknown message type', () => {
+        const unknownData = {
+          type: 'unknownType',
+          someField: 'value',
+        };
+        handleWebSocketMessage(unknownData);
+        expect(log).toHaveBeenCalledWith('Unknown WebSocket message type', unknownData);
+      });
+
       it('should handle new conversation', () => {
         const conversationData = {
           type: 'newConversation',
@@ -276,6 +304,16 @@ jest.mock('../conversations');
             // Expect that log was called with the appropriate message
             expect(log).toHaveBeenCalledWith('Cleared message pane for deleted conversation', { conversationSid: currentSid });
           });
+
+          it('should log error on WebSocket error event', () => {
+            setupClientWebSocket('wss://example.com');
+          
+            const errorEvent = { message: 'Connection error' };
+            mockSocket.triggerError(errorEvent);
+          
+            expect(log).toHaveBeenCalledWith('WebSocket error:', errorEvent);
+          });
+          
         });
   
         describe('handleWebSocketMessage', () => {

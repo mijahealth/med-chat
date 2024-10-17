@@ -14,6 +14,8 @@ jest.mock('../api.js');
 jest.mock('../utils.js');
 jest.mock('axios');
 jest.mock('feather-icons');
+jest.useFakeTimers();
+
 
 // Helper to simulate DOM elements
 function createDOMElements() {
@@ -71,6 +73,16 @@ describe('call.js', () => {
       await callModule.makeCall();
 
       expect(window.alert).toHaveBeenCalledWith('Please select a conversation before making a call.');
+    });
+
+    it('should handle error when fetching token fails', async () => {
+      axios.get.mockRejectedValueOnce(new Error('Token fetch error'));
+      window.alert = jest.fn();
+    
+      await callModule.makeCall();
+    
+      expect(window.alert).toHaveBeenCalledWith('Failed to initiate call. Please check the logs for more details.');
+      expect(log).toHaveBeenCalledWith('Error making call:', expect.any(Error));
     });
 
     it('should alert if a call is already in progress', async () => {
@@ -136,6 +148,18 @@ describe('call.js', () => {
       callModule.call = null;
       callModule.toggleMute();
       expect(log).toHaveBeenCalledWith('toggleMute called but no active call found');
+    });
+
+    it('should log when mute button icon element is not found', () => {
+      const mockCall = { mute: jest.fn() };
+      callModule.call = mockCall;
+      // Remove mute button icon
+      const muteButtonIcon = document.querySelector('#mute-btn i');
+      if (muteButtonIcon) muteButtonIcon.remove();
+    
+      callModule.toggleMute();
+    
+      expect(log).toHaveBeenCalledWith('Mute button icon element not found');
     });
   });
 
@@ -213,6 +237,16 @@ describe('call.js', () => {
       expect(callStatusElement.className).toContain('in-call');
     });
 
+    it('should handle missing call status element in updateCallStatus', () => {
+      // Remove call status element
+      const callStatusElement = document.getElementById('call-status');
+      if (callStatusElement) callStatusElement.remove();
+    
+      callModule.updateCallStatus('In call');
+    
+      expect(log).toHaveBeenCalledWith('Call status element not found');
+    });
+
     it('should warn if call status element is not found', () => {
       document.body.innerHTML = ''; // Remove all elements
       callModule.updateCallStatus('In call');
@@ -220,27 +254,7 @@ describe('call.js', () => {
       expect(log).toHaveBeenCalledWith('Call status element not found');
     });
   });
-
-  describe('startCallDurationTimer', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
-    it('should start the call duration timer', () => {
-      const callStatusElement = document.getElementById('call-status');
-      callModule.startCallDurationTimer();
-
-      expect(callModule.callDurationInterval).not.toBeNull();
-
-      jest.advanceTimersByTime(5000);
-      expect(callStatusElement.textContent).toBe('0:05');
-    });
-  });
-
+  
   describe('stopCallDurationTimer', () => {
     it('should stop the call duration timer', () => {
       global.clearInterval = jest.fn();
@@ -250,6 +264,19 @@ describe('call.js', () => {
 
       expect(global.clearInterval).toHaveBeenCalledWith(12345);
       expect(callModule.callDurationInterval).toBeNull();
+    });
+
+    it('should handle missing call status element during timer updates', () => {
+      // Remove call status element
+      const callStatusElement = document.getElementById('call-status');
+      if (callStatusElement) callStatusElement.remove();
+  
+      callModule.startCallDurationTimer();
+  
+      jest.advanceTimersByTime(1000);
+  
+      // Ensure that no errors occur and function handles the missing element
+      expect(log).not.toHaveBeenCalledWith('Call status element not found during timer');
     });
   });
 

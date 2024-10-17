@@ -81,6 +81,24 @@ describe('Conversations Module', () => {
       expect(mockFetch).toHaveBeenCalled();
       expect(logger.error).toHaveBeenCalledWith('Error fetching conversation', { sid, error: mockError });
     });
+
+    it('should handle invalid JSON in conversation attributes and continue processing', async () => {
+      const mockConversations = [
+        { sid: 'C1', attributes: '{"phoneNumber":"+1111111111"}' },
+        { sid: 'C2', attributes: 'invalid-json' }, // This will cause JSON.parse to throw
+        { sid: 'C3', attributes: '{"phoneNumber":"+4444444444"}' },
+      ];
+    
+      client.conversations.v1.conversations.list.mockResolvedValue(mockConversations);
+    
+      const result = await conversationsModule.getConversationByPhoneNumber('+4444444444');
+    
+      expect(result).toEqual(mockConversations[2]);
+      expect(logger.error).toHaveBeenCalledWith('Error parsing conversation attributes', {
+        conversationSid: 'C2',
+        error: expect.any(SyntaxError),
+      });
+    });
   });
 
   describe('createConversation', () => {

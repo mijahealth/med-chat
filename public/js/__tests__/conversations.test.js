@@ -68,6 +68,28 @@ describe('Conversations Module', () => {
       expect(document.getElementById('loading-spinner').style.display).toBe('none');
     });
 
+    it('should highlight the selected conversation if currentConversation.sid is set', async () => {
+      const mockConversations = [
+        { sid: 'conv1', lastMessage: 'Hello', lastMessageTime: '2023-10-01T10:00:00Z' },
+        { sid: 'conv2', lastMessage: 'Hi', lastMessageTime: '2023-10-02T12:00:00Z' },
+      ];
+    
+      // Set currentConversation.sid
+      currentConversation.sid = 'conv2';
+    
+      // Mocking the API response
+      api.getConversations.mockResolvedValue(mockConversations);
+    
+      // Setup DOM element for the selected conversation
+      const conv2Div = document.createElement('div');
+      conv2Div.id = 'conv-conv2';
+      document.body.appendChild(conv2Div);
+    
+      await Conversations.loadConversations();
+    
+      expect(document.getElementById('conv-conv2').classList.contains('selected')).toBe(true);
+    });
+
     it('should handle API errors gracefully', async () => {
       const mockError = new Error('API Error');
       api.getConversations.mockRejectedValue(mockError);
@@ -226,6 +248,24 @@ describe('Conversations Module', () => {
       expect(state.conversations[0].lastMessage).toBe('Old Message');
       expect(renderConversations).toHaveBeenCalledWith(state.conversations);
     });
+
+    it('should handle missing elements gracefully in handleUpdateConversation', () => {
+      // Initial conversation state setup
+      state.conversations = [{ sid: 'conv1', lastMessage: 'Old Message' }];
+    
+      const updatedConversation = { sid: 'conv1', lastMessage: 'Updated Message' };
+    
+      // Remove conversation DOM element to simulate missing element
+      const conversationDiv = document.getElementById('conv-conv1');
+      if (conversationDiv) conversationDiv.remove();
+    
+      Conversations.handleUpdateConversation(updatedConversation);
+    
+      // Verify that no errors occur and state is updated
+      expect(state.conversations[0].lastMessage).toBe('Updated Message');
+      // Ensure that renderConversations is called to update the UI
+      expect(renderConversations).toHaveBeenCalledWith(state.conversations);
+    });
   });
 
   // Tests for removeConversationFromUI
@@ -247,6 +287,24 @@ describe('Conversations Module', () => {
       Conversations.removeConversationFromUI(conversationSid);
 
       expect(log).toHaveBeenCalledWith('Conversation element not found for deletion', { conversationSid });
+    });
+    it('should clear DOM elements and log when current conversation is deleted', () => {
+      const conversationSid = 'conv1';
+      currentConversation.sid = 'conv1';
+    
+      // Setup DOM elements
+      const messagesDiv = document.getElementById('messages');
+      const messagesTitle = document.getElementById('messages-title');
+      const messageInput = document.getElementById('message-input');
+      messageInput.style.display = 'block';
+    
+      Conversations.removeConversationFromUI(conversationSid);
+    
+      expect(currentConversation.sid).toBeNull();
+      expect(messagesDiv.innerHTML).toBe('');
+      expect(messagesTitle.innerHTML).toBe('');
+      expect(messageInput.style.display).toBe('none');
+      expect(log).toHaveBeenCalledWith('Cleared message pane for deleted conversation', { conversationSid });
     });
   });
 

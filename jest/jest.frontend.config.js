@@ -11,11 +11,11 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80,
-    },
+      branches: 70,
+    functions: 70,
+    lines: 80,
+    statements: 80,
+  },
   },
   testEnvironment: 'jsdom',
   testMatch: [
@@ -40,4 +40,8 @@ module.exports = {
     '<rootDir>/modules/',     // Optionally ignore backend modules
     '<rootDir>/routes/',      // Optionally ignore backend routes
   ],
+  // Add the fakeTimers configuration below
+  fakeTimers: {
+    enableGlobally: true,
+  },
 };

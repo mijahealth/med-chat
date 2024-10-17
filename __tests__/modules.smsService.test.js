@@ -173,6 +173,144 @@ describe('smsService', () => {
       );
     });
 
+    it('should handle error when creating message via Conversation fails', async () => {
+      const to = '+1987654321';
+      const body = 'Test message';
+      const conversationSid = 'CH123';
+      const author = '+1234567890';
+    
+      const error = new Error('Message creation failed');
+      error.code = 20404;
+      error.moreInfo = 'https://www.twilio.com/docs/errors/20404';
+    
+      client.__messagesCreateMock.mockRejectedValue(error);
+    
+      await expect(
+        smsService.sendSMS(to, body, conversationSid, author)
+      ).rejects.toThrow('Message creation failed');
+    
+      // Ensure logger.error was called
+      expect(logger.error).toHaveBeenCalledWith('Error sending SMS', {
+        to,
+        body,
+        conversationSid,
+        error: error.message,
+        twilioCode: error.code,
+        twilioMoreInfo: error.moreInfo,
+      });
+    });
+
+    it('should log a warning if broadcast function is not available in sendViaConversation', async () => {
+      const to = '+1987654321';
+      const body = 'Test message';
+      const conversationSid = 'CH123';
+      const author = '+1234567890';
+    
+      // Create smsService instance without broadcast function
+      smsService = smsServiceFactory(null);
+    
+      const mockConversationMessage = { sid: 'IM123' };
+      client.__messagesCreateMock.mockResolvedValue(mockConversationMessage);
+    
+      client.__conversationsFetchMock.mockResolvedValue({
+        sid: conversationSid,
+        friendlyName: 'Test Conversation',
+        attributes: '{}',
+      });
+    
+      const result = await smsService.sendSMS(to, body, conversationSid, author);
+    
+      expect(result).toEqual({ success: true, messageSid: 'IM123' });
+    
+      // Ensure logger.warn was called for broadcasting message
+      expect(logger.warn).toHaveBeenCalledWith('Broadcast function is not available', {
+        messageDetails: {
+          type: 'newMessage',
+          conversationSid,
+          messageSid: 'IM123',
+          author: author || process.env.TWILIO_PHONE_NUMBER,
+          body,
+          dateCreated: expect.any(String),
+        },
+      });
+    
+      // Ensure logger.warn was called for conversation update
+      expect(logger.warn).toHaveBeenCalledWith('Broadcast function is not available', {
+        messageDetails: {
+          type: 'updateConversation',
+          conversationSid,
+          friendlyName: 'Test Conversation',
+          lastMessage: body,
+          lastMessageTime: expect.any(String),
+          attributes: {},
+        },
+      });
+    });
+
+    it('should handle exceptions when fetching conversation for update', async () => {
+      const to = '+1987654321';
+      const body = 'Test message';
+      const conversationSid = 'CH123';
+      const author = '+1234567890';
+    
+      const mockConversationMessage = { sid: 'IM123' };
+      client.__messagesCreateMock.mockResolvedValue(mockConversationMessage);
+    
+      const error = new Error('Fetch conversation error');
+      client.__conversationsFetchMock.mockRejectedValue(error);
+    
+      const result = await smsService.sendSMS(to, body, conversationSid, author);
+    
+      expect(result).toEqual({ success: true, messageSid: 'IM123' });
+    
+      // Ensure logger.error was called
+      expect(logger.error).toHaveBeenCalledWith('Error fetching conversation for update', {
+        conversationSid,
+        error,
+      });
+    });
+
+    it('should send SMS via Conversation when conversationSid is provided', async () => {
+      const to = '+1987654321';
+      const body = 'Test message';
+      const conversationSid = 'CH123';
+      const author = '+1234567890';
+    
+      // Mock Twilio client's methods
+      const mockConversationMessage = { sid: 'IM123' };
+      client.__messagesCreateMock.mockResolvedValue(mockConversationMessage);
+    
+      const mockConversation = {
+        sid: conversationSid,
+        friendlyName: 'Test Conversation',
+        attributes: '{}',
+      };
+      client.__conversationsFetchMock.mockResolvedValue(mockConversation);
+    
+      const result = await smsService.sendSMS(to, body, conversationSid, author);
+    
+      expect(result).toEqual({ success: true, messageSid: 'IM123' });
+    
+      // Ensure Twilio client's methods were called correctly
+      expect(client.conversations.v1.conversations).toHaveBeenCalledWith(conversationSid);
+      expect(client.__messagesCreateMock).toHaveBeenCalledWith({
+        body,
+        author: author || process.env.TWILIO_PHONE_NUMBER,
+      });
+    
+      expect(client.__conversationsFetchMock).toHaveBeenCalled();
+    
+      // Ensure broadcast was called
+      expect(mockBroadcast).toHaveBeenCalledTimes(2);
+    
+      // Ensure logger was used
+      expect(logger.info).toHaveBeenCalledWith('Sending SMS via Conversation', {
+        conversationSid,
+        body,
+      });
+    });
+    
+
     it('should handle exceptions when fetching conversation for update', async () => {
       const to = '+1987654321';
       const body = 'Test message';

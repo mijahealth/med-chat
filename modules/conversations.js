@@ -313,7 +313,17 @@ async function getConversationByPhoneNumber(phoneNumber) {
     });
 
     for (const conv of conversationsList) {
-      const attributes = JSON.parse(conv.attributes || '{}');
+      let attributes = {};
+      try {
+        attributes = JSON.parse(conv.attributes || '{}');
+      } catch (parseError) {
+        logger.error('Error parsing conversation attributes', {
+          conversationSid: conv.sid,
+          error: parseError,
+        });
+        continue; // Skip this conversation and continue with the next one
+      }
+
       if (attributes.phoneNumber === phoneNumber) {
         logger.info(
           `Found conversation ${conv.sid} for phone number ${phoneNumber}`,

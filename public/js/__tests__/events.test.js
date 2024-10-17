@@ -161,6 +161,24 @@ describe('events.js', () => {
       expect(phoneInput.classList.contains('invalid')).toBe(false);
     });
 
+    it('should handle unknown validation types gracefully', () => {
+      const input = document.createElement('input');
+      input.dataset.validate = 'unknown';
+      input.value = 'some value';
+      const errorElement = document.createElement('span');
+      errorElement.classList.add('error-message');
+      errorElement.dataset.for = input.name;
+      document.body.appendChild(input);
+      document.body.appendChild(errorElement);
+    
+      const event = { target: input };
+      const result = validateInput(event);
+    
+      expect(result).toBe(true);
+      expect(errorElement.textContent).toBe('');
+      expect(input.classList.contains('invalid')).toBe(false);
+    });
+
     it('should invalidate an invalid phone number input', () => {
       const phoneInput = document.querySelector('input[name="phoneNumber"]');
       phoneInput.value = 'invalid phone';
@@ -283,6 +301,29 @@ describe('events.js', () => {
       expect(messageSentIndicator.classList.contains('show')).toBe(true);
     });
 
+    it('should not send message if message is only whitespace', async () => {
+      const inputField = document.getElementById('new-message');
+      inputField.value = '   ';
+    
+      await handleSendMessage();
+    
+      expect(api.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('should alert when no conversation is selected', async () => {
+      const inputField = document.getElementById('new-message');
+      inputField.value = 'Hello World';
+    
+      currentConversation.sid = null;
+    
+      global.alert = jest.fn();
+    
+      await handleSendMessage();
+    
+      expect(global.alert).toHaveBeenCalledWith('Please select a conversation before sending a message.');
+      expect(api.sendMessage).not.toHaveBeenCalled();
+    });
+
     it('should not send a message when input is empty', async () => {
       const inputField = document.getElementById('new-message');
       inputField.value = '';
@@ -376,6 +417,14 @@ describe('events.js', () => {
     });
 
     it('should log when new conversation modal is not found', () => {
+      document.getElementById('new-conversation-modal').remove();
+    
+      openNewConversationModal();
+    
+      expect(log).toHaveBeenCalledWith('New conversation modal not found');
+    });
+
+    it('should log when new conversation modal is not found', () => {
       document.body.innerHTML = ''; // Remove modal
       openNewConversationModal();
 
@@ -424,6 +473,14 @@ describe('events.js', () => {
 
       expect(api.searchConversations).toHaveBeenCalledWith('test');
       expect(renderConversations).toHaveBeenCalledWith(mockResults);
+    });
+
+    it('should log when search input is not found', async () => {
+      document.getElementById('search-input').remove();
+    
+      await performSearch(api, log);
+    
+      expect(log).toHaveBeenCalledWith('Search input not found');
     });
 
     it('should load conversations when query is empty', async () => {
@@ -515,6 +572,34 @@ describe('events.js', () => {
       expect(renderMessages).toHaveBeenCalledWith([]);
     });
 
+    it('should not select conversation if conversations are not loaded', async () => {
+      const sid = 'CH1234567890';
+    
+      state.conversationsLoaded = false;
+      currentConversation.sid = null;
+    
+      global.alert = jest.fn();
+    
+      await selectConversation(sid);
+    
+      expect(global.alert).toHaveBeenCalledWith('Please wait until conversations are fully loaded.');
+      expect(api.getConversationDetails).not.toHaveBeenCalled();
+    });
+
+    it('should alert when getConversationDetails fails', async () => {
+      const sid = 'CH1234567890';
+    
+      state.conversationsLoaded = true;
+      currentConversation.sid = null;
+    
+      api.getConversationDetails.mockRejectedValue(new Error('Network error'));
+      global.alert = jest.fn();
+    
+      await selectConversation(sid);
+    
+      expect(global.alert).toHaveBeenCalledWith('Error: Network error');
+    });
+
     it('should mark messages as read when conversation has unread messages', async () => {
       const sid = 'CH1234567890';
 
@@ -595,6 +680,14 @@ describe('events.js', () => {
     });
 
     it('should handle missing elements in closeConversation', () => {
+      document.body.innerHTML = '';
+    
+      expect(() => {
+        closeConversation();
+      }).not.toThrow();
+    });
+
+    it('should handle missing elements in closeConversation', () => {
       document.body.innerHTML = ''; // Remove all elements
 
       expect(() => {
@@ -618,6 +711,15 @@ describe('events.js', () => {
       expect(log).toHaveBeenCalledWith('Conversation deleted successfully', { sid });
       expect(deleteButton.disabled).toBe(true);
       expect(deleteButton.innerHTML).toContain('Deleting...');
+    });
+
+    it('should handle case where delete button is not found', async () => {
+      document.body.innerHTML = '';
+    
+      await handleDeleteConversation('CH1234567890');
+    
+      // Since deleteButton is not found, nothing should happen
+      expect(deleteConversation).not.toHaveBeenCalled();
     });
 
     it('should alert and re-enable delete button when API call fails', async () => {
@@ -665,6 +767,14 @@ describe('events.js', () => {
       expect(addEventListenerSpy).toHaveBeenCalledWith('blur', expect.any(Function));
     });
 
+    it('should not throw error if form is not found in setupFormValidation', () => {
+      document.getElementById('new-conversation-form').remove();
+    
+      expect(() => {
+        setupFormValidation();
+      }).not.toThrow();
+    });
+
     it('should not throw error if form is not found', () => {
       document.body.innerHTML = ''; // Remove form
       expect(() => {
@@ -690,6 +800,14 @@ describe('events.js', () => {
 
       expect(log).toHaveBeenCalledWith('Conversations container not found');
     });
+
+    it('should log warning if conversations container is not found', () => {
+      document.getElementById('conversations').remove();
+    
+      setupConversationListeners();
+    
+      expect(log).toHaveBeenCalledWith('Conversations container not found');
+    });
   });
 
   describe('setupEventListeners', () => {
@@ -706,6 +824,16 @@ describe('events.js', () => {
       expect(inputAddEventListenerSpy).toHaveBeenCalledWith('keypress', expect.any(Function));
       expect(btnAddEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function));
     });
+
+    it('should log when new conversation button is not found', () => {
+      document.getElementById('new-conversation-btn').remove();
+    
+      setupEventListeners();
+    
+      expect(log).toHaveBeenCalledWith('New conversation button not found');
+    });
+
+    
 
     it('should log warning if new message input or send button is not found', () => {
       document.body.innerHTML = ''; // Remove elements
@@ -741,6 +869,14 @@ describe('events.js', () => {
         updateUIForConversationSelection();
       }).not.toThrow();
     });
+
+    it('should handle missing loading spinner gracefully', () => {
+      document.getElementById('loading-spinner').remove();
+    
+      expect(() => {
+        updateUIForConversationSelection();
+      }).not.toThrow();
+    });
   });
 
   describe('updateConversationSelection', () => {
@@ -754,6 +890,14 @@ describe('events.js', () => {
       updateConversationSelection('CH1234567890');
 
       expect(convElement.classList.contains('selected')).toBe(true);
+    });
+
+    it('should handle missing selected conversation element', () => {
+      document.body.innerHTML = '';
+    
+      expect(() => {
+        updateConversationSelection('CH1234567890');
+      }).not.toThrow();
     });
 
     it('should handle missing selected conversation element', () => {
@@ -771,6 +915,14 @@ describe('events.js', () => {
 
       await fetchAndRenderMessages('CH1234567890');
 
+      // No exception should be thrown
+    });
+
+    it('should handle missing messages div', async () => {
+      document.getElementById('messages').remove();
+    
+      await fetchAndRenderMessages('CH1234567890');
+    
       // No exception should be thrown
     });
 
@@ -814,6 +966,39 @@ describe('events.js', () => {
       expect(global.alert).toHaveBeenCalledWith('Error: Test error');
     });
 
+    it('should alert with response data error if available', () => {
+      const error = {
+        response: {
+          data: {
+            error: 'Test response error',
+          },
+        },
+      };
+      global.alert = jest.fn();
+    
+      handleConversationError(error);
+    
+      expect(global.alert).toHaveBeenCalledWith('Error: Test response error');
+    });
+
+    it('should alert with error message when error occurs', () => {
+      const error = new Error('Test error');
+      global.alert = jest.fn();
+    
+      handleConversationError(error);
+    
+      expect(global.alert).toHaveBeenCalledWith('Error: Test error');
+    });
+
+    it('should alert with default message if error is unknown', () => {
+      const error = {};
+      global.alert = jest.fn();
+    
+      handleConversationError(error);
+    
+      expect(global.alert).toHaveBeenCalledWith('Error: Unknown error occurred.');
+    });
+    
     it('should alert with response data error if available', () => {
       const error = {
         response: {
