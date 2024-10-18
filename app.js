@@ -233,6 +233,10 @@ app.get('/video-room/:roomName', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'video-room.html'));
 });
 
+app.get('/customer/:phoneNumber', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'customer.html'));
+});
+
 // Twilio Webhook Endpoint
 app.post(
   '/twilio-webhook',

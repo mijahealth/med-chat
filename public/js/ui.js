@@ -264,11 +264,15 @@ export function updateConversationHeader(
     <div class="contact-card-wrapper">
       <div class="contact-card">
         <div class="contact-card-avatar">
-          <i data-feather="user" class="icon avatar-icon"></i>
+          <i data-feather="info" class="icon avatar-icon"></i>
         </div>
         <div class="contact-card-content">
           <div class="contact-card-main">
-            <h2 class="contact-name">${name || 'Unknown'}</h2>
+            <h2 class="contact-name">
+              <a href="/customer/${phoneNumber.replace('+', '')}" class="customer-link">
+                ${name || 'Unknown'}
+              </a>
+            </h2>
             <div class="contact-card-details">
               <div class="contact-info-row">
                 <div class="contact-item">

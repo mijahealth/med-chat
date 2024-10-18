@@ -381,6 +381,17 @@ describe('ui.js', () => {
       expect(messagesTitle.innerHTML).toContain('DOB: 1990-01-01');
       expect(messagesTitle.innerHTML).toContain('State: California');
 
+      // Check that the name is a hyperlink
+      const nameLink = messagesTitle.querySelector('.customer-link');
+      expect(nameLink).toBeInTheDocument();
+      expect(nameLink.href).toContain('/customer/1111111111');
+      expect(nameLink.textContent.trim()).toBe('Alice');  // Use trim() here
+
+      // Check that the avatar icon is now an info icon
+      const avatarIcon = messagesTitle.querySelector('.avatar-icon');
+      expect(avatarIcon).toBeInTheDocument();
+      expect(avatarIcon.getAttribute('data-feather')).toBe('info');
+
       // Check that closeConversation was attached to the close button
       const closeButton = document.getElementById('close-conversation-btn');
       expect(closeButton).toBeInTheDocument();

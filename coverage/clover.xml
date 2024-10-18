@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1729136263099" clover="3.2.0">
-  <project timestamp="1729136263099" name="All files">
-    <metrics statements="1307" coveredstatements="1146" conditionals="572" coveredconditionals="413" methods="216" coveredmethods="168" elements="2095" coveredelements="1727" complexity="0" loc="1307" ncloc="1307" packages="4" files="23" classes="23"/>
+<coverage generated="1729259992234" clover="3.2.0">
+  <project timestamp="1729259992234" name="All files">
+    <metrics statements="1315" coveredstatements="1153" conditionals="574" coveredconditionals="415" methods="218" coveredmethods="169" elements="2107" coveredelements="1737" complexity="0" loc="1315" ncloc="1315" packages="4" files="24" classes="24"/>
     <package name="med-chat">
-      <metrics statements="142" coveredstatements="130" conditionals="42" coveredconditionals="35" methods="10" coveredmethods="9"/>
+      <metrics statements="144" coveredstatements="131" conditionals="42" coveredconditionals="35" methods="11" coveredmethods="9"/>
       <file name="app.js" path="/Users/mattward/Desktop/Projects/med-chat/app.js">
-        <metrics statements="136" coveredstatements="124" conditionals="42" coveredconditionals="35" methods="10" coveredmethods="9"/>
+        <metrics statements="138" coveredstatements="125" conditionals="42" coveredconditionals="35" methods="11" coveredmethods="9"/>
         <line num="4" count="13" type="cond" truecount="2" falsecount="0"/>
         <line num="5" count="12" type="stmt"/>
         <line num="7" count="1" type="stmt"/>
@@ -115,33 +115,35 @@
         <line num="227" count="2" type="stmt"/>
         <line num="232" count="13" type="stmt"/>
         <line num="233" count="1" type="stmt"/>
-        <line num="237" count="13" type="stmt"/>
-        <line num="241" count="8" type="stmt"/>
-        <line num="250" count="8" type="stmt"/>
-        <line num="252" count="8" type="cond" truecount="4" falsecount="0"/>
-        <line num="253" count="4" type="stmt"/>
-        <line num="255" count="4" type="cond" truecount="2" falsecount="0"/>
-        <line num="256" count="3" type="stmt"/>
-        <line num="257" count="2" type="stmt"/>
-        <line num="259" count="2" type="cond" truecount="1" falsecount="1"/>
-        <line num="260" count="0" type="stmt"/>
-        <line num="269" count="0" type="stmt"/>
-        <line num="278" count="4" type="cond" truecount="2" falsecount="0"/>
-        <line num="280" count="2" type="stmt"/>
-        <line num="283" count="2" type="stmt"/>
-        <line num="286" count="7" type="stmt"/>
-        <line num="288" count="1" type="stmt"/>
-        <line num="289" count="1" type="stmt"/>
-        <line num="295" count="13" type="stmt"/>
-        <line num="296" count="12" type="stmt"/>
-        <line num="301" count="12" type="stmt"/>
-        <line num="304" count="12" type="stmt"/>
-        <line num="308" count="13" type="cond" truecount="3" falsecount="1"/>
-        <line num="309" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="310" count="0" type="stmt"/>
-        <line num="311" count="0" type="stmt"/>
-        <line num="318" count="13" type="stmt"/>
-        <line num="319" count="13" type="stmt"/>
+        <line num="236" count="13" type="stmt"/>
+        <line num="237" count="0" type="stmt"/>
+        <line num="241" count="13" type="stmt"/>
+        <line num="245" count="8" type="stmt"/>
+        <line num="254" count="8" type="stmt"/>
+        <line num="256" count="8" type="cond" truecount="4" falsecount="0"/>
+        <line num="257" count="4" type="stmt"/>
+        <line num="259" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="260" count="3" type="stmt"/>
+        <line num="261" count="2" type="stmt"/>
+        <line num="263" count="2" type="cond" truecount="1" falsecount="1"/>
+        <line num="264" count="0" type="stmt"/>
+        <line num="273" count="0" type="stmt"/>
+        <line num="282" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="284" count="2" type="stmt"/>
+        <line num="287" count="2" type="stmt"/>
+        <line num="290" count="7" type="stmt"/>
+        <line num="292" count="1" type="stmt"/>
+        <line num="293" count="1" type="stmt"/>
+        <line num="299" count="13" type="stmt"/>
+        <line num="300" count="12" type="stmt"/>
+        <line num="305" count="12" type="stmt"/>
+        <line num="308" count="12" type="stmt"/>
+        <line num="312" count="13" type="cond" truecount="3" falsecount="1"/>
+        <line num="313" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="314" count="0" type="stmt"/>
+        <line num="315" count="0" type="stmt"/>
+        <line num="322" count="13" type="stmt"/>
+        <line num="323" count="13" type="stmt"/>
       </file>
       <file name="twilioClient.js" path="/Users/mattward/Desktop/Projects/med-chat/twilioClient.js">
         <metrics statements="6" coveredstatements="6" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
@@ -379,7 +381,7 @@
       </file>
     </package>
     <package name="med-chat.public.js">
-      <metrics statements="753" coveredstatements="627" conditionals="388" coveredconditionals="265" methods="158" coveredmethods="113"/>
+      <metrics statements="759" coveredstatements="633" conditionals="390" coveredconditionals="267" methods="159" coveredmethods="114"/>
       <file name="api.js" path="/Users/mattward/Desktop/Projects/med-chat/public/js/api.js">
         <metrics statements="15" coveredstatements="15" conditionals="1" coveredconditionals="1" methods="22" coveredmethods="22"/>
         <line num="19" count="1" type="stmt"/>
@@ -626,6 +628,15 @@
         <line num="229" count="0" type="stmt"/>
         <line num="230" count="0" type="stmt"/>
         <line num="231" count="0" type="stmt"/>
+      </file>
+      <file name="customer.js" path="/Users/mattward/Desktop/Projects/med-chat/public/js/customer.js">
+        <metrics statements="6" coveredstatements="6" conditionals="2" coveredconditionals="2" methods="1" coveredmethods="1"/>
+        <line num="11" count="3" type="stmt"/>
+        <line num="12" count="3" type="stmt"/>
+        <line num="14" count="3" type="cond" truecount="2" falsecount="0"/>
+        <line num="15" count="2" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
       </file>
       <file name="events.js" path="/Users/mattward/Desktop/Projects/med-chat/public/js/events.js">
         <metrics statements="321" coveredstatements="250" conditionals="181" coveredconditionals="119" methods="47" coveredmethods="25"/>
@@ -1061,15 +1072,15 @@
         <line num="261" count="1" type="stmt"/>
         <line num="262" count="1" type="stmt"/>
         <line num="263" count="1" type="stmt"/>
-        <line num="325" count="1" type="stmt"/>
-        <line num="330" count="1" type="stmt"/>
-        <line num="360" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="361" count="0" type="stmt"/>
-        <line num="363" count="0" type="stmt"/>
+        <line num="329" count="1" type="stmt"/>
+        <line num="334" count="1" type="stmt"/>
+        <line num="364" count="1" type="cond" truecount="1" falsecount="1"/>
         <line num="365" count="0" type="stmt"/>
-        <line num="366" count="0" type="stmt"/>
-        <line num="368" count="0" type="stmt"/>
+        <line num="367" count="0" type="stmt"/>
         <line num="369" count="0" type="stmt"/>
+        <line num="370" count="0" type="stmt"/>
+        <line num="372" count="0" type="stmt"/>
+        <line num="373" count="0" type="stmt"/>
       </file>
       <file name="utils.js" path="/Users/mattward/Desktop/Projects/med-chat/public/js/utils.js">
         <metrics statements="35" coveredstatements="34" conditionals="13" coveredconditionals="13" methods="17" coveredmethods="16"/>
